@@ -62,6 +62,8 @@ class pulse_group(QWidget):
         topbox.addWidget(self.ref_channel_lbl)
         topbox.addWidget(self.ref_channel_combo_box)
         vbox.addLayout(topbox)
+
+        
     # def get_tab(parent):
         # the part how to show pulse group with pyqt, maybe one would need additional class
         # main_vbox = VBOX
