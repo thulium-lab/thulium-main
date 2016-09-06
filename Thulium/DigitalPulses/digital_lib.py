@@ -1,4 +1,6 @@
 # from PyQt5.QtCore import QObject
+import os, sys
+import pickle
 import random
 import numpy as np
 import matplotlib
@@ -11,29 +13,127 @@ from PyQt5.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer)
 from PyQt5.QtGui import (QBrush, QColor, QPainter)
 from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem,
                              QGridLayout, QVBoxLayout, QHBoxLayout, QSizePolicy,
-                             QLabel, QLineEdit, QPushButton, QWidget, QComboBox,QRadioButton, QSpinBox, QCheckBox)
-# class digital_pulses(QWidget):
-#     # can be done as QWidget
-#     super().__init__()
-#     self.initUI()
-#     schemes = []  # schemes with saved groups and pulses
-#     groups = []  # list of all pulse_groups
-#
-#     def initUI():
-#         vbox = QVBoxLayout(self)
-#         topbox = QVBoxLayout(self)
-#
-#         # few buttons like save, add_scheme (to add current version of the scheme) and so on
-#         self.current_scheme  # set_current_scheme (may be from last session)
-#         self.pulses_tabs = QTabWidget()  # initialize tab widget with tabs for pulse_groups
-#         for p_group in current_scheme:
-#             self.pulses_tabs.addTab(p_group.get_tab(SMTH), p_group.name)
-#             # probably here i have to return widget or smth
+                             QLabel, QLineEdit, QPushButton, QWidget, QComboBox,QRadioButton, QSpinBox, QCheckBox, QTabWidget, QFileDialog)
 
+digital_pulses_folder = 'digatal_schemes'
 
-class pulse_group(QWidget):
+class digital_pulses(QWidget):
+    # can be done as QWidget
     def __init__(self):
-        self.name = 'First'
+        self.schemes = {}#self.loadSchemes()  # schemes with saved groups and pulses
+        groups = []  # list of all pulse_groups
+        self.current_scheme = None
+        super().__init__()
+        if len(self.schemes) == 0:
+            self.schemes['Default']=[pulse_group(self,name='first'),pulse_group(self,name='qqq')]
+            self.schemes['Default1'] = [pulse_group(self),pulse_group(self,name='dfg')]
+        self.initUI()
+
+    def initUI(self):
+
+        vbox = QVBoxLayout(self)
+
+        topbox = QHBoxLayout(self)
+        self.scheme_lbl = QLabel('Scheme')
+        topbox.addWidget(self.scheme_lbl)
+
+        self.scheme_combo_box = QComboBox()
+        self.scheme_combo_box.addItems(self.schemes.keys())
+        self.scheme_combo_box.currentTextChanged.connect(self.updateScheme)
+        topbox.addWidget(self.scheme_combo_box)
+
+        self.add_group_button = QPushButton('Add group')
+        self.add_group_button.clicked.connect(self.addGroup)
+        topbox.addWidget(self.add_group_button)
+
+        self.save_button = QPushButton('Save')
+        self.save_button.clicked.connect(self.saveScheme)
+        topbox.addWidget(self.save_button)
+
+        self.save_as_button = QPushButton('Save as')
+        self.save_as_button.clicked.connect(self.saveAsScheme)
+        topbox.addWidget(self.save_as_button)
+
+        vbox.addLayout(topbox)
+
+
+        self.tabbox = QTabWidget()
+        self.tabbox.setMovable(True)
+        self.current_scheme = self.scheme_combo_box.currentText()
+        print(self.current_scheme)
+        for group in self.schemes[self.current_scheme]:
+            group.updateReferences()
+            self.tabbox.addTab(group, group.name)
+        # tab1 = pulse_group(self)
+
+        vbox.addWidget(self.tabbox)
+        self.setLayout(vbox)
+        print(self.children())
+        # few buttons like save, add_scheme (to add current version of the scheme) and so on
+        # self.current_scheme  # set_current_scheme (may be from last session)
+        # self.pulses_tabs = QTabWidget()  # initialize tab widget with tabs for pulse_groups
+        # for p_group in current_scheme:
+        #     self.pulses_tabs.addTab(p_group.get_tab(SMTH), p_group.name)
+            # probably here i have to return widget or smth
+    def addGroup(self):
+        print('addGroup')
+        new_group = pulse_group(self)
+        self.schemes[self.current_scheme].append(new_group)
+        # self.tabbox.addTab(new_group,new_group.name)
+        # self.tabbox.setCurrentWidget(new_group)
+        # self.show()
+        self.updateScheme()
+    # def updateScheme(self):
+    #     print('in update')
+    #     print(self.tabbox.count())
+    #     for i in range(self.tabbox.count()):
+    #         # print(self.tabbox.widget(i))
+    #         self.tabbox.setTabText(i,self.tabbox.widget(i).name)
+
+    def updateScheme(self):
+        print('updateScheme')
+        self.tabbox.clear()
+        self.current_scheme = self.scheme_combo_box.currentText()
+        for group in self.schemes[self.current_scheme]:
+            group.updateReferences()
+            self.tabbox.addTab(group, group.name)
+
+    def saveScheme(self):
+        print('saveScheme')
+        if not os.path.exists(digital_pulses_folder):
+            print('create folder')
+            os.mkdir(digital_pulses_folder)
+        with open(os.path.join(digital_pulses_folder,self.current_scheme), 'wb') as f:
+            pickle.dump(self.schemes[self.current_scheme],f)
+
+    def saveAsScheme(self):
+        print('saveAsScheme')
+        if not os.path.exists(digital_pulses_folder):
+            print('create folder')
+            os.mkdir(digital_pulses_folder)
+        fname = QFileDialog.getSaveFileName(self,directory=digital_pulses_folder)[0]
+        with open(fname, 'wb') as f:
+            pickle.dump(self.schemes[self.current_scheme],f)
+
+    def loadSchemes(self):
+        print('loadSchemes')
+        if not os.path.exists(digital_pulses_folder):
+            print('create folder')
+            os.mkdir(digital_pulses_folder)
+        files = os.listdir(digital_pulses_folder)
+        if len(files) == 0:
+            return {}
+        else:
+            schemes = {}
+            for fname in files:
+                with open(os.path.join(digital_pulses_folder, fname), 'rb') as f:
+                    print('here')
+                    schemes[fname] = pickle.load(f)
+            return schemes
+class pulse_group(QWidget):
+    def __init__(self,parent=None,name='Default'):
+        self.parent = parent
+        self.name = name
         self.edge=0
         self.delay = 10
         self.length = 100
@@ -58,25 +158,22 @@ class pulse_group(QWidget):
     def initUI(self):
         vbox = QVBoxLayout(self)
         topbox = QHBoxLayout(self)
-        # self.name_lbl = QLabel('Name:')
-        # self.name_line = QLineEdit('')
-        # self.name_line.setMaximumWidth(100)
+
         self.ref_channel_lbl = QLabel('Ref. channel:')
+        topbox.addWidget(self.ref_channel_lbl)
+
         self.ref_channel_combo_box = QComboBox()
-        self.ref_channel_combo_box.addItems(['1','20000'])
+        self.ref_channel_combo_box.addItems([])
         self.ref_channel_combo_box.setMaximumWidth(100)
-        # self.edge_lbl = QLabel('Edge')
-        # self.edge_combo_box = QComboBox()
-        # self.edge_combo_box.addItems(['Begin','End'])
+        topbox.addWidget(self.ref_channel_combo_box)
+
         self.add_pulse_btn = QPushButton('Add pulse')
         self.add_pulse_btn.clicked.connect(self.add_pulse)
+        topbox.addWidget(self.add_pulse_btn)
         # topbox.addWidget(self.name_lbl)
         # topbox.addWidget(self.name_line)
-        topbox.addWidget(self.ref_channel_lbl)
-        topbox.addWidget(self.ref_channel_combo_box)
         # topbox.addWidget(self.edge_lbl)
         # topbox.addWidget(self.edge_combo_box)
-        topbox.addWidget(self.add_pulse_btn)
         vbox.addLayout(topbox)
         self.columns = ['Del','As group','Name','Edge','Delay','Length','Active']
         self.edges = ['Begin', 'End']
@@ -86,10 +183,9 @@ class pulse_group(QWidget):
         self.show
     def add_pulse(self):
         self.pulses.append(IndividualPulse())
-        print(self.children())
-        print(self.layout())
         QWidget().setLayout(self.layout())
         self.initUI()
+        self.updateReferences()
         # self.draw_pulses()
     def drawGrid(self):
         grid_layout = QGridLayout()
@@ -97,6 +193,7 @@ class pulse_group(QWidget):
             grid_layout.addWidget(QLabel(name),1,i)
         j=0
         group_name = QLineEdit(self.name)
+        group_name.editingFinished.connect(self.groupNameChanged)
         grid_layout.addWidget(group_name,j,self.columns.index('Name'))
         group_edge = QComboBox()
         group_edge.addItems(self.edges)
@@ -136,6 +233,14 @@ class pulse_group(QWidget):
             pulse_is_active.setChecked(pulse.is_active)
             grid_layout.addWidget(pulse_is_active,j,self.columns.index('Active'))
         return grid_layout
+    def groupNameChanged(self):
+        print('Here')
+        print('new name', self.sender().text())
+        self.name = self.sender().text()
+        self.parent.updateScheme()
+    def updateReferences(self):
+        self.ref_channel_combo_box.clear()
+        self.ref_channel_combo_box.addItems([group.name for group in self.parent.schemes[self.parent.current_scheme]])
     # def get_tab(parent):
         # the part how to show pulse group with pyqt, maybe one would need additional class
         # main_vbox = VBOX
@@ -160,7 +265,7 @@ class IndividualPulse():
 if __name__ == '__main__':
     import sys
     app = QApplication(sys.argv)
-    mainWindow = pulse_group()
+    mainWindow = digital_pulses()
 
     mainWindow.show()
     sys.exit(app.exec_())
