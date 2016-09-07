@@ -14,21 +14,45 @@ from PyQt5.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer)
 from PyQt5.QtGui import (QBrush, QColor, QPainter)
 from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem,
                              QGridLayout, QVBoxLayout, QHBoxLayout, QSizePolicy,
-                             QLabel, QLineEdit, QPushButton, QWidget, QComboBox,QRadioButton, QSpinBox, QCheckBox, QTabWidget, QFileDialog)
-
+                             QLabel, QLineEdit, QPushButton, QWidget, QComboBox,QRadioButton, QSpinBox, QCheckBox, QTabWidget, QFileDialog,QMessageBox, QDoubleSpinBox)
+import pyqtgraph as pg
 digital_pulses_folder = 'digatal_schemes'
 config_scheme_file = 'config_scheme'
+
 class digital_pulses(QWidget):
     # can be done as QWidget
     def __init__(self):
         self.loadSchemes()  # schemes with saved groups and pulses
-        groups = []  # list of all pulse_groups
+        groups = []  # list of all pulse_groups]
+        self.output_data = {}
         super().__init__()
         if len(self.schemes) == 0:
             self.schemes['Default']=[pulse_group(name='first'),pulse_group(name='qqq')]
-            self.schemes['Default1'] = [pulse_group(),pulse_group(name='dfg')]
+            self.schemes['Default10'] = [pulse_group(),pulse_group(name='dfg')]
+        self.refChannels = [0]
+        self.refChannels.extend([group.name for group in self.schemes[self.current_scheme]])
+        print(self.refChannels)
         self.initUI()
-
+        self.calculateOutputData()
+        print(self.output_data)
+        self.win = pg.GraphicsWindow(title="Three plot curves")
+        self.win.resize(1000, 600)
+        self.plotPulses()
+    def plotPulses(self):
+        self.win.clear()
+        for name in sorted(self.output_data):
+            value = self.output_data[name]
+            p = self.win.addPlot(title=name)
+            xx = []
+            yy = []
+            for i,point in enumerate(value[1:]):
+                if (not i==0) and (not i == (len(value[1:])-1)):
+                    xx.append(point[0])
+                    yy.append(not point[1])
+                xx.append(point[0])
+                yy.append(point[1])
+            p.plot(xx,yy)
+            self.win.nextRow()
     def initUI(self):
 
         vbox = QVBoxLayout(self)
@@ -62,22 +86,22 @@ class digital_pulses(QWidget):
         self.tabbox = QTabWidget()
         self.tabbox.setMovable(True)
         self.current_scheme = self.scheme_combo_box.currentText()
-        print(self.current_scheme)
+        print('Current scheme: ', self.current_scheme)
         for group in self.schemes[self.current_scheme]:
             tab = group.PulseGroupWidget(parent=self, data=group)
-            tab.updateReferences()
+            # tab.updateReferences()
             self.tabbox.addTab(tab, group.name)
         # tab1 = pulse_group(self)
 
         vbox.addWidget(self.tabbox)
         self.setLayout(vbox)
-        print(self.children())
         # few buttons like save, add_scheme (to add current version of the scheme) and so on
         # self.current_scheme  # set_current_scheme (may be from last session)
         # self.pulses_tabs = QTabWidget()  # initialize tab widget with tabs for pulse_groups
         # for p_group in current_scheme:
         #     self.pulses_tabs.addTab(p_group.get_tab(SMTH), p_group.name)
             # probably here i have to return widget or smth
+
     def addGroup(self):
         print('addGroup')
         new_group = pulse_group(self)
@@ -96,6 +120,7 @@ class digital_pulses(QWidget):
             # tab.updateReferences()
             self.tabbox.addTab(tab, group.name)
         self.updateConfig()
+        self.onAnyChange()
 
     def updateConfig(self):
         print('updateConfig')
@@ -161,9 +186,77 @@ class digital_pulses(QWidget):
                         config = {}
             if 'current_scheme' in config.keys():
                 self.current_scheme = config['current_scheme']
-            else:
-                self.current_scheme = None
+            elif len(self.schemes):
+                self.current_scheme = list(self.schemes.keys())[0]
 
+    def pulseByName(self,name):
+        group_names = [group.name for group in self.schemes[self.current_scheme]]
+        return self.schemes[self.current_scheme][group_names.index(name)]
+
+    def calculateOutputData(self):
+        self.output_data = {}
+        end_time = 0
+        first_time = 0
+        for pulse_group in self.schemes[self.current_scheme]:
+            if pulse_group.is_active:
+                for pulse in pulse_group.pulses:
+                    if pulse.is_active:
+                        if not pulse.channel in self.output_data.keys():
+                            self.output_data[pulse.channel] = []
+                        new_points = self.getPoints(pulse,pulse_group)
+                        for point in new_points:
+                            if point[0] not in [point[0] for point in self.output_data[pulse.channel]]:
+                                self.output_data[pulse.channel].append(point)
+                            else:
+                                self.output_data[pulse.channel].remove((point[0],not point[1]))
+                        # if new_points[-1][0] > end_time:
+                        #     end_time = new_points[-1][0]
+
+        for point_list in self.output_data.values():
+            point_list.sort(key=lambda x: x[0])
+            if point_list[0][0] != 0:
+                point_list.insert(0,(0,0))
+        for points in self.output_data.values():
+            if points[-1][0] > end_time:
+                end_time = points[-1][0]
+            if first_time == 0:
+                first_time = end_time
+            if points[1][0] < first_time:
+                first_time = points[1][0]
+        for points in self.output_data.values():
+            points.append((end_time+10,points[-1][1]))
+            points.insert(1,(first_time - 100, points[0][1]))
+        self.first_time = first_time
+        self.end_time = end_time
+
+    def getPoints(self,pulse, group):
+        group_begin = group.delay + group.getReferencePoint(self)
+        if not pulse.edge:
+            if pulse.length == 0:
+                return ((group_begin + pulse.delay,1),(group_begin + group.length,0))
+            elif pulse.length > 0:
+                return ((group_begin + pulse.delay,1),(group_begin +  pulse.delay + pulse.length,0))
+            else:
+                return ((group_begin +  pulse.delay,1),(group_begin + group.length + pulse.length,0))
+        else:
+            if pulse.length == 0:
+                return ((group_begin + pulse.delay,1),(group_begin + group.length,0))
+            elif pulse.length > 0:
+                return ((group_begin + group.length + pulse.delay,1),(group_begin + group.length + pulse.delay + pulse.length,0))
+            else:
+                return ((group_begin + group.length + pulse.delay + pulse.length,1),(group_begin + group.length + pulse.delay,0))
+
+    def onAnyChange(self):
+        self.calculateOutputData()
+        self.plotPulses()
+        print(self.output_data)
+
+    def deleteGroup(self, group_name):
+        print("deleteGroup")
+        group_names = [group.name for group in self.schemes[self.current_scheme]]
+        # print(group_name, group_names.index(group_name))
+        self.schemes[self.current_scheme].pop(group_names.index(group_name))
+        self.updateScheme()
 
 class pulse_group():
     def __init__(self,parent=None,name='Default'):
@@ -175,14 +268,23 @@ class pulse_group():
         self.ref = None
         self.pulses = []
         self.pulses.append(IndividualPulse(name='Green'))
-        self.pulses.append(IndividualPulse(as_group=False,delay=10,edge=1,is_active=True,length=100,name='Blue',))
+        self.pulses.append(IndividualPulse(as_group=False,delay=10,edge=1,is_active=True,length=100,name='Blue'))
+
         # t_start  # absolute time of the beginning of the group
         # t_end  # absolute time of the end of the group
+    def getReferencePoint(self,scheme):
+        if self.ref == '0':
+            return 0
+        else:
+            predecessor = scheme.pulseByName(self.ref)
+            return self.edge * predecessor.length + predecessor.getReferencePoint(scheme)
 
     class PulseGroupWidget(QWidget):
         def __init__(self,parent=None,data=None):
             self.parent = parent
             self.data = data
+            self.channels = [str(i) for i in range(10)]
+            self.n_decimals = 2
             super().__init__()
             self.initUI()
 
@@ -190,13 +292,12 @@ class pulse_group():
             vbox = QVBoxLayout(self)
             topbox = QHBoxLayout(self)
 
-            self.ref_channel_lbl = QLabel('Ref. channel:')
-            topbox.addWidget(self.ref_channel_lbl)
+            ref_channel_lbl = QLabel('Ref. channel:')
+            topbox.addWidget(ref_channel_lbl)
 
             self.ref_channel_combo_box = QComboBox()
             self.ref_channel_combo_box.addItem('0')
             self.ref_channel_combo_box.addItems([group.name for group in self.parent.schemes[self.parent.current_scheme]])
-            # print(self.data.__dict__)
             self.ref_channel_combo_box.setCurrentText(self.data.ref)
             self.ref_channel_combo_box.currentIndexChanged.connect(self.refChannelChanged)
             topbox.addWidget(self.ref_channel_combo_box)
@@ -204,105 +305,238 @@ class pulse_group():
             self.add_pulse_btn = QPushButton('Add pulse')
             self.add_pulse_btn.clicked.connect(self.add_pulse)
             topbox.addWidget(self.add_pulse_btn)
-            # topbox.addWidget(self.name_lbl)
-            # topbox.addWidget(self.name_line)
-            # topbox.addWidget(self.edge_lbl)
-            # topbox.addWidget(self.edge_combo_box)
+
+            self.del_group_btn = QPushButton('Del Group')
+            self.del_group_btn.clicked.connect(self.deleteGroup)
+            topbox.addWidget(self.del_group_btn)
             vbox.addLayout(topbox)
-            self.columns = ['Del','As group','Name','Edge','Delay','Length','Active']
+
+            self.columns = ['Del','Channel','Name','Edge','Delay','Length','Active']
             self.edges = ['Begin', 'End']
-            grid_layout = self.drawGrid()
-            vbox.addLayout(grid_layout)
+            self.grid_layout = self.drawGrid()
+            vbox.addLayout(self.grid_layout)
             self.setLayout(vbox)
             self.show
+
+        def deleteGroup(self):
+            print('deleteGroup')
+            quit_msg = "Are you sure you want to delete this pulse group?"
+            reply = QMessageBox.question(self, 'Message',
+                                               quit_msg, QMessageBox.Yes, QMessageBox.No)
+
+            if reply == QMessageBox.Yes:
+                self.parent.deleteGroup(self.data.name)
 
         def refChannelChanged(self):
             print('refChannelChanged')
             self.data.ref = self.ref_channel_combo_box.currentText()
-            print(self.data.ref)
+            self.parent.onAnyChange()
+            # print(self.data.__dict__)
             # self.redrawGroup()
 
         def redrawGroup(self):
+            # the way i found to redraw all layout
+            print('redrawGroup')
             QWidget().setLayout(self.layout())
             self.initUI()
-            self.updateReferences()
+            # self.updateReferences()
 
         def add_pulse(self):
+            print('addPulse')
             self.data.pulses.append(IndividualPulse())
             self.redrawGroup()
+            self.parent.onAnyChange()
             # self.draw_pulses()
 
         def drawGrid(self):
+            print('drawGrid')
             grid_layout = QGridLayout()
+
+            # add column names
+            label_row = 1
             for i,name in enumerate(self.columns):
-                grid_layout.addWidget(QLabel(name),1,i)
-            j=0
+                grid_layout.addWidget(QLabel(name),label_row,i)
+
+            # add pulse_group data
+            group_row=0
+            self.group_row = group_row
             group_name = QLineEdit(self.data.name)
-            group_name.editingFinished.connect(self.groupNameChanged)
-            grid_layout.addWidget(group_name,j,self.columns.index('Name'))
+            group_name.returnPressed.connect(self.groupNameChanged)
+            grid_layout.addWidget(group_name,group_row,self.columns.index('Name'))
+
             group_edge = QComboBox()
             group_edge.addItems(self.edges)
             group_edge.setCurrentIndex(self.data.edge)
-            grid_layout.addWidget(group_edge,j,self.columns.index('Edge'))
-            group_delay = QSpinBox()
-            group_delay.setValue(self.data.delay)
-            grid_layout.addWidget(group_delay, j, self.columns.index('Delay'))
-            group_length = QSpinBox()
-            group_length.setValue(self.data.length)
-            grid_layout.addWidget(group_length, j, self.columns.index('Length'))
-            group_is_active = QRadioButton()
-            group_is_active.setChecked(self.data.is_active)
-            grid_layout.addWidget(group_is_active, j, self.columns.index('Active'))
+            group_edge.currentIndexChanged.connect(self.edgeChanged)
+            grid_layout.addWidget(group_edge,group_row,self.columns.index('Edge'))
 
+            group_delay = QDoubleSpinBox()
+            group_delay.setDecimals(self.n_decimals)
+            group_delay.setMaximum(10000)
+            group_delay.setMinimum(-10000)
+            group_delay.setValue(self.data.delay)
+            group_delay.valueChanged.connect(self.delayChanged)
+            grid_layout.addWidget(group_delay, group_row, self.columns.index('Delay'))
+
+            group_length = QDoubleSpinBox()
+            group_length.setDecimals(self.n_decimals)
+            group_length.setMaximum(10000)
+            group_length.setMinimum(-10000)
+            group_length.setValue(self.data.length)
+            group_length.valueChanged.connect(self.lengthChanged)
+            grid_layout.addWidget(group_length, group_row, self.columns.index('Length'))
+
+            group_is_active = QCheckBox()
+            group_is_active.setChecked(self.data.is_active)
+            group_is_active.stateChanged.connect(self.isActiveChanged)
+            grid_layout.addWidget(group_is_active, group_row, self.columns.index('Active'))
+            # add individual pulse data
             for i,pulse in enumerate(self.data.pulses):
-                print('pulse',i)
-                j = i + 2
+                # print('pulse',i)
+                pulse_row = i + 2
+
                 del_button = QPushButton('Del')
+                del_button.setMaximumWidth(40)
                 del_button.clicked.connect(self.delButtonClicked)
-                grid_layout.addWidget(del_button,j,self.columns.index('Del'))
-                pulse_as_group = QRadioButton()
-                pulse_as_group.setChecked(pulse.as_group)
-                grid_layout.addWidget(pulse_as_group,j,self.columns.index('As group'))
+                grid_layout.addWidget(del_button,pulse_row,self.columns.index('Del'))
+
+                # pulse_as_group = QRadioButton()
+                # pulse_as_group.setChecked(pulse.as_group)
+                # grid_layout.addWidget(pulse_as_group,pulse_row,self.columns.index('As group'))
+                pulse_channel = QComboBox()
+                pulse_channel.addItems(self.channels)
+                pulse_channel.setCurrentText(getattr(pulse,'channel','0'))
+                pulse_channel.currentTextChanged.connect(self.pulseChannelChanged)
+                grid_layout.addWidget(pulse_channel,pulse_row,self.columns.index('Channel'))
+
                 pulse_name = QLineEdit(pulse.name)
-                grid_layout.addWidget(pulse_name,j,self.columns.index('Name'))
+                pulse_name.returnPressed.connect(self.pulseNameChanged)
+                grid_layout.addWidget(pulse_name,pulse_row,self.columns.index('Name'))
+
                 pulse_edge = QComboBox()
                 pulse_edge.addItems(self.edges)
                 pulse_edge.setCurrentIndex(pulse.edge)
-                grid_layout.addWidget(pulse_edge,j,self.columns.index('Edge'))
-                pulse_delay = QSpinBox()
+                pulse_edge.currentIndexChanged.connect(self.edgeChanged)
+                grid_layout.addWidget(pulse_edge,pulse_row,self.columns.index('Edge'))
+
+                pulse_delay = QDoubleSpinBox()
+                pulse_delay.setDecimals(self.n_decimals)
+                pulse_delay.setMaximum(10000)
+                pulse_delay.setMinimum(-10000)
                 pulse_delay.setValue(pulse.delay)
-                grid_layout.addWidget(pulse_delay,j,self.columns.index('Delay'))
-                pulse_length = QSpinBox()
+                pulse_delay.valueChanged.connect(self.delayChanged)
+                grid_layout.addWidget(pulse_delay,pulse_row,self.columns.index('Delay'))
+
+                pulse_length = QDoubleSpinBox()
+                pulse_length.setDecimals(self.n_decimals)
+                pulse_length.setMaximum(10000)
+                pulse_length.setMinimum(-10000)
                 pulse_length.setValue(pulse.length)
-                grid_layout.addWidget(pulse_length,j,self.columns.index('Length'))
-                pulse_is_active = QRadioButton()
+                pulse_length.valueChanged.connect(self.lengthChanged)
+                grid_layout.addWidget(pulse_length,pulse_row,self.columns.index('Length'))
+
+                pulse_is_active = QCheckBox()
                 pulse_is_active.setChecked(pulse.is_active)
-                grid_layout.addWidget(pulse_is_active,j,self.columns.index('Active'))
+                pulse_is_active.stateChanged.connect(self.isActiveChanged)
+                grid_layout.addWidget(pulse_is_active,pulse_row,self.columns.index('Active'))
+
             return grid_layout
 
         def delButtonClicked(self):
-            layout = self.layout()
-            index = layout.children()[1].indexOf(self.sender())
-            row, column, cols, rows = layout.children()[1].getItemPosition(index)
-            print(row, column, cols, rows)
+            # layout = self.layout()
+            print('delButtonClicked')
+            index = self.grid_layout.indexOf(self.sender())
+            row, column, cols, rows = self.grid_layout.getItemPosition(index)
+            # print(row, column, cols, rows)
             self.data.pulses.pop(row-2)
             self.redrawGroup()
+            self.parent.onAnyChange()
 
         def groupNameChanged(self):
-            print('Here')
-            print('new name', self.sender().text())
+            print('groupNameChanged')
+            # print('new name', self.sender().text())
             self.data.name = self.sender().text()
             self.parent.updateScheme()
 
-        def updateReferences(self):
-            self.ref_channel_combo_box.clear()
-            self.ref_channel_combo_box.addItem('0')
-            self.ref_channel_combo_box.addItems([group.name for group in self.parent.schemes[self.parent.current_scheme]])
-            self.ref_channel_combo_box.setCurrentText(self.data.ref)
+        # def updateReferences(self):
+        #     self.ref_channel_combo_box.clear()
+        #     self.ref_channel_combo_box.addItem('0')
+        #     self.ref_channel_combo_box.addItems([group.name for group in self.parent.schemes[self.parent.current_scheme]])
+        #     self.ref_channel_combo_box.setCurrentText(self.data.ref)
+
+        def edgeChanged(self, new_index):
+            print('edgeChanged')
+            index = self.grid_layout.indexOf(self.sender())
+            row, column, cols, rows = self.grid_layout.getItemPosition(index)
+            # print(row,column,new_index)
+            if row == self.group_row:
+                # group edge has been changed
+                self.data.edge = new_index
+            else:
+                # individual pulse edge has been changed
+                self.data.pulses[row-2].edge = new_index
+            self.parent.onAnyChange()
+
+        def delayChanged(self,new_value):
+            print('delayChanged')
+            index = self.grid_layout.indexOf(self.sender())
+            row, column, cols, rows = self.grid_layout.getItemPosition(index)
+            # print(row,column,new_value)
+            if row == self.group_row:
+                # group edge has been changed
+                self.data.delay = new_value
+            else:
+                # individual pulse edge has been changed
+                self.data.pulses[row-2].delay = new_value
+            self.parent.onAnyChange()
+
+        def lengthChanged(self,new_value):
+            print('lengthChanged')
+            index = self.grid_layout.indexOf(self.sender())
+            row, column, cols, rows = self.grid_layout.getItemPosition(index)
+            # print(row,column,new_value)
+            if row == self.group_row:
+                # group edge has been changed
+                self.data.length = new_value
+            else:
+                # individual pulse edge has been changed
+                self.data.pulses[row-2].length = new_value
+            self.parent.onAnyChange()
+
+        def isActiveChanged(self,new_value):
+            print('isActiveChanged')
+            index = self.grid_layout.indexOf(self.sender())
+            row, column, cols, rows = self.grid_layout.getItemPosition(index)
+            # print(row,column,new_value)
+            if row == self.group_row:
+                # group edge has been changed
+                self.data.is_active = new_value
+            else:
+                # individual pulse edge has been changed
+                self.data.pulses[row-2].is_active = new_value
+            self.parent.onAnyChange()
+
+        def pulseChannelChanged(self,new_value):
+            print('pulseChannelChanged')
+            index = self.grid_layout.indexOf(self.sender())
+            row, column, cols, rows = self.grid_layout.getItemPosition(index)
+            # print(row, column, new_value)
+            self.data.pulses[row - 2].channel = new_value
+            self.parent.onAnyChange()
+
+        def pulseNameChanged(self):
+            print('pulseNameChanged')
+            index = self.grid_layout.indexOf(self.sender())
+            row, column, cols, rows = self.grid_layout.getItemPosition(index)
+            # print(row, column, self.sender().text())
+            self.data.pulses[row - 2].name = self.sender().text()
+            self.parent.onAnyChange()
+
 
 class IndividualPulse():
-    def __init__(self, name='', as_group=True,edge = 0, delay = 0, length=1,is_active=True):
+    def __init__(self, name='',channel = 0, as_group=True,edge = 0, delay = 0, length=1,is_active=True):
         self.name = name  # physical channel of the signal (or may be name in dictionary)
+        self.channel = str(channel)
         self.as_group = as_group  # replicate timing of the group
         self.edge = edge # start the pulse from group's t_start or t_end
         self.delay = delay  # delay compared to group t_start or t_end
