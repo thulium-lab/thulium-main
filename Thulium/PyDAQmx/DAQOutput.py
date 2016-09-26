@@ -3,6 +3,7 @@ import numpy as np
 import ctypes
 import time
 
+
 class DigitalOutput(dq.Task):
     """
     Wrapper of a standard class 'Task', specifically designed
@@ -16,7 +17,7 @@ class DigitalOutput(dq.Task):
         but not necessary (called implicitly when adding new data)
     __del__ - clean on destruction
     """
-    def __init__(self, func = None):
+    def __init__(self, func=None):
         dq.Task.__init__(self)
         self.count = 0
         # you need to ClearTask() every time you want to delete channel from task
@@ -29,6 +30,7 @@ class DigitalOutput(dq.Task):
         self.CreateDOChan('Dev1/port0', "", dq.DAQmx_Val_ChanForAllLines)
         self.running = False
         self.wait = 0
+        self.write()
         self.run()
         self.func = func
         self.time = time.perf_counter()
@@ -36,7 +38,11 @@ class DigitalOutput(dq.Task):
     def getCount(self):
         return self.count
     
-    def run(self, data = np.array([0,0], dtype=np.uint32), rate = 2, samples = 2):
+    def setFunc(self, func):
+        self.func = func
+        return
+    
+    def write(self, data = np.array([0,0], dtype=np.uint32), rate = 2, samples = 2):
         self.stop()
         self.CfgSampClkTiming("", rate, dq.DAQmx_Val_Rising,
                               dq.DAQmx_Val_ContSamps, samples)
@@ -49,6 +55,9 @@ class DigitalOutput(dq.Task):
         self.WriteDigitalU32(samples, 0, 10.0,
                              dq.DAQmx_Val_GroupByChannel,
                              data, None, None)
+        return
+    
+    def run(self):
         self.count = 0
         self.time = time.perf_counter()
         self.running = True
@@ -59,9 +68,6 @@ class DigitalOutput(dq.Task):
             return 0
         self.running = False
         return self.StopTask()
-    
-    def idle(self):
-        return 0
     
     def EveryNCallback(self):
         if not self.running:
@@ -78,11 +84,14 @@ class DigitalOutput(dq.Task):
     
     def __del__(self):
         self.func = None
+        self.write()
         self.run()
         self.stop()
         self.ClearTask()
     
 AON = 4
+
+
 class AnalogOutput(dq.Task):
     """
     Wrapper of a standard class 'Task', specifically designed
@@ -103,9 +112,14 @@ class AnalogOutput(dq.Task):
         for line in range(0,4):
             self.CreateAOVoltageChan('Dev1/ao'+str(line), "", -10.0,
                                      10.0, dq.DAQmx_Val_Volts, None)
+        self.write()
         self.run()
+        
+    def setSync(self, sync):
+        self.sync = sync
+        return
     
-    def run(self, data = np.array([0 for x in range(AON*2)], dtype=np.double), rate = 2, samples = 2):
+    def write(self, data = np.array([0 for x in range(AON*2)], dtype=np.double), rate = 2, samples = 2):
         self.stop()
         self.CfgSampClkTiming("", rate, dq.DAQmx_Val_Rising,
                               dq.DAQmx_Val_ContSamps, samples)
@@ -115,6 +129,9 @@ class AnalogOutput(dq.Task):
         self.WriteAnalogF64(samples, 0, 10.0,
                             dq.DAQmx_Val_GroupByChannel,
                             data, None, None)
+        return
+    
+    def run(self):
         self.running = True
         return self.StartTask()
     
@@ -126,10 +143,12 @@ class AnalogOutput(dq.Task):
     
     def __del__(self):
         self.sync = False
+        self.write()
         self.run()
         self.stop()
         self.ClearTask()
-    
+
+
 class DAQHandler:
     """
     Handles DO and AO channels
@@ -145,10 +164,16 @@ class DAQHandler:
         self.DO = DigitalOutput(func)
         self.AO = AnalogOutput(sync)
         
-    def run(self, data = {}):
+    def setFunc(self, func):
+        return self.DO.setFunc(func)
+    
+    def setSync(self, sync):
+        return self.AO.setSync(sync)
+        
+    def write(self, data = {}):
         if (len(data) == 0):
-            self.AO.run()
-            return self.DO.run()
+            self.AO.write()
+            return self.DO.write()
         DOtimes = set()
         AOtimes = set()
         AOpattern = 'A'
@@ -212,8 +237,16 @@ class DAQHandler:
                     last[chan] = AOchans[chan].pop(0)[1]
             for i in range(AON):
                 AOdata[i*AOsamples+sample] = last[i]
-        self.AO.run(AOdata, AOrate, AOsamples)
-        return self.DO.run(DOdata, DOrate, DOsamples)
+        self.AO.write(AOdata, AOrate, AOsamples)
+        return self.DO.write(DOdata, DOrate, DOsamples)
+    
+    def run(self):
+        self.AO.run()
+        return self.DO.run()
+    
+    def stop(self):
+        self.DO.stop()
+        return self.AO.stop()
     
     def __del__(self):
         del self.AO

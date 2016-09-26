@@ -12,7 +12,7 @@ from copy import deepcopy
 
 from PyQt5.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer)
 from PyQt5.QtGui import (QBrush, QColor, QPainter)
-from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem, QMenu, QAction,
+from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem, QMenu, QAction, QScrollArea,QFrame,
                              QGridLayout, QVBoxLayout, QHBoxLayout, QSizePolicy,QMainWindow, QDialog,QTextEdit,
                              QLabel, QLineEdit, QPushButton, QWidget, QComboBox,QRadioButton, QSpinBox, QCheckBox, QTabWidget, QFileDialog,QMessageBox, QDoubleSpinBox)
 # import pyqtgraph as pg
@@ -27,11 +27,14 @@ from sympy.parsing.sympy_parser import parse_expr
 
 scanner_config_file = 'config_scanner.json'
 data_directory = '..'
+scan_params_str = 'scan_params'
 
-class Scaner(QWidget):
+class Scanner(QWidget):
 
-    def __init__(self):
+    def __init__(self,globals=None,all_updates_methods=None):
         # написат загрузку с конфига
+        self.all_updates_methods = all_updates_methods
+        self.globals = globals
         self.day_folder = ''
         self.all_meas_type = set()
         self.current_meas_type = ''
@@ -70,7 +73,7 @@ class Scaner(QWidget):
 
     def initUI(self):
         main_layout = QVBoxLayout()
-
+        main_layout.setSpacing(5)
         hor1 = QHBoxLayout()
 
         self.day_box = QLineEdit(os.path.basename(self.day_folder))
@@ -158,10 +161,14 @@ class Scaner(QWidget):
         # grid = QGridLayout()
         # self.scan_box.setLayout(grid)
         self.scanDraw()
+        # scroll = QScrollArea()
+        # scroll.setFrameShape(QFrame.NoFrame)
+        # scroll.setWidget(self.scan_box)
         main_layout.addWidget(self.scan_box)
 
         notes_box = QTextEdit(self.notes)
         notes_box.textChanged.connect(self.notesChanged)
+        notes_box.setMaximumHeight(200)
         main_layout.addWidget(notes_box)
         self.setLayout(main_layout)
         print('Done')
@@ -177,8 +184,10 @@ class Scaner(QWidget):
                 menu_btn = QPushButton(str(param[0]) if len(param[0])==0 else param[0][-1])
                 menu_btn.setToolTip('->'.join(param[0]))
                 param_menu = QMenu(menu_btn)
+                param_menu.aboutToShow.connect(self.updateAllScanParams)
                 self.getParamMenu(param_menu, self.all_scan_params)
                 menu_btn.setMenu(param_menu)
+                # menu_btn.pressed.connect(self.updateAllScanParams)
                 grid.addWidget(menu_btn,row,0)
 
                 grid.addWidget(QLabel(str(i)),row,1)
@@ -200,6 +209,15 @@ class Scaner(QWidget):
         grid.addWidget(menu_btn)
         self.scan_box.setLayout(grid)
         print('after')
+
+    def updateAllScanParams(self):
+        print('updateAllScanParams')
+        print(self.globals)
+        if self.globals != None:
+            del self.all_scan_params
+            self.all_scan_params = deepcopy(self.globals[scan_params_str])
+            self.sender().clear()
+            self.getParamMenu(self.sender(), self.all_scan_params)
 
     def scanRedraw(self):
         QWidget().setLayout(self.scan_box.layout())
@@ -260,7 +278,7 @@ class Scaner(QWidget):
         self.scanRedraw()
 
     def getParamMenu(self,parent, data):
-        print('getParamMenu')
+        # print('getParamMenu')
         if type(data) == type([]):
             for submenu in data:
                     # print('end of the tree')
@@ -279,7 +297,7 @@ class Scaner(QWidget):
         name.append(a.text())
         while 1:
             a = a.parent()
-            print(repr(a.title()))
+            # print(repr(a.title()))
             if a.title() == '':
                 break
             name.insert(0,a.title())
@@ -287,6 +305,7 @@ class Scaner(QWidget):
         grid = self.scan_box.layout()
         index = grid.indexOf(par)
         row, column, cols, rows = grid.getItemPosition(index)
+        # print(row,column)
         sm = 0
         for group in self.scan_params:
             if row < sm + len(group):
@@ -296,7 +315,7 @@ class Scaner(QWidget):
                 break
             else:
                 sm += len(group)
-        print(row, column)
+        # print(row, column)
         self.saveConfig('scan_params')
 
     # def getParamNumbers(self):
@@ -392,6 +411,8 @@ class Scaner(QWidget):
                     for i in range(len(group)-1):
                         if len(group[i][1]) != len(group[i+1][1]):
                             QMessageBox.warning(self, 'Message',"Not equal length of params", QMessageBox.Yes)
+                            # print(len(group[i][1]))
+                            # print(len(group[i+1][1]))
                             is_wrong = True
                             # break
             if is_wrong:
@@ -454,7 +475,9 @@ class Scaner(QWidget):
                 params_to_send[subprogram_name] = {}
             params_to_send[subprogram_name][tuple(key[1:])]=value
         print(params_to_send)
-
+        if self.all_updates_methods != None:
+            for name, params in params_to_send.items():
+                res_of_update = self.all_updates_methods[name](param_dict=params)
         # for every subprogramm call setNewParameter function with dictionary of parameters names: values
         # there should be smth like self.subprogramm_routins = {subprogram_name:function}
 
@@ -483,6 +506,6 @@ if __name__ == '__main__':
     #     json.dump(config,f)
     import sys
     app = QApplication(sys.argv)
-    mainWindow = Scaner()
+    mainWindow = Scanner()
     mainWindow.show()
     sys.exit(app.exec_())

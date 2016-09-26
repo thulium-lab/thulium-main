@@ -27,6 +27,7 @@ from sympy.parsing.sympy_parser import parse_expr
 from PyQt5.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer)
 from PyQt5.QtGui import (QBrush, QColor, QPainter)
 from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem, QMenu, QAction, QMdiArea,QMdiSubWindow,
+                             QMenu, QAction, QScrollArea, QFrame,
                              QGridLayout, QVBoxLayout, QHBoxLayout, QSizePolicy,QMainWindow, QDialog,QTextEdit,
                              QLabel, QLineEdit, QPushButton, QWidget, QComboBox,QRadioButton, QSpinBox, QCheckBox, QTabWidget, QFileDialog,QMessageBox, QDoubleSpinBox)
 
@@ -40,9 +41,11 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__(parent)
         self.mdi = QMdiArea()
         self.setCentralWidget(self.mdi)
+        self.showFullScreen()
         self.all_updates_methods = {}
         self.globals = {}
-        self.default_widgets_names=['Scaner','pulses']
+        self.widgets = {}
+        self.default_widgets_names=['Scanner','PulseScheme']
         self.initUI()
 
     def initUI(self):
@@ -53,23 +56,31 @@ class MainWindow(QMainWindow):
         file.addAction("Tiled")
         file.triggered[QAction].connect(self.windowaction)
         self.setWindowTitle("MDI demo")
+
         MainWindow.count = MainWindow.count + 1
         sub = QMdiSubWindow()
-        sub.setWidget(PulseScheme())
+        self.widgets['Pulses']=PulseScheme(globals=self.globals)
+        sub.setWidget(self.widgets['Pulses'])
+        self.all_updates_methods['Pulses']=self.widgets['Pulses'].getUpdateMethod()
         sub.setWindowTitle("Pulses")
         # sub.
         self.mdi.addSubWindow(sub)
         sub.show()
+
         MainWindow.count = MainWindow.count + 1
         sub = QMdiSubWindow()
-        sub.setWidget(Scanner())
+        self.widgets['Scanner']=Scanner(globals=self.globals,all_updates_methods=self.all_updates_methods)
+        sub.setWidget(self.widgets['Scanner'])
         self.mdi.addSubWindow(sub)
         sub.setWindowTitle("Scan")
         self.mdi.tileSubWindows()
         sub.show()
+        print('self_globals',self.globals)
 
 
         # print('file')
+    def addSubProgramm(self):
+        pass
 
     def windowaction(self, q):
         print("triggered")

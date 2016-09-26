@@ -28,10 +28,14 @@ from sympy.parsing.sympy_parser import parse_expr
 digital_pulses_folder = 'digatal_schemes'
 config_scheme_file = 'config_scheme'
 pulse_name_suffix = '.pls'
+scan_params_str = 'scan_params'
+name_in_scan_params = 'Pulses'
+
 
 class PulseScheme(QWidget):
     # can be done as QWidget
-    def __init__(self,parent=None,available_channels=[]):
+    def __init__(self,parent=None,available_channels=[],globals=None):
+        self.globals = globals
         self.call_from_scanner = False
         self.parent = parent
         self.available_channels = available_channels
@@ -384,6 +388,7 @@ class PulseScheme(QWidget):
         # and send new scan params to globals
         if self.call_from_scanner:
             self.call_from_scanner = False
+        else:
             self.updateAndSendScanParameters()
         self.calculateOutput()
         # write new output to DAQ
@@ -393,13 +398,18 @@ class PulseScheme(QWidget):
         self.scan_params = {}
         for group in self.current_groups:
             self.scan_params[group.name] = {}
-            self.scan_params[group.name][''] = list(group.variables.keys())
+            self.scan_params[group.name]['group'] = list(group.variables.keys())
             for pulse in group.pulses:
                 self.scan_params[group.name][pulse.name] = list(pulse.variables.keys())
-        print(self.scan_params)
+        print('Scan params',self.scan_params)
         # send scan parameters to global
+        if self.globals != None:
+            if scan_params_str not in self.globals:
+                self.globals[scan_params_str] = {}
+            self.globals[scan_params_str][name_in_scan_params] = self.scan_params
+                # print(self.scan_params)
 
-    def updateFromScanner(self,param_dict):
+    def updateFromScanner(self,param_dict=None):
         print('updateFromScanner')
         self.call_from_scanner = True
         for key, val in param_dict.items():
@@ -420,6 +430,8 @@ class PulseScheme(QWidget):
         # if everything is ok return 0, ef not - smth else
         return 0
 
+    def getUpdateMethod(self):
+        return self.updateFromScanner
 
 class PulseGroup():
 

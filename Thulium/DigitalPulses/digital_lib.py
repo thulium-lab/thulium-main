@@ -22,6 +22,7 @@ config_scheme_file = 'config_scheme'
 class digital_pulses(QWidget):
     # can be done as QWidget
     def __init__(self):
+        self.active_channels = {}
         self.loadSchemes()  # schemes with saved groups and pulses
         groups = []  # list of all pulse_groups]
         self.output_data = {}
@@ -33,11 +34,9 @@ class digital_pulses(QWidget):
         self.refChannels.extend([group.name for group in self.schemes[self.current_scheme]])
         print(self.refChannels)
         self.initUI()
-        self.calculateOutputData()
-        print(self.output_data)
         self.win = pg.GraphicsWindow(title="Three plot curves")
         self.win.resize(1000, 600)
-        self.plotPulses()
+        self.onAnyChange()
     def plotPulses(self):
         self.win.clear()
         for name in sorted(self.output_data):
@@ -53,10 +52,9 @@ class digital_pulses(QWidget):
                 yy.append(point[1])
             p.plot(xx,yy)
             self.win.nextRow()
+
     def initUI(self):
-
         vbox = QVBoxLayout(self)
-
         topbox = QHBoxLayout(self)
         self.scheme_lbl = QLabel('Scheme')
         topbox.addWidget(self.scheme_lbl)
@@ -82,6 +80,10 @@ class digital_pulses(QWidget):
 
         vbox.addLayout(topbox)
 
+        self.hor_box = QHBoxLayout(self)
+
+        self.ch_grid = QGridLayout(self)
+        self.hor_box.addLayout(self.ch_grid)
 
         self.tabbox = QTabWidget()
         self.tabbox.setMovable(True)
@@ -93,7 +95,9 @@ class digital_pulses(QWidget):
             self.tabbox.addTab(tab, group.name)
         # tab1 = pulse_group(self)
 
-        vbox.addWidget(self.tabbox)
+        self.hor_box.addWidget(self.tabbox)
+        vbox.addLayout(self.hor_box)
+        # self.channels_vbox
         self.setLayout(vbox)
         # few buttons like save, add_scheme (to add current version of the scheme) and so on
         # self.current_scheme  # set_current_scheme (may be from last session)
@@ -247,9 +251,50 @@ class digital_pulses(QWidget):
                 return ((group_begin + group.length + pulse.delay + pulse.length,1),(group_begin + group.length + pulse.delay,0))
 
     def onAnyChange(self):
+        self.updateChannelPannel()
         self.calculateOutputData()
-        self.plotPulses()
+        # self.plotPulses()
         print(self.output_data)
+
+    def updateChannelPannel(self):
+        print('updateChannelPannel')
+        flag_to_redraw = False
+        channels_in_pulses = set()
+        for pulse_group in self.schemes[self.current_scheme]:
+                for pulse in pulse_group.pulses:
+                        channels_in_pulses.add(pulse.channel)
+                        if pulse.channel not in self.active_channels:
+                            self.active_channels[pulse.channel] = 'StandBy'
+                            flag_to_redraw = True
+        to_remove = []
+        for key in self.active_channels:
+            if key not in channels_in_pulses:
+                to_remove.append(key)
+        for key in to_remove:
+            self.active_channels.pop(key)
+            flag_to_redraw = True
+        print(self.active_channels)
+        if not flag_to_redraw:
+            self.showChannelPannel()
+        else:
+            QWidget().setLayout(self.layout())
+            self.initUI()
+
+    def showChannelPannel(self):
+        print('Now',self.ch_grid)
+        # self.ch_grid = QGridLayout()
+        for i,channel in enumerate(sorted(self.active_channels)):
+            self.ch_grid.addWidget(QLabel(channel),i,0)
+            alwais_on = QCheckBox()
+            if self.active_channels[channel] == 'On':
+                alwais_on.setChecked(True)
+            self.ch_grid.addWidget(alwais_on, i, 1)
+            alwais_off = QCheckBox()
+            if self.active_channels[channel] == 'Off':
+                alwais_on.setChecked(True)
+            self.ch_grid.addWidget(alwais_off, i, 2)
+        # self.initUI()
+
 
     def deleteGroup(self, group_name):
         print("deleteGroup")

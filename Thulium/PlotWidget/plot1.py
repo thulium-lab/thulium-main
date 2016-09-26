@@ -1,14 +1,14 @@
 # from PyQt5.QtCore import QObject
 import random
 import numpy as np
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import matplotlib
-# matplotlib.use('Qt5Agg',force=True)
-from PyQt4.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer)
-from PyQt4.QtGui import (QBrush, QColor, QPainter)
-from PyQt4.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem,
+matplotlib.use('Qt5Agg',force=True)
+from PyQt5.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer)
+from PyQt5.QtGui import (QBrush, QColor, QPainter)
+from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem,
                              QGridLayout, QVBoxLayout, QHBoxLayout, QSizePolicy,
                              QLabel, QLineEdit, QPushButton)
 
