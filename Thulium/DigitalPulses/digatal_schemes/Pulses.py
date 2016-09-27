@@ -34,7 +34,7 @@ name_in_scan_params = 'Pulses'
 
 class PulseScheme(QWidget):
     # can be done as QWidget
-    def __init__(self,parent=None,available_channels=[],globals=None):
+    def __init__(self,parent=None,available_channels=[],globals=None,**argd):
         self.globals = globals
         self.call_from_scanner = False
         self.parent = parent
@@ -53,7 +53,7 @@ class PulseScheme(QWidget):
         super().__init__()
         self.initUI()
 
-    def initUI(self):
+    def initUI(self,tab_index=0):
         self.main_box = QVBoxLayout()
         topbox = QHBoxLayout()
 
@@ -99,9 +99,12 @@ class PulseScheme(QWidget):
             tab.setFrameShape(QFrame.NoFrame)
             tab.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
             self.tabbox.addTab(tab, group.name)
+            # tab.activateWindow()
             # self.tabbox.addTab(group.PulseGroupQt(scheme=self, data=group), group.name)
         # scroll2 = QScrollArea()
         # scroll2.setWidget(self.tabbox)
+
+        self.tabbox.setCurrentIndex(tab_index)
         self.hor_box.addWidget(self.tabbox)
         self.main_box.addLayout(self.hor_box)
         self.setLayout(self.main_box)
@@ -175,13 +178,16 @@ class PulseScheme(QWidget):
             self.active_channels = new_active_channels
         self.onAnyChange()
 
-    def schemeRedraw(self):
+    def schemeRedraw(self,tab_index=None):
         print('schemeRedraw')
+        if tab_index == None:
+            tab_index = self.tabbox.currentIndex()
         self.tabbox.clear()
         print('Current scheme: ', self.current_scheme)
         for group in self.current_groups:
             tab = group.PulseGroupQt(scheme=self, data=group)
             self.tabbox.addTab(tab, group.name)
+        self.tabbox.setCurrentIndex(tab_index)
         self.updateChannels()
 
     def load(self):
@@ -234,7 +240,7 @@ class PulseScheme(QWidget):
         print(new_group.__dict__)
         self.current_groups.append(new_group)
         print(self.current_groups)
-        self.schemeRedraw()
+        self.schemeRedraw(tab_index=len(self.current_groups)-1)
 
     def saveScheme(self):
         print('saveScheme')
@@ -691,6 +697,7 @@ class PulseGroup():
             # there is no need to recalculate pulses if only name has changed
             pulse_number = self.getPulseNumber()
             self.data.pulses[pulse_number].name = self.getNewText()#self.gui.sender().text()
+            self.scheme.changeInGroup()
 
         def edgeChanged(self,new_edge):
             print('edgeChanged')

@@ -41,10 +41,10 @@ class Scanner(QWidget):
         self.other_params = ''
         self.meas_folder = ''
         self.add_points_flag = False
-        a = {'1 stage cooling': {'group': ['length', 'delay'], 'Magnetic field': ['t0', 'length', 'delay', 't1'], 'Zeeman': ['length', 'delay'], 'Blue': ['length', 'delay'], 'Green': ['length', 'delay'], 'ttt': ['length', 'delay', 'p']}, '2 stage cooling': {'group': ['length', 'delay'], 'Magnetic fiekd': ['length', 'delay'], 'Green': ['length', 'delay'], 'yyy': ['length', 'delay']}}
-        self.all_scan_params = {'pulses':a}
+        # a = {'1 stage cooling': {'group': ['length', 'delay'], 'Magnetic field': ['t0', 'length', 'delay', 't1'], 'Zeeman': ['length', 'delay'], 'Blue': ['length', 'delay'], 'Green': ['length', 'delay'], 'ttt': ['length', 'delay', 'p']}, '2 stage cooling': {'group': ['length', 'delay'], 'Magnetic fiekd': ['length', 'delay'], 'Green': ['length', 'delay'], 'yyy': ['length', 'delay']}}
+        self.all_scan_params = {}#{'pulses':a}
         self.notes = ''
-        self.current_meas_number = 1
+        self.current_meas_number = 0
         self.on_scan = False
         self.scan_interrupted = False
         self.number_of_shots = 10
@@ -52,10 +52,14 @@ class Scanner(QWidget):
         self.current_param_indexs = [] # index for each level of params
         self.scan_params = [[[['1','2'],''],[['3','4'],'']]]
         self.loadConfig()
-        print('Here')
+        # print('Here')
         super().__init__()
         self.initUI()
-        print(self.__dict__)
+        # for now while without real scan
+        self.timer = QTimer(self)
+        self.timer.setInterval(1000)
+        self.timer.timeout.connect(self.cycleFinished)
+        # print(self.__dict__)
 
     def loadConfig(self):
         print('loadConfig')
@@ -388,16 +392,10 @@ class Scanner(QWidget):
     def stopBtnPressed(self):
         print('stopBtnPressed')
         if self.on_scan:
-            self.timer.stop()
-            self.on_scan = False
-            self.stop_btn.setText('Continue')
-            self.scan_btn.setText('New scan')
-            self.scan_interrupted = True
+            self.stopScan(stop_btn_text='Continue', is_scan_interrupted=True)
         elif self.scan_interrupted:
-            self.timer.start()
-            self.stop_btn.setText('Stop')
-            self.scan_btn.setText('On scan!')
-            self.on_scan=True
+            self.startScan()
+            print('Scan restarted')
 
     def scanBtnPressed(self):
         print('scanBtnPressed')
@@ -417,56 +415,60 @@ class Scanner(QWidget):
                             # break
             if is_wrong:
                 return
-            print('Scan started')
-            self.stop_btn.setText('Stop')
-            self.scan_btn.setText('On scan!')
             self.current_shot_number = 0
-            self.current_param_indexs = [0]*len(self.scan_params)
-            # self.current_param_indexs[0]=1
-            self.scan_interrupted = False
+            self.current_param_indexs = [0] * len(self.scan_params)
             self.updateParamAndSend(len(self.current_param_indexs) - 1)
-            self.on_scan = True
-            self.timer = QTimer(self)
-            self.timer.timeout.connect(self.cycleFinished)
-            self.timer.start(1000)
+            self.startScan()
+            # self.stop_btn.setText('Stop')
+            # self.scan_btn.setText('On scan!')
+            # self.current_param_indexs[0]=1
+            # self.scan_interrupted = False
+            # self.on_scan = True
+            print('Scan started')
+
+    def addIndex(self,i):
+        # reccursive function to properly update indexs of current scan params
+        if self.current_param_indexs[i] < len(self.scan_params[i][0][1]) - 1:
+            # i.e. it is not yet end of this level parameter
+            self.current_param_indexs[i] += 1
+            # return which index is modified
+            return i
+        else:
+            # overflow happend
+            self.current_param_indexs[i] = 0  # if put this line late one can realize situation, where after scan
+            # indexs are not set back to zero
+            if i < len(self.current_param_indexs) - 1:
+                return self.addIndex(i + 1)
+            else:
+                # this means the end of scan
+                return -1
 
     def cycleFinished(self):
-        # called when one cycle is finished
-        # here should be added instruction od update of self.current_shot_number and when it overflows go further
         print('cycleFinished')
+        # called when one cycle is finished
+        if self.current_shot_number < self.number_of_shots:
+            self.current_shot_number += 1
+            return 0
+        else:
+            self.current_shot_number = 0
         # reccursive function to properly update indexs of current scan params
-        def addIndex(i):
-            if self.current_param_indexs[i] < len(self.scan_params[i][0][1]) - 1:
-                # i.e. it is not yet end of this level parameter
-                self.current_param_indexs[i] += 1
-                # return which index is modified
-                return i
-            else:
-                # overflow happend
-                self.current_param_indexs[i] = 0 # if put this line late one can realize situation, where after scan
-                                                # indexs are not set back to zero
-                if i < len(self.current_param_indexs)-1:
-                    return addIndex(i + 1)
-                else:
-                    # this means the end of scan
-                    return -1
-        changedIndex = addIndex(0)
+        changedIndex = self.addIndex(0)
         if changedIndex == -1:
             # scan is finished
-            self.stopBtnPressed()
-            # rewrite this values to indicate and of scan
-            self.stop_btn.setText('Finished')
-            self.scan_interrupted = False
+            self.stopScan(stop_btn_text='Fihished')
         else:
             self.updateParamAndSend(changedIndex)
 
     def updateParamAndSend(self,changed_index):
         print('updateParamAndSend')
+        # STOP DAQ
+
         #construct dict with new values of params to send of type param_full_name:new value
         self.current_params = {}
         for i in range(changed_index + 1): # to handle changed index as well
             for param in self.scan_params[i]:
                 self.current_params[tuple(param[0])] = param[1][self.current_param_indexs[i]]
+
         # reconstruct dict to dictionary submprogam_name:{relativ_param_name:value,...}
         params_to_send = {}
         for key, value in self.current_params.items():
@@ -475,11 +477,32 @@ class Scanner(QWidget):
                 params_to_send[subprogram_name] = {}
             params_to_send[subprogram_name][tuple(key[1:])]=value
         print(params_to_send)
+        # update parameters by calling update methods of subprogramm
+        is_Ok = True
         if self.all_updates_methods != None:
             for name, params in params_to_send.items():
                 res_of_update = self.all_updates_methods[name](param_dict=params)
-        # for every subprogramm call setNewParameter function with dictionary of parameters names: values
-        # there should be smth like self.subprogramm_routins = {subprogram_name:function}
+                if res_of_update == -1: # if smth wrong
+                    QMessageBox.warning(self, 'Message', "Couldn't change %s parameters\nScan is stopped"%(name), QMessageBox.Yes)
+                    self.stopScan(stop_btn_text='Continue',is_scan_interrupted=True)
+                    is_Ok = False
+                    break
+        # START DAQ mayby somehow check if is_Ok
+                # print(name, res_of_update)
+
+    def stopScan(self,stop_btn_text='Stop',is_scan_interrupted=False,**argd):
+        self.timer.stop()
+        self.on_scan = False
+        self.stop_btn.setText(stop_btn_text)
+        self.scan_btn.setText('New scan')
+        self.scan_interrupted = is_scan_interrupted
+
+    def startScan(self,**argd):
+        self.scan_interrupted = False
+        self.timer.start()
+        self.stop_btn.setText('Stop')
+        self.scan_btn.setText('On scan!')
+        self.on_scan = True
 
     def addParamLevelPressed(self):
         print('addParamLevelPressed')
