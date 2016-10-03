@@ -33,6 +33,7 @@ from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraph
 
 from Pulses import PulseScheme, PulseGroup,IndividualPulse,AnalogPulse
 from Scanner import Scanner
+from PlotPulse import PlotPulse
 
 vertical_splitting = 0.7
 horizontal_splitting = 0.6
@@ -41,81 +42,36 @@ class MainWindow(QMainWindow):
 
     def __init__(self, parent = None):
         super(MainWindow, self).__init__(parent)
-
-        # self.resize(QDesktopWidget().availableGeometry(self).size())
-        # self.size(QDesktopWidget().availableGeometry(self).size())
-        # self.resize(1500,700)
-        # self.mdi = QMdiArea()
-        # self.setCentralWidget(self.mdi)
         # self.showFullScreen()
         self.all_updates_methods = {}
+        self.slots_to_bound=[]
         self.globals = {}
         self.widgets = {}
         self.default_widgets_names=['Scanner','PulseScheme']
         self.initUI()
 
     def initUI(self):
-        # bar = self.menuBar()
-        # file = bar.addMenu("File")
-        # file.addAction("New")
-        # file.addAction("cascade")
-        # file.addAction("Tiled")
-        # file.triggered[QAction].connect(self.windowaction)
-        # self.setWindowTitle("MDI demo")
-        # self.mdi.tileSubWindows()
-        # # self.mdi.setViewMode(QMdiArea.TabbedView)
         self.screenSize = QDesktopWidget().availableGeometry()
-        # print(self.screenSize)
-        # self.setGeometry(self.screenSize)
-
-        # this->setFixedSize(QSize(screenSize.width * 0.7f, screenSize.height * 0.7f));
-        # MainWindow.count = MainWindow.count + 1
-        sub = QMdiSubWindow()
-        self.widgets['Scanner']=Scanner(globals=self.globals,all_updates_methods=self.all_updates_methods)
-        # sub.setWidget(self.widgets['Scanner'])
-        # self.mdi.addSubWindow(sub)
-
-        # MainWindow.count = MainWindow.count + 1
-        # sub = QMdiSubWindow()
-        self.widgets['Pulses']=PulseScheme(globals=self.globals)
-        # sub.setWidget(self.widgets['Pulses'])
+        self.widgets['Scanner']=Scanner(parent=self,globals=self.globals,all_updates_methods=self.all_updates_methods)
+        self.widgets['Pulses']=PulseScheme(parent=self,globals=self.globals)
+        self.widgets['PulsePlot']=PlotPulse(parent=self,globals=self.globals)
         self.all_updates_methods['Pulses']=self.widgets['Pulses'].getUpdateMethod()
-        # sub.setWindowTitle("Pulses")
-        # sub.setOption(QMdiSubWindow.RubberBandResize, True)
-        # sub.setTabPo
-        # sub.adjustSize()
-        # sub.show()
-        # sub.updateGeometry()
-        ver_splitter = QSplitter(Qt.Horizontal)
-        ver_splitter.setSizes([26, 74])
+        hor_splitter = QSplitter(Qt.Horizontal)
+        hor_splitter.setSizes([26, 74])
 
-        self.setCentralWidget(ver_splitter)
+        self.setCentralWidget(hor_splitter)
+        ver_splitter = QSplitter(Qt.Vertical)
+
 
         ver_splitter.addWidget(self.widgets['Scanner'])
-        ver_splitter.addWidget(self.widgets['Pulses'])
+        ver_splitter.addWidget(self.widgets['PulsePlot'])
+        hor_splitter.addWidget(ver_splitter)
+        hor_splitter.addWidget(self.widgets['Pulses'])
 
         self.setFixedWidth(self.screenSize.width())
 
-        # sub.setOption(QMdiSubWindow.RubberBandResize, True)
-
-        # sub.setMaximumWidth(500)
-
-        # self.mdi.addSubWindow(sub)
-        # sub.setWindowTitle("Scan")
-
-        # sub.show()
         print('self_globals',self.globals)
-        # self.adjustSize()
-        # print(self.mdi.subWindowList())
-        # print(self.mdi)
-        # self.mdi.subWindowList()[0].setGeometry(self.screenSize.left() + (1 - vertical_splitting) * self.screenSize.right(),
-        #                 self.screenSize.top() + (1 - horizontal_splitting) * self.screenSize.bottom(),
-        #                 self.screenSize.right(),
-        #                 self.screenSize.bottom())
-        # self.mdi.subWindowList()[1].setGeometry(self.screenSize.left(),
-        #                 self.screenSize.top(),
-        #                 (1 - vertical_splitting) * self.screenSize.right(),
-        #                 (1 - horizontal_splitting) * self.screenSize.bottom())
+
     def addSubProgramm(self):
         pass
 

@@ -10,7 +10,7 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from copy import deepcopy
 
-from PyQt5.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer)
+from PyQt5.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer,QObject,pyqtSignal)
 from PyQt5.QtGui import (QBrush, QColor, QPainter)
 from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem,QScrollArea, QFrame,
                              QGridLayout, QVBoxLayout, QHBoxLayout, QSizePolicy,QMainWindow, QDialog,
@@ -30,12 +30,17 @@ config_scheme_file = 'config_scheme'
 pulse_name_suffix = '.pls'
 scan_params_str = 'scan_params'
 name_in_scan_params = 'Pulses'
+pulse_output_str = 'pulse_output'
 
+class PulseSignal(QObject):
+    onAnyChangeSignal = pyqtSignal()
 
 class PulseScheme(QWidget):
     # can be done as QWidget
-    def __init__(self,parent=None,available_channels=[],globals=None,**argd):
+    def __init__(self,parent=None,available_channels=[],globals={},**argd):
+        self.pulse_signal = PulseSignal()
         self.globals = globals
+        self.globals['Pulses'] = {}
         self.call_from_scanner = False
         self.parent = parent
         self.available_channels = available_channels
@@ -50,8 +55,18 @@ class PulseScheme(QWidget):
         self.current_groups = []
         self.output = {}
         self.load()
+        if 'Signals' not in globals:
+            globals['Signals'] ={}
+        if 'Pulses' not in globals['Signals']:
+            globals['Signals']['Pulses'] = {}
+        globals['Signals']['Pulses']['onAnyChange'] = self.pulse_signal.onAnyChangeSignal
+        self.globals['Pulses']['analog_channels']=self.analog_channels
+        self.globals['Pulses']['digital_channels'] = self.digital_channels
+
         super().__init__()
         self.initUI()
+        # self.connect(self.)
+        # self.pulse_signal.onAnyChangeSignal()
 
     def initUI(self,tab_index=0):
         self.main_box = QVBoxLayout()
@@ -390,14 +405,16 @@ class PulseScheme(QWidget):
 
     def onAnyChange(self):
         print('onAnyChange')
-        # add check if changes are due to scan programm request, then just calculateOutput, else - update scan_params
-        # and send new scan params to globals
         if self.call_from_scanner:
             self.call_from_scanner = False
         else:
             self.updateAndSendScanParameters()
         self.calculateOutput()
         # write new output to DAQ
+        self.globals['Pulses'][pulse_output_str] = self.output
+        self.globals['Pulses']['t_first']=self.t_first
+        self.pulse_signal.onAnyChangeSignal.emit()
+        # print('Globals\n',self.globals)
 
     def updateAndSendScanParameters(self):
         print('updateAndSendScanParameters')
@@ -438,6 +455,7 @@ class PulseScheme(QWidget):
 
     def getUpdateMethod(self):
         return self.updateFromScanner
+
 
 class PulseGroup():
 
