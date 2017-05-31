@@ -24,10 +24,11 @@ class ArduinoShutters():
         message = b'WMShutters'
         for chan, state in data:
             message += b' %i %i'%(chan,state)
-        message += '!'
+        message += b'!'
         print(message)
         self.device.write(message)
         print('written')
+        print(self.device.readline()) # here one should add check of correct writing
         # add check of success
         return 1
         # print(self.device)
