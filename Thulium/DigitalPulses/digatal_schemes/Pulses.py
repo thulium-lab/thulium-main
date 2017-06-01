@@ -10,9 +10,9 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from copy import deepcopy
 
-from PyQt5.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer)
+from PyQt5.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer,QObject,pyqtSignal)
 from PyQt5.QtGui import (QBrush, QColor, QPainter)
-from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem,QScrollArea, QFrame,
+from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem,QScrollArea, QFrame,QMenu,
                              QGridLayout, QVBoxLayout, QHBoxLayout, QSizePolicy,QMainWindow, QDialog,
                              QLabel, QLineEdit, QPushButton, QWidget, QComboBox,QRadioButton, QSpinBox, QCheckBox, QTabWidget, QFileDialog,QMessageBox, QDoubleSpinBox)
 # import pyqtgraph as pg
@@ -25,17 +25,26 @@ from numpy import *
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 
+from shutter import Shutter
+
 digital_pulses_folder = 'digatal_schemes'
 config_scheme_file = 'config_scheme'
 pulse_name_suffix = '.pls'
 scan_params_str = 'scan_params'
 name_in_scan_params = 'Pulses'
+pulse_output_str = 'pulse_output'
 
+class PulseSignals(QObject):
+    # here all possible signals by Pulse class should be declared
+    onAnyChangeSignal = pyqtSignal()
 
 class PulseScheme(QWidget):
     # can be done as QWidget
-    def __init__(self,parent=None,available_channels=[],globals=None):
+    def __init__(self,parent=None,available_channels=[],globals={},**argd):
+        super().__init__()
+        self.pulse_signals = PulseSignals()
         self.globals = globals
+        self.globals['Pulses'] = {}
         self.call_from_scanner = False
         self.parent = parent
         self.available_channels = available_channels
@@ -44,16 +53,36 @@ class PulseScheme(QWidget):
         self.active_channels = {}
         self.all_schemes = {}
         self.scan_params = {}
+        self.active_shutters = []
         self.config={}
         self.time_step = 0.1
         self.current_scheme = None
         self.current_groups = []
         self.output = {}
         self.load()
-        super().__init__()
-        self.initUI()
+        if 'Signals' not in globals:
+            globals['Signals'] ={}
+        if 'Pulses' not in globals['Signals']:
+            globals['Signals']['Pulses'] = {}
+        globals['Signals']['Pulses']['onAnyChange'] = self.pulse_signals.onAnyChangeSignal
+        self.globals['Pulses']['analog_channels']=self.analog_channels
+        self.globals['Pulses']['digital_channels'] = self.digital_channels
 
-    def initUI(self):
+
+        self.initUI()
+        # self.connect(self.)
+        # self.pulse_signal.onAnyChangeSignal()
+    def updateActiveShutters(self):
+        print('pulses-updateActiveShutters')
+        for group in self.current_groups:
+            for pulse in group.pulses:
+                if 'shutters' in pulse.__dict__:
+                    # print(pulse.shutters)
+                    for shutter in pulse.shutters:
+                        if shutter not in self.active_shutters:
+                            self.active_shutters.append(shutter)
+
+    def initUI(self,tab_index=0):
         self.main_box = QVBoxLayout()
         topbox = QHBoxLayout()
 
@@ -99,9 +128,12 @@ class PulseScheme(QWidget):
             tab.setFrameShape(QFrame.NoFrame)
             tab.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
             self.tabbox.addTab(tab, group.name)
+            # tab.activateWindow()
             # self.tabbox.addTab(group.PulseGroupQt(scheme=self, data=group), group.name)
         # scroll2 = QScrollArea()
         # scroll2.setWidget(self.tabbox)
+
+        self.tabbox.setCurrentIndex(tab_index)
         self.hor_box.addWidget(self.tabbox)
         self.main_box.addLayout(self.hor_box)
         self.setLayout(self.main_box)
@@ -173,15 +205,20 @@ class PulseScheme(QWidget):
             for channel in channels_in_pulses:
                 new_active_channels[channel] = self.active_channels[channel] if channel in self.active_channels else {'state':'StandBy','shuttes':[]}
             self.active_channels = new_active_channels
+
+        self.updateActiveShutters()
         self.onAnyChange()
 
-    def schemeRedraw(self):
+    def schemeRedraw(self,tab_index=None):
         print('schemeRedraw')
+        if tab_index == None:
+            tab_index = self.tabbox.currentIndex()
         self.tabbox.clear()
         print('Current scheme: ', self.current_scheme)
         for group in self.current_groups:
             tab = group.PulseGroupQt(scheme=self, data=group)
             self.tabbox.addTab(tab, group.name)
+        self.tabbox.setCurrentIndex(tab_index)
         self.updateChannels()
 
     def load(self):
@@ -234,7 +271,7 @@ class PulseScheme(QWidget):
         print(new_group.__dict__)
         self.current_groups.append(new_group)
         print(self.current_groups)
-        self.schemeRedraw()
+        self.schemeRedraw(tab_index=len(self.current_groups)-1)
 
     def saveScheme(self):
         print('saveScheme')
@@ -354,6 +391,34 @@ class PulseScheme(QWidget):
             self.output = output
             print(self.t_first, self.t_last)
             print(self.output)
+            # update shutters times now
+            print('proceed with shutters')
+            def getPosition(point,list_of_points):
+                for i,p1 in enumerate(list_of_points):
+                    if point[0] < p1[0]:
+                        return i-1
+                return len(list_of_points)-1
+            for shutter in self.active_shutters:
+                print(shutter)
+                linked_digital_channels = set()
+
+                for pulse_full_name in shutter.linked_digital_channels:
+                    group_name, pulse_name = pulse_full_name.split('->')
+                    print(group_name, pulse_name)
+                    group = [group for group in self.current_groups if group.name == group_name][0]
+                    pulse = [pulse for pulse in group.pulses if pulse.name == pulse_name][0]
+                    print(pulse_name)
+                    linked_digital_channels.add(pulse.channel)
+                print(linked_digital_channels)
+                if not linked_digital_channels:
+                    sh_out = self.output[linked_digital_channels[0]]
+                    for chan in linked_digital_channels[1:]:
+                        for point in  self.output[chan]:
+                            i = getPosition(point,sh_out)
+                            if point[1]:
+                                pass
+
+
 
     def updateGroupTime(self):
         print('updateGroupTime')
@@ -384,14 +449,16 @@ class PulseScheme(QWidget):
 
     def onAnyChange(self):
         print('onAnyChange')
-        # add check if changes are due to scan programm request, then just calculateOutput, else - update scan_params
-        # and send new scan params to globals
         if self.call_from_scanner:
             self.call_from_scanner = False
         else:
             self.updateAndSendScanParameters()
         self.calculateOutput()
         # write new output to DAQ
+        self.globals['Pulses'][pulse_output_str] = self.output
+        self.globals['Pulses']['t_first']=self.t_first
+        self.pulse_signals.onAnyChangeSignal.emit()
+        # print('Globals\n',self.globals)
 
     def updateAndSendScanParameters(self):
         print('updateAndSendScanParameters')
@@ -432,6 +499,7 @@ class PulseScheme(QWidget):
 
     def getUpdateMethod(self):
         return self.updateFromScanner
+
 
 class PulseGroup():
 
@@ -595,9 +663,14 @@ class PulseGroup():
                     analog_config = QPushButton('Conf')
                     analog_config.clicked.connect(self.analogConfig)
                     self.grid_layout.addWidget(analog_config,pulse_row,self.columns.index('Special'))
+                if pulse.channel in self.scheme.digital_channels:
+                    # print('DIGITAL_CHANNEL')
+                    shutter_config = QPushButton('Shutter')
+                    shutter_config.clicked.connect(self.shutterConfig)
+                    self.grid_layout.addWidget(shutter_config,pulse_row,self.columns.index('Special'))
 
             main_box.addLayout(self.grid_layout)
-
+            # print(self.scheme.digital_channels)
             main_box.addStretch(1)
             self.setLayout(main_box)
             self.setMinimumHeight(400)
@@ -691,6 +764,7 @@ class PulseGroup():
             # there is no need to recalculate pulses if only name has changed
             pulse_number = self.getPulseNumber()
             self.data.pulses[pulse_number].name = self.getNewText()#self.gui.sender().text()
+            self.scheme.changeInGroup()
 
         def edgeChanged(self,new_edge):
             print('edgeChanged')
@@ -752,6 +826,13 @@ class PulseGroup():
             #     print(pulse.__dict__)
             a = self.analogWidget(parent=self,pulse=self.data.pulses[pulse_number])
             a.show()
+
+        def shutterConfig(self):
+            print('pulses-shutterConfig')
+            pulse_number = self.getPulseNumber()
+            a = self.digitalWidget(parent=self, pulse=self.data.pulses[pulse_number])
+            a.show()
+            # self.scheme.changeInGroup()
 
         class analogWidget(QDialog):
 
@@ -906,6 +987,141 @@ class PulseGroup():
                 self.applyChanges()
                 self.close()
 
+        class digitalWidget(QDialog):
+
+            def __init__(self,parent=None,pulse=None,):
+                print(pulse.__dict__)
+                super().__init__(parent.scheme)
+                self.parent = parent
+                self.pulse = pulse
+                if 'shutters' not in self.pulse.__dict__:
+                    self.pulse.shutters = []
+                self.initUI()
+                self.show()
+                # self.add_btn.setDefault(False)
+
+            def initUI(self):
+                main_layout = QVBoxLayout()
+
+                add_shutter_btn = QPushButton('Add shutter')
+                add_shutter_btn.clicked.connect(self.addShutter)
+                param_menu = QMenu(add_shutter_btn)
+                param_menu.aboutToShow.connect(self.updateMenu)
+                add_shutter_btn.setMenu(param_menu)
+                main_layout.addWidget(add_shutter_btn)
+                self.grid_layout = QGridLayout()
+                self.drawGrid()
+                main_layout.addLayout(self.grid_layout)
+
+                ok_btn = QPushButton('Ok')
+                ok_btn.clicked.connect(self.okBtnClicked)
+                main_layout.addWidget(ok_btn)
+                
+                self.setLayout(main_layout)
+
+            def drawGrid(self):
+                while self.grid_layout.count():
+                    item = self.grid_layout.takeAt(0)
+                    item.widget().deleteLater()
+                if 'shutters' not in self.pulse.__dict__:
+                    self.pulse.shutters = []
+                for i, shutter in enumerate(self.pulse.shutters):
+                    self.grid_layout.addWidget(QLabel(shutter.name), i, 0)
+                    self.grid_layout.addWidget(QLabel(str(shutter.channel)), i, 1)
+
+                    conf_shutter = QPushButton('conf')
+                    conf_shutter.clicked.connect(self.confShutter)
+                    self.grid_layout.addWidget(conf_shutter, i, 2)
+
+                    del_shutter = QPushButton('del')
+                    del_shutter.clicked.connect(self.deleteShutter)
+                    self.grid_layout.addWidget(del_shutter, i, 3)
+
+            def updateMenu(self):
+                print('shutter_btn-udateMenu')
+                btn = self.sender()
+                btn.clear()
+                for shutter in self.parent.scheme.active_shutters:
+                    if shutter not in self.pulse.shutters:
+                        act = btn.addAction(shutter.name + '  ch.' + str(shutter.channel))
+                        act.triggered.connect(self.addShutter)
+                act = btn.addAction('New')
+                act.triggered.connect(self.addShutter)
+
+            def addShutter(self):
+                print('pulse-addShutter')
+                print(self.sender().text())
+                if self.sender().text() == 'New':
+                    new_shutter = Shutter()
+                    res = new_shutter.ShutterWidget(data=new_shutter,parent=self).exec_()
+                    self.raise_()
+
+                    if not res:
+                        del new_shutter
+                        return
+
+                    self.parent.scheme.active_shutters.append(new_shutter)
+                else:
+                    new_shutter = [shutter for shutter in self.parent.scheme.active_shutters if shutter.name == self.sender().text().split()[0]][0]
+
+                if 'shutters' not in self.pulse.__dict__:
+                    self.pulse.shutters = []
+
+                self.pulse.shutters.append(new_shutter)
+                new_shutter.linked_digital_channels.append('->'.join([self.parent.data.name, self.pulse.name]))
+                self.drawGrid()
+                self.repaint()
+                print('Heee')
+
+            def getShutterIndex(self):
+                index = self.grid_layout.indexOf(self.sender())
+                row, column, cols, rows = self.grid_layout.getItemPosition(index)
+                return row
+
+            def confShutter(self):
+                print('pulse-confShutter')
+                shutter = self.pulse.shutters[self.getShutterIndex()]
+                # print(shutter.__dict__)
+                res = shutter.ShutterWidget(parent=self, data=shutter).exec_()
+                # print(res)
+                # print(shutter.__dict__)
+                self.drawGrid()
+                self.raise_()
+
+            def deleteShutter(self):
+                print('pulse-deleteShutter')
+                reply = QMessageBox.question(self, 'Message',
+                                             "Do you want to delete shutter", QMessageBox.Yes, QMessageBox.No)
+
+                if reply == QMessageBox.Yes:
+                    shutter = self.pulse.shutters[self.getShutterIndex()]
+                    self.pulse.shutters.remove(shutter)
+                    pulse_name = '->'.join([self.parent.data.name, self.pulse.name])
+                    if pulse_name in shutter.linked_digital_channels:
+                        shutter.linked_digital_channels.remove(pulse_name)
+                    self.drawGrid()
+                    self.raise_()
+
+            def okBtnClicked(self):
+                print('shutter-okBtnClicked')
+                self.parent.scheme.changeInGroup()
+                self.done(0)
+
+            class addShutterWidget(QDialog):
+                def __init__(self,parent=None):
+                    super().__init__(parent)
+                    self.initUI()
+                    self.show()
+                def initUI(self):
+                    layout = QVBoxLayout()
+                    for i in range(2):
+                        btn = QPushButton(str(i))
+                        btn.clicked.connect(self.doReturn)
+                        layout.addWidget(btn)
+                    self.setLayout(layout)
+                def doReturn(self):
+                    self.accept()
+                    return 345
 
 class IndividualPulse():
 
@@ -917,6 +1133,7 @@ class IndividualPulse():
         self.variables = {'delay':delay,
                           'length':length}  # for easy scanning
         self.is_active = is_active
+        self.shutters = []
 
     def updateTime(self,group):
         if not self.edge:
