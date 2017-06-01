@@ -90,12 +90,11 @@ class Scanner(QWidget):
         except json.decoder.JSONDecodeError:
             old_config = {}
         with open(scanner_config_file, 'w') as f:
-            # old_config = json.load(f)
             try:
                 json.dump(self.config,f)
             except: # find what error does it raise when cannot dump
                 json.dump(old_config, f)
-                QMessageBox.warning(None, 'Message', "can not dump config to json, old version will saved",
+                QMessageBox.warning(None, 'Message', "can not dump config to json, old version will be saved",
                                     QMessageBox.Ok)
         # maybe introduce here updateGlobals() call
 
@@ -146,70 +145,6 @@ class Scanner(QWidget):
         main_layout.addWidget(notes_box)
         self.setLayout(main_layout)
 
-    def updateAllScanParams(self):
-        print('updateAllScanParams')
-        print(self.globals)
-        if self.globals != None:
-            del self.all_scan_params
-            self.all_scan_params = deepcopy(self.globals[scan_params_str])
-            self.sender().clear()
-            self.generateParamMenu(self.sender(), self.all_scan_params)
-
-    def dayBtnPressed(self):
-        print("dayBtnPressed")
-        filet = str(QFileDialog.getExistingDirectory(self, "Select Directory",directory=data_directory))
-        if filet:
-            print(filet)
-            self.day_folder = filet
-            self.day_box.setText(os.path.basename(self.day_folder))
-            self.saveConfig('day_folder')
-
-    def measTypeChanged(self,new_value):
-        print('measTypeChanged')
-        self.current_meas_type = new_value
-        self.saveConfig('current_meas_type')
-        print(self.current_meas_type)
-        self.updateMeasFolder()
-
-    def otherParamsChanged(self):
-        print('otherParamsChanged')
-        self.other_params = self.sender().text()
-        self.saveConfig('other_params')
-        self.updateMeasFolder()
-
-    def updateMeasFolder(self):
-        print('updateMeasFolder')
-        self.meas_folder = "%02i %s %s" % (self.current_meas_number,self.current_meas_type,self.other_params)
-        self.meas_folder_box.setText(self.meas_folder)
-
-    def measFolderChanged(self):
-        print('measFolderChanged')
-        self.meas_folder = self.sender().text()
-        # maybe update self.other params
-
-    def newBtnPressed(self):
-        print('newBtnPressed')
-        drs = os.listdir(self.day_folder)
-        last_index = 0
-        for d in drs:
-            if d[:2].isdigit():
-                n = int(d[:2])
-                print(n)
-                if n > last_index:
-                    last_index = n
-        self.current_meas_number = last_index+1
-        self.updateMeasFolder()
-        # self.
-
-    def openBtnPressed(self):
-        print('openBtnPressed')
-        filet = str(QFileDialog.getExistingDirectory(self, "Select Directory", directory=os.path.join(data_directory,self.day_folder)))
-        if filet:
-            print(filet)
-            self.meas_folder = os.path.basename(filet)
-            self.meas_folder_box.setText(self.meas_folder)
-            # maybe update self.other params
-
     def addPointsChanged(self, new_value):
         print('addPointsChanged')
         self.add_points_flag = new_value
@@ -242,24 +177,6 @@ class Scanner(QWidget):
             self.updateSingleMeasFolder()
             self.startScan()
             print('Scan started')
-
-    def addIndex(self,i):
-        # reccursive function to properly update indexs of current scan params
-        # i - number of index to start check with
-        if self.current_param_indexs[i] < len(self.scan_params[i][0][1]) - 1:
-            # i.e. it is not yet end of this level parameter
-            self.current_param_indexs[i] += 1
-            # return which index is modified
-            return i
-        else:
-            # overflow happend
-            self.current_param_indexs[i] = 0  # if put this line late one can realize situation, where after scan
-            # indexs are not set back to zero
-            if i < len(self.current_param_indexs) - 1:
-                return self.addIndex(i + 1)
-            else:
-                # this means the end of scan
-                return -1
 
     def updateSingleMeasFolder(self):
         print('updateSingleMeasFolder')
@@ -331,19 +248,11 @@ class Scanner(QWidget):
         self.scan_btn.setText('On scan!')
         self.on_scan = True
 
-    def addParamLevelPressed(self):
-        print('addParamLevelPressed')
-        self.scan_params.append([[['0','2'],'']])
-        self.scanRedraw()
-
     def notesChanged(self):
         print('notesChanged')
         self.notes = self.sender().toPlainText()
         print(repr(self.notes))
         self.saveConfig('notes')
-
-    def paramShortNameChanged(self):
-        print('paramShortNameChanged')
 
 
 

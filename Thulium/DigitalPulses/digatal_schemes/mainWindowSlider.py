@@ -48,10 +48,10 @@ class MainWindow(QMainWindow):
         self.globals = {}
         self.widgets = {}
         self.default_widgets_names=['Scanner','PulseScheme']
+        self.screenSize = QDesktopWidget().availableGeometry()
         self.initUI()
 
     def initUI(self):
-        self.screenSize = QDesktopWidget().availableGeometry()
         self.widgets['Scanner']=Scanner(parent=self,globals=self.globals,all_updates_methods=self.all_updates_methods)
         self.widgets['Pulses']=PulseScheme(parent=self,globals=self.globals)
         self.widgets['PulsePlot']=PlotPulse(parent=self,globals=self.globals)

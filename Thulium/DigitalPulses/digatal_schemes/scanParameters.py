@@ -31,7 +31,7 @@ data_directory = '..'
 scan_folder_data_str = 'scan_folder_data'
 SCAN_FINISHED = -1
 class SingleScanParameter():
-    is_active = True
+    is_active = False
     name = ('',)  # tuple of name i.e. ('pulse','1 stage cooling',..)
     short_name = ''
     nesting = 0  # indicate at which layer of nesting it is
@@ -85,6 +85,7 @@ class AllScanParameters():
             self.addParameter(SingleScanParameter())
             return 0
         for parameter_dict in parameters_dict_list:
+            # print(parameter_dict)
             new_parameter = SingleScanParameter(parameter_dict)
             self.addParameter(new_parameter)
         self.updateActiveParameters()
@@ -102,7 +103,7 @@ class AllScanParameters():
             for group in self.active_params_list:
                 for param in group:
                     param.current_value = param.param_list[0]
-                    # print(param.current_value)
+            # print(self.current_indexs)
             return len(self.current_indexs) - 1
         else:
             for i, group in enumerate(self.active_params_list):
@@ -124,17 +125,20 @@ class AllScanParameters():
 
     def updateCurrentValues(self):
         print('updateCurrentValues')
-        for i,group in enumerate(self.all_params_list):
+        # print(self.active_params_list)
+        # print(self.current_indexs)
+        for i,group in enumerate(self.active_params_list):
             for param in group:
                 param.current_value = param.param_list[self.current_indexs[i]]
 
     def updateAdditionalName(self):
         print('updateAdditionalName')
+        # self.updateActiveParameters()
         self.updateCurrentValues()
         res = ' '.join([param.short_name + '=' + str(int(param.current_value) if (param.current_value).is_integer() else param.current_value) for param in
                         list(chain.from_iterable(self.all_params_list)) if param.nesting > 0 and param.is_active])
         self.globals['additional_scan_param_name'] = res
-        print(res)
+        # print(res)
 
     def getParamsToSend(self):
         """construct params to send based on self.current_indexs
@@ -157,6 +161,7 @@ class AllScanParameters():
         self.active_params_list = [[param for param in group if param.is_active] for group in
                                    self.all_params_list]
         self.active_params_list = [group for group in self.active_params_list if group]
+        # print(self.active_params_list)
 
     def checkLength(self):
         print('checkLength')
@@ -374,6 +379,7 @@ class AllScanParameters():
             print('saveToConfig')
             res = []
             self.data.updateActiveParameters()
+            self.data.updateIndexes(start=True)
             self.data.updateAdditionalName()
             for param in list(chain.from_iterable(self.data.all_params_list)):
                 res.append({key:getattr(param,key) for key in dir(param) if not callable(key) and not key.startswith('_')})
