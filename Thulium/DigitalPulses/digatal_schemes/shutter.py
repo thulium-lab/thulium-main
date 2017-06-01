@@ -15,7 +15,7 @@ from PyQt5.QtGui import (QBrush, QColor, QPainter)
 
 from PyQt5.QtWidgets import (QGridLayout, QWidget, QVBoxLayout, QHBoxLayout, QLabel,QLineEdit, QSpinBox, QComboBox,
                              QDoubleSpinBox, QApplication, QDialog, QPushButton,QDialogButtonBox)
-class BasicShutter():
+#class BasicShutter():
     
 class Shutter():
     N_CHANNELS = 16
