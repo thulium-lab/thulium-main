@@ -125,7 +125,7 @@ class WMChannel:
 class WMMain():
     channels = []
     N_SHOTS_MAX = 10
-    N_SHOTS_MIN = 3
+    N_SHOTS_MIN = 2
     EXCEPTABLE_WAVELENGTH_ERROR = 0.01 #nm
     current_index = 0
     active_channels_indexes = []

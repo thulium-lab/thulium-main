@@ -1,0 +1,127 @@
+import os, sys
+import numpy as np
+import matplotlib
+from ctypes import *
+matplotlib.use('Qt5Agg', force=True)
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
+
+from PyQt5.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer, QCoreApplication, QSize, QBasicTimer)
+from PyQt5.QtGui import (QBrush, QColor, QPainter, QIcon, QPixmap)
+from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem, QScrollArea, QFrame,
+                             QGridLayout, QVBoxLayout, QHBoxLayout, QSizePolicy, QMainWindow, QDialog, QLabel,
+                             QLineEdit, QPushButton, QWidget, QComboBox, QRadioButton, QSpinBox, QCheckBox,
+                             QTabWidget, QFileDialog, QMessageBox, QDoubleSpinBox)
+
+import time
+import re
+
+from STT_CAM import Camera
+
+class MainWindow(QTabWidget):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.indices = []
+        self.initUI()
+        return
+
+    def initUI(self):
+        self.setGeometry(100, 100, 1000, 700)
+        for index in range(2):
+            self.addTab(CamWidget(index), "camera "+str(index))
+            self.setTabToolTip(index, str(self.widget(index)))
+        self.setWindowIcon(QIcon(os.path.dirname(__file__)+r'\icons\camera.png'))
+        self.setWindowTitle('STT camera viewer')
+        self.show()
+        
+        return
+
+class CamWidget(QWidget):
+    def __init__(self, index, **kwargs):
+        super().__init__(**kwargs)
+        self.index = index
+        self.connected = False
+        self.name = ""
+        self.camera = None
+        self.capture = False
+        self.trig = 2
+        self.connect()
+        if self.connected:
+            self.initUI()
+        return
+
+    def __str__(self, **kwargs):
+        return self.name
+
+    def connect(self):
+        self.camera = Camera()
+        self.trig = self.camera.trig.value-1
+        if self.camera.getNumberCameras() <= self.index:
+            return -1
+        if self.camera.openCamera(self.index):
+            return -1
+        self.connected = True
+        self.name = self.camera.name
+        return 0
+
+    def initUI(self, show=True):
+        self.start = QPushButton('', self)
+        self.start.setIcon(QIcon(os.path.dirname(__file__)+r'\icons\start.png'))
+        self.start.setIconSize(QSize(18,18))
+        self.start.clicked.connect(self.toggleCapture)
+
+        self.trigButton = QComboBox(self)
+        self.trigButton.addItems(['external', 'program'])
+        self.trigButton.move(30,0)
+        
+        self.trigButton.currentIndexChanged.connect(self.changeTrig)
+
+        self.timer = QBasicTimer()
+        
+        self.show()
+        self.trigButton.setCurrentIndex(self.trig)
+        return
+
+    def timerEvent(self, event):
+        if event.timerId() != self.timer.timerId():
+            return super().timerEvent(event)
+
+        if self.camera.busy():
+            return
+        self.camera.read(self.buffer)
+
+    def draw(self):
+        pass
+
+    def changeTrig(self, trig):
+        self.camera.setTrig(trig+1)
+        self.trig = self.camera.trig.value-1
+        self.trigButton.setCurrentIndex(self.trig)
+
+    def toggleCapture(self):
+        self.capture = not self.capture
+        if self.capture:
+            self.start.setIcon(QIcon(os.path.dirname(__file__)+r'\icons\stop.png'))
+            self.ROI = self.camera.ROI
+            self.buffer = (c_ubyte*(self.ROI[2]*self.ROI[3]))()
+            # 10ms for external (making this less is not advisable due to CPU being useful (more or less) for other processes
+            # 100ms for program (10fps is enough - it's not a CS)
+            dt = 10+30*self.trig
+            self.camera.start()
+            self.timer.start(dt, self)
+        else:
+            self.timer.stop()
+            self.camera.stop()
+            self.start.setIcon(QIcon(os.path.dirname(__file__)+r'\icons\start.png'))
+        return
+
+
+def main():
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    sys.exit(app.exec_())
+    return
+
+if __name__ == '__main__':
+    main()

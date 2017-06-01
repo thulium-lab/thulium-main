@@ -33,15 +33,23 @@ class Camera:
         # other params
         self.trig = c_uint()
         self.binning = c_uint()
-        self.ROI = np.array([0,0,0,0], dtype=c_uint)
-        self.size = np.array([0,0], dtype=c_uint)
+        self.ROI = (c_uint*4)(0)
+        self.size = (c_uint*2)(0)
 
         self.status = c_uint()
-        self.length = 0
+        self.length = c_uint()
         self.buffer = None
+        self.temp = None
+        self.image = None
         self.gamma = (c_ushort * 4096)()
-        dll.sdu_make_gamma_lut_12to16(byref(self.gamma), 1)
+        dll.sdu_make_gamma_lut_12to16(self.gamma, 1)
+        self.time = time.perf_counter()
         return
+
+    def getTime(self):
+        oldTime = self.time
+        self.time = time.perf_counter()
+        return self.time - oldTime
     
     def __del__(self):
         return dll.sdu_close_interface(self.camera)
@@ -50,8 +58,8 @@ class Camera:
         return self.count.value
     
     def openCamera(self, index):
-        name = create_string_buffer(64)
-        result = dll.sdu_open_camera(self.camera, c_uint(index), name)
+        name = (c_char*64)()
+        result = dll.sdu_open_camera(self.camera, c_uint(index), byref(name))
         if result:
             return result
         self.getTrig()
@@ -59,7 +67,7 @@ class Camera:
         dll.sdu_set_encoding(self.camera, 1) # 1=12bit, 0=8bit
 
         self.index = index
-        self.name = name.value
+        self.name = name.value.decode("utf-8")
         
         self.getExp()
         self.getGain()
@@ -89,19 +97,29 @@ class Camera:
         return self.binning
 
     def getROI(self):
-        dll.sdu_get_roi_org(self.camera, byref(self.ROI[0]), byref(self.ROI[1]))
-        dll.sdu_get_roi_size(self.camera, byref(self.ROI[2]), byref(self.ROI[3]))
+        x=c_uint()
+        y=c_uint()
+        dll.sdu_get_roi_org(self.camera, byref(x), byref(y))
+        self.ROI[0]=x
+        self.ROI[1]=y
+        dll.sdu_get_roi_size(self.camera, byref(x), byref(y))
+        self.ROI[2]=x
+        self.ROI[3]=y
+        self.length = c_uint(int(self.ROI[2] * self.ROI[3] * 3 / 2))
+        self.buffer = (c_ubyte*int(self.length.value))()
+        self.temp = (c_ushort*int(self.ROI[2]*self.ROI[3]))()
+        # self.image = [[0]*self.ROI[3]]*self.ROI[2]
         return self.ROI
 
     def getSize(self):
-        dll.sdu_get_sensor_width(self.camera, byref(self.size[0]))
-        dll.sdu_get_sensor_height(self.camera, byref(self.size[1]))
+        dll.sdu_get_sensor_width(self.camera, byref(self.size, 0))
+        dll.sdu_get_sensor_height(self.camera, byref(self.size, 1))
         return self.size
 
     def setExp(self, exp):
         exp = min(exp, self.expMax)
         exp = max(exp, self.expMin)
-        if self.exp == exp:
+        if self.exp.value == exp:
             return exp
         self.exp.value = exp
         dll.sdu_set_exp(self.camera, byref(self.exp))
@@ -110,7 +128,7 @@ class Camera:
     def setGain(self, gain = 0):
         gain = min(gain, self.gainMax)
         gain = max(gain, self.gainOpt)
-        if self.gain == gain:
+        if self.gain.value == gain:
             return gain
         self.gain.value = gain
         dll.sdu_set_master_gain(self.camera, byref(self.gain))
@@ -119,16 +137,17 @@ class Camera:
     def setTrig(self, trig):
         if trig!=1 and trig!=2:
             return -1
-        if self.trig == trig:
+        if self.trig.value == trig:
             return trig
         self.trig.value = trig
+        # set trigger to external only on start
         # dll.sdu_set_trigmode(self.camera, self.trig)
         return trig
     
     def setBinning(self, binning):
         binning = min(binning, 3)
         binning = max(binning, 0)
-        if self.binning == binning:
+        if self.binning.value == binning:
             return binning
         self.binning.value = binning
         dll.sdu_set_binning(self.camera, self.binning)
@@ -155,14 +174,13 @@ class Camera:
         return dll.sdu_fifo_init(self.camera)
 
     def start(self):
-        self.clearFIFO()
-        self.length = c_uint(self.ROI[2] * self.ROI[3] * 3 / 2)
-        self.buffer = (c_ubyte*self.length.value)()
-        if self.trig == 1:
+        if self.busy():
+            self.clearFIFO()
+        if self.trig.value == 1:
             dll.sdu_set_trigmode(self.camera, self.trig)
-        else:
-            dll.sdu_cam_start(self.camera)
-        return self.length
+        # else:
+        #     dll.sdu_cam_start(self.camera)
+        return self.ROI[2]*self.ROI[3]
 
     def stop(self):
         if self.trig == 1:
@@ -185,9 +203,16 @@ class Camera:
             return -1
         return 0
 
-    def read(self, buffer):
+    def busy(self):
+        return self.getStatus() & 8
+
+    def read(self):
+        if self.trig != 1:
+            dll.sdu_cam_start(self.camera)
+            self.wait()
         length = c_uint()
-        dll.sdu_read_data(self.camera, byref(self.buffer), self.length, byref(length))
-        dll.sdu_bw_convert_12to16(byref(self.buffer), buffer, byref(self.gamma), self.ROI[2], self.ROI[3])
+        dll.sdu_read_data(self.camera, self.buffer, self.length, byref(length))
+        dll.sdu_bw_convert_12to16(self.buffer, self.temp, None, self.ROI[2], self.ROI[3])
+        self.image = np.reshape(self.temp, (-1,self.ROI[2])).transpose()
         return self.length != length
 
