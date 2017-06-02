@@ -27,6 +27,8 @@ from sympy.parsing.sympy_parser import parse_expr
 
 from shutter import Shutter
 
+from DOAO import DAQHandler
+
 digital_pulses_folder = 'digatal_schemes'
 config_scheme_file = 'config_scheme'
 pulse_name_suffix = '.pls'
@@ -59,6 +61,7 @@ class PulseScheme(QWidget):
         self.current_scheme = None
         self.current_groups = []
         self.output = {}
+        self.dq = DAQHandler()
         self.load()
         if 'Signals' not in globals:
             globals['Signals'] ={}
@@ -67,7 +70,6 @@ class PulseScheme(QWidget):
         globals['Signals']['Pulses']['onAnyChange'] = self.pulse_signals.onAnyChangeSignal
         self.globals['Pulses']['analog_channels']=self.analog_channels
         self.globals['Pulses']['digital_channels'] = self.digital_channels
-
 
         self.initUI()
         # self.connect(self.)
@@ -233,6 +235,7 @@ class PulseScheme(QWidget):
                     with open(os.path.join(digital_pulses_folder, fname), 'r') as f:
                         print('config_load')
                         self.config = json.load(f)
+                        # print(self.congi)
                 if fname.endswith(pulse_name_suffix):
                     with open(os.path.join(digital_pulses_folder, fname), 'rb') as f:
                         print(fname)
@@ -418,8 +421,6 @@ class PulseScheme(QWidget):
                             if point[1]:
                                 pass
 
-
-
     def updateGroupTime(self):
         print('updateGroupTime')
         handled = []
@@ -455,6 +456,9 @@ class PulseScheme(QWidget):
             self.updateAndSendScanParameters()
         self.calculateOutput()
         # write new output to DAQ
+        self.dq.write(self.output)
+        self.dq.run()
+
         self.globals['Pulses'][pulse_output_str] = self.output
         self.globals['Pulses']['t_first']=self.t_first
         self.pulse_signals.onAnyChangeSignal.emit()

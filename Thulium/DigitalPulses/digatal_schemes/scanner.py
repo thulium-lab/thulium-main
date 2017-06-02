@@ -61,7 +61,6 @@ class Scanner(QWidget):
         # add variable to global namespace
         self.updateGlobals()
 
-
     def loadConfig(self):
         print('loadConfigScanner')
         try:
@@ -217,6 +216,8 @@ class Scanner(QWidget):
         print(changed_index)
         # STOP DAQ
         params_to_send = self.scan_parameters.getParamsToSend()
+        print("watch this!")
+        print(params_to_send)
         # update parameters by calling update methods of subprogramm
         is_Ok = True    # now it's not used but may be later
         if self.all_updates_methods != None:

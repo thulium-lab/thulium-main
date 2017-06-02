@@ -16,7 +16,7 @@ class DigitalOutput(dq.Task):
         but not necessary (called implicitly when adding new data)
     __del__ - clean on destruction
     """
-    def __init__(self, func=None):
+    def __init__(self, func = None):
         dq.Task.__init__(self)
         self.count = 0
         # you need to ClearTask() every time you want to delete channel from task
@@ -68,6 +68,9 @@ class DigitalOutput(dq.Task):
         self.running = False
         return self.StopTask()
     
+    def idle(self):
+        return 0
+    
     def EveryNCallback(self):
         if not self.running:
             return 0
@@ -89,8 +92,6 @@ class DigitalOutput(dq.Task):
         self.ClearTask()
     
 AON = 4
-
-
 class AnalogOutput(dq.Task):
     """
     Wrapper of a standard class 'Task', specifically designed
@@ -146,8 +147,7 @@ class AnalogOutput(dq.Task):
         self.run()
         self.stop()
         self.ClearTask()
-
-
+    
 class DAQHandler:
     """
     Handles DO and AO channels
@@ -190,7 +190,9 @@ class DAQHandler:
         DOtimes = sorted(DOtimes)
         AOtimes = sorted(AOtimes)
         DOdt = DOtimes[1] - DOtimes[0]
-        AOdt = AOtimes[1] - AOtimes[0]
+        AOdt = DOdt
+        if len(AOtimes) >= 2:
+            AOdt = AOtimes[1] - AOtimes[0]
         for i in range(1, len(DOtimes)):
             dt = DOtimes[i] - DOtimes[i-1]
             if dt < DOdt:
@@ -211,7 +213,9 @@ class DAQHandler:
         DOchans[trigger] = [(0,1),(np.ceil(1./DOdt)*DOdt,0),(DOtimes[-1],0)]
         
         DOsamples = round((DOtimes[-1] - DOtimes[0])/DOdt)
-        AOsamples = round((AOtimes[-1] - AOtimes[0])/AOdt)
+        AOsamples = DOsamples
+        if len(AOtimes) >= 2:
+            AOsamples = round((AOtimes[-1] - AOtimes[0])/AOdt)
         DOrate = 1000./DOdt
         AOrate = 1000./AOdt
         DOdata = np.array([0 for x in range(DOsamples)], dtype=np.uint32)
