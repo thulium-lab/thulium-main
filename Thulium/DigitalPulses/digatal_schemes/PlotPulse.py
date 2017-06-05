@@ -88,8 +88,9 @@ class PlotPulse(pg.GraphicsWindow):
 
             elif name in analog_channels:
                 local_plot = a_plot
-                xx, yy = list(zip(*output_data[name][1:]))
-                local_plot.plot(xx,yy)
+                # TODO plot analogs
+                # xx, yy = list(zip(*output_data[name][1:]))
+                # local_plot.plot(xx,yy)
                 analog_counter += 1
             else:
                 print('Wrong channel')

@@ -32,7 +32,7 @@ from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraph
                              QLabel, QLineEdit, QPushButton, QWidget, QComboBox,QRadioButton, QSpinBox, QCheckBox, QTabWidget, QFileDialog,QMessageBox, QDoubleSpinBox)
 
 from Pulses import PulseScheme, PulseGroup,IndividualPulse,AnalogPulse
-from Scanner import Scanner
+from scanner import Scanner
 from PlotPulse import PlotPulse
 
 vertical_splitting = 0.7

@@ -215,7 +215,7 @@ class DAQHandler:
         DOsamples = round((DOtimes[-1] - DOtimes[0])/DOdt)
         AOsamples = DOsamples
         if len(AOtimes) >= 2:
-            AOsamples = round((AOtimes[-1] - AOtimes[0])/AOdt)
+            AOsamples = round((AOtimes[-1] - AOtimes[0])/AOdt).astype(int)
         DOrate = 1000./DOdt
         AOrate = 1000./AOdt
         DOdata = np.array([0 for x in range(DOsamples)], dtype=np.uint32)
