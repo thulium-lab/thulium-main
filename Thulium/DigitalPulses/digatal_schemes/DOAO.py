@@ -227,7 +227,7 @@ class DAQHandler:
             for chan in DOchans:
                 if abs(DOchans[chan][0][0]-t)<err:
                     V = DOchans[chan].pop(0)[1]
-                    if V:
+                    if not V:
                         last = last | (1 << chan)
                     else:
                         last = last & ~(1 << chan)
