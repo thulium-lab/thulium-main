@@ -43,7 +43,7 @@ class PulseSignals(QObject):
 class PulseScheme(QWidget):
     # can be done as QWidget
     def __init__(self,parent=None,available_channels=[],globals={},**argd):
-        super().__init__()
+        super().__init__(parent)
         self.pulse_signals = PulseSignals()
         self.globals = globals
         self.globals['Pulses'] = {}
@@ -61,7 +61,7 @@ class PulseScheme(QWidget):
         self.current_scheme = None
         self.current_groups = []
         self.output = {}
-        self.dq = DAQHandler()
+        self.dq = DAQHandler()# self.parent().triggerCycle.emit)
         self.load()
         if 'Signals' not in globals:
             globals['Signals'] ={}
@@ -74,6 +74,7 @@ class PulseScheme(QWidget):
         self.initUI()
         # self.connect(self.)
         # self.pulse_signal.onAnyChangeSignal()
+
     def updateActiveShutters(self):
         print('pulses-updateActiveShutters')
         for group in self.current_groups:
@@ -404,7 +405,12 @@ class PulseScheme(QWidget):
             for shutter in self.active_shutters:
                 print(shutter)
                 linked_digital_channels = set()
-
+                # TODO
+                # update pulse_full_name in shutter.linked_digital_channels elsewhere
+                #
+                # hard to do because shutter.linked_digital_channels contains only string name, not index
+                # rework shutter class structure?
+                #
                 for pulse_full_name in shutter.linked_digital_channels:
                     group_name, pulse_name = pulse_full_name.split('->')
                     print(group_name, pulse_name)
@@ -413,13 +419,13 @@ class PulseScheme(QWidget):
                     print(pulse_name)
                     linked_digital_channels.add(pulse.channel)
                 print(linked_digital_channels)
-                if not linked_digital_channels:
-                    sh_out = self.output[linked_digital_channels[0]]
-                    for chan in linked_digital_channels[1:]:
-                        for point in  self.output[chan]:
-                            i = getPosition(point,sh_out)
-                            if point[1]:
-                                pass
+                # if len(linked_digital_channels):
+                #     sh_out = self.output[linked_digital_channels[0]]
+                #     for chan in linked_digital_channels[1:]:
+                #         for point in self.output[chan]:
+                #             i = getPosition(point,sh_out)
+                #             if point[1]:
+                #                 pass
 
     def updateGroupTime(self):
         print('updateGroupTime')

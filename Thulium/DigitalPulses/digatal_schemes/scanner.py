@@ -57,12 +57,13 @@ class Scanner(QWidget):
         # for now while without real scan
         self.timer = QTimer(self)
         self.timer.setInterval(1000)
-        self.timer.timeout.connect(self.cycleFinished)
+        # self.timer.timeout.connect(self.cycleFinished)
         # add variable to global namespace
         self.updateGlobals()
 
     def loadConfig(self):
         print('loadConfigScanner')
+        print(os.getcwd())
         try:
             with open(scanner_config_file,'r') as f:
                 self.config = json.load(f)
@@ -191,7 +192,7 @@ class Scanner(QWidget):
         self.globals['current_shot_number'] = self.current_shot_number
         print('Globals: ',self.globals)
 
-    def cycleFinished(self):
+    def cycleFinished(self, number=None):
         print('cycleFinished')
         # called when one cycle is finished
         if self.current_shot_number < self.number_of_shots - 1:
