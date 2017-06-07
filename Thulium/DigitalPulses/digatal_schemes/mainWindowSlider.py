@@ -4,6 +4,7 @@ import pickle
 import random
 import numpy as np
 sys.path.append(r'D:\Dropbox\Python\Thulium\Camera')
+sys.path.append(r'D:\Dropbox\Python\Thulium\DigitalPulses')
 import matplotlib
 matplotlib.use('Qt5Agg',force=True)
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -36,6 +37,7 @@ from Pulses import PulseScheme, PulseGroup,IndividualPulse,AnalogPulse
 from scanner import Scanner
 from PlotPulse import PlotPulse
 from bgnd_runner import Bgnd_Thread
+from display_widget import DisplayWidget
 import threading
 import time
 vertical_splitting = 0.7
@@ -48,16 +50,13 @@ class OurSignals(QObject):
     # here all possible signals which can be used in our programm
     anyPulseChange = pyqtSignal()  # to handle any change in pulse scheme - probably for displaying pulses
     newImageRead = pyqtSignal()     # emits when new image is read from image_folder
-    scanCicleFinished = pyqtSignal()    # emits by DAQ when every cicle is finished - needed for proper scanning and data acquisition
+    scanCycleFinished = pyqtSignal(int)    # emits by DAQ when every cycle is finished - needed for proper scanning and data acquisition
 
 
 class MainWindow(QMainWindow):
     count = 0
     signals = OurSignals()
     image_folder = r'Z:\Camera'
-    # triggerCycle = pyqtSignal()
-    # slots_to_bound = {}
-    # slots_to_bound['cycleFinished'] = pyqtSignal()
 
     def __init__(self, parent = None):
         super(MainWindow, self).__init__(parent)
@@ -67,7 +66,8 @@ class MainWindow(QMainWindow):
         self.globals = {}
         self.globals['image'] = None
         self.globals['image_updated'] = False
-        self.bgnd_image_handler = Bgnd_Thread(globals = self.globals, signals = self.signals, image_folder=self.image_folder)
+        self.bgnd_image_handler = Bgnd_Thread(globals = self.globals, signals = self.signals,
+                                              image_folder=self.image_folder)
         self.bgnd_image_handler.start()
         self.widgets = {}
         self.default_widgets_names=['Scanner','PulseScheme']
@@ -75,12 +75,14 @@ class MainWindow(QMainWindow):
         self.initUI()
 
     def initUI(self):
-        # self.slots_to_bound['cycleFinished'] = pyqtSignal()
-        self.widgets['Scanner']=Scanner(parent=self,globals=self.globals,all_updates_methods=self.all_updates_methods)
+        self.widgets['Scanner']=Scanner(parent=self,globals=self.globals,
+                                        all_updates_methods=self.all_updates_methods,
+                                        signals=self.signals)
         # self.slots_to_bound['cycleFinished'].connect(self.widgets['Scanner'].cycleFinished)
         # self.triggerCycle.connect(self.widgets['Scanner'].cycleFinished)
-        self.widgets['Pulses']=PulseScheme(parent=self,globals=self.globals)
+        self.widgets['Pulses']=PulseScheme(parent=self,globals=self.globals,signals=self.signals)
         self.widgets['PulsePlot']=PlotPulse(parent=self,globals=self.globals)
+        self.widgets['CamView'] = DisplayWidget(parent=self, globals=self.globals, signals=self.signals)
         self.all_updates_methods['Pulses']=self.widgets['Pulses'].getUpdateMethod()
         hor_splitter = QSplitter(Qt.Horizontal)
         hor_splitter.setSizes([26, 74])
@@ -95,6 +97,8 @@ class MainWindow(QMainWindow):
         hor_splitter.addWidget(self.widgets['Pulses'])
 
         self.setFixedWidth(self.screenSize.width())
+
+        self.widgets['CamView'].show()
 
         print('self_globals',self.globals)
 

@@ -37,9 +37,10 @@ EMPTY_CONFIG_FILE = -1
 
 class Scanner(QWidget):
 
-    def __init__(self,globals=None,all_updates_methods=None,**argd):
+    def __init__(self,globals=None,all_updates_methods=None,signals=None,**argd):
         self.all_updates_methods = all_updates_methods
         self.globals = globals
+        self.signals = signals
         self.scan_parameters = AllScanParameters(globals=globals,parent=self)
         self.meas_folder1 = MeasurementFolderClass(globals=globals,parent=self)
         self.add_points_flag = False
@@ -58,6 +59,7 @@ class Scanner(QWidget):
         self.timer = QTimer(self)
         self.timer.setInterval(1000)
         # self.timer.timeout.connect(self.cycleFinished)
+        self.signals.scanCycleFinished.connect(self.cycleFinished)
         # add variable to global namespace
         self.updateGlobals()
 
@@ -193,7 +195,9 @@ class Scanner(QWidget):
         print('Globals: ',self.globals)
 
     def cycleFinished(self, number=None):
-        print('cycleFinished')
+        print(number, 'cycleFinished')
+        if not self.on_scan:
+            return
         # called when one cycle is finished
         if self.current_shot_number < self.number_of_shots - 1:
             self.current_shot_number += 1
@@ -217,7 +221,6 @@ class Scanner(QWidget):
         print(changed_index)
         # STOP DAQ
         params_to_send = self.scan_parameters.getParamsToSend()
-        print("watch this!")
         print(params_to_send)
         # update parameters by calling update methods of subprogramm
         is_Ok = True    # now it's not used but may be later

@@ -42,10 +42,11 @@ class PulseSignals(QObject):
 
 class PulseScheme(QWidget):
     # can be done as QWidget
-    def __init__(self,parent=None,available_channels=[],globals={},**argd):
+    def __init__(self,parent=None,available_channels=[],globals={},signals=None,**argd):
         super().__init__(parent)
         self.pulse_signals = PulseSignals()
         self.globals = globals
+        self.signals = signals
         self.globals['Pulses'] = {}
         self.call_from_scanner = False
         self.parent = parent
@@ -61,7 +62,7 @@ class PulseScheme(QWidget):
         self.current_scheme = None
         self.current_groups = []
         self.output = {}
-        self.dq = DAQHandler()# self.parent().triggerCycle.emit)
+        self.dq = DAQHandler(self.signals.scanCycleFinished.emit)
         self.load()
         if 'Signals' not in globals:
             globals['Signals'] ={}
@@ -504,7 +505,7 @@ class PulseScheme(QWidget):
             item_to_change.variables[key[2]] = val
         # print('Here')
         self.schemeRedraw()
-        # if everything is ok return 0, ef not - smth else
+        # if everything is ok return 0, if not - smth else
         return 0
 
     def getUpdateMethod(self):

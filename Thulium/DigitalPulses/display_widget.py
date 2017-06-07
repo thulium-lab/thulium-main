@@ -26,7 +26,8 @@ from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraph
 
 
 import os, sys
-sys.path.append(r'/Users/artemgolovizin/GitHub')
+# sys.path.append(r'/Users/artemgolovizin/GitHub')
+sys.path.append(r'D:\!Data')
 from matplotlib.pyplot import imread
 import pyqtgraph as pg
 # from pyqtgraph.Qt import QtCore, QtGui
@@ -39,7 +40,7 @@ import thulium_python_lib.image_processing_new as impr
 
 pg.setConfigOptions(imageAxisOrder='row-major')
 
-ds_dir = r'/Users/artemgolovizin/Documents/lab_data/2015_12_01/02 t'
+ds_dir = r'D:\!Data\2016_04_22\01 T no_ramp a=-6 f=363.9 b=0.8'
 data = []
 for d in os.listdir(ds_dir):
     d_dir  = os.path.join(ds_dir,d)
@@ -56,8 +57,12 @@ current_data_index = 0;
 # win.resize(1000,500)
 # win.setWindowTitle('Dockarea')
 
-class DisplayWidget(QMainWindow):
-    def __init__(self):
+class DisplayWidget(DockArea):
+    def __init__(self,parent=None,globals=None,signals=None,**argd):
+        self.globals = globals
+        self.signals = signals
+        self.parent = parent
+
         self.all_plot_data = {'N':[],'width':[]}
         self.do_fit1D_x = True
         self.do_fit1D_y = True
@@ -70,7 +75,7 @@ class DisplayWidget(QMainWindow):
             ("N_small",0,0 , 0)
         ], dtype=[('Parameter', object), ('x', object), ('y', object), ('2D', object)])
 
-        super().__init__()
+        super(DisplayWidget, self).__init__(parent)
         self.initUI()
         self.iso = pg.IsocurveItem(pen='g')
         self.iso.setZValue(1000)
@@ -78,11 +83,11 @@ class DisplayWidget(QMainWindow):
         self.timer = QTimer(self)
         self.timer.setInterval(1000)
         self.timer.timeout.connect(self.routine)
-        self.timer.start()
+        # self.timer.start()
 
     def initUI(self):
-        self.area = DockArea()
-        self.setCentralWidget(self.area)
+        # self.area = DockArea()
+        # self.setCentralWidget(self.area)
         self.resize(1000,500)
         self.setWindowTitle('Dockarea')
         self.d1 = Dock("Image", size=(500, 500))     ## give this dock the minimum possible size
@@ -96,7 +101,7 @@ class DisplayWidget(QMainWindow):
 
         self.imv = pg.ImageView()
         self.imv.setColorMap(pg.ColorMap(np.array([ 0.  ,  0.25,  0.5 ,  0.75,  1.  ]), np.array([[  255, 255, 255, 255],       [  0,   0, 255, 255],       [  0,   0,   0, 255],       [255,   0,   0, 255],       [255, 255,   0, 255]], dtype=np.uint8)))
-        self.imv.setImage(imread("default_image.png"))
+        self.imv.setImage(imread(r"D:\!Data\2016_04_22\01 T no_ramp a=-6 f=363.9 b=0.8\0ms\1_1.png"))
         self.d1.addWidget(self.imv)
 
         self.w2 = pg.PlotWidget()
@@ -152,15 +157,17 @@ class DisplayWidget(QMainWindow):
         self.curve24 = self.w4.plot(np.array([]), pen='y',name="w_y2")
 
         self.d4.addWidget(self.w4)
+        self.signals.newImageRead.connect(self.routine)
 
     def routine(self):
-        global current_data_index
-        current_data_index = (current_data_index + 1) % len(data)
-        new_data = self.process_image()
-        self.update_image_info(new_data)
-        self.update_plot(new_data)
-        self.imv.setImage(new_data.image,autoLevels=False,autoHistogramRange=False,autoRange=False)
+        # global current_data_index
+        # current_data_index = (current_data_index + 1) % len(data)
+        # new_data = self.process_image()
+        # self.update_image_info(new_data)
+        # self.update_plot(new_data)
+        # self.imv.setImage(new_data.image,autoLevels=False,autoHistogramRange=False,autoRange=False)
         # print(self.imv.getHistogramWidget().gradient.colorMap())
+        self.imv.setImage(self.globals['image'])#, autoLevels=False, autoHistogramRange=False, autoRange=False)
         self.updateIsocurve()
 
     def updateIsocurve(self):
@@ -171,7 +178,8 @@ class DisplayWidget(QMainWindow):
         self.iso.setLevel(cur_data.max()/np.e)
 
     def process_image(self):
-        basic_data = impr.Image_Basics(data[current_data_index])
+        # basic_data = impr.Image_Basics(data[current_data_index])
+        basic_data = impr.Image_Basics(self.globals['image'])
         try:
             if self.do_fit1D_x:
                 basic_data.fit1D_x = basic_data.fit_gaussian1D(0)
