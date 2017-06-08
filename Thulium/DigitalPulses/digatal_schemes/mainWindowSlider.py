@@ -5,6 +5,7 @@ import random
 import numpy as np
 sys.path.append(r'D:\Dropbox\Python\Thulium\Camera')
 sys.path.append(r'D:\Dropbox\Python\Thulium\DigitalPulses')
+sys.path.append(r'D:\Dropbox\Python\Thulium\Device controll')
 import matplotlib
 matplotlib.use('Qt5Agg',force=True)
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -38,6 +39,7 @@ from scanner import Scanner
 from PlotPulse import PlotPulse
 from bgnd_runner import Bgnd_Thread
 from display_widget import DisplayWidget
+from device_lib import connectArduino
 import threading
 import time
 vertical_splitting = 0.7
@@ -66,6 +68,8 @@ class MainWindow(QMainWindow):
         self.globals = {}
         self.globals['image'] = None
         self.globals['image_updated'] = False
+        self.arduino = connectArduino()
+
         self.bgnd_image_handler = Bgnd_Thread(globals = self.globals, signals = self.signals,
                                               image_folder=self.image_folder)
         self.bgnd_image_handler.start()

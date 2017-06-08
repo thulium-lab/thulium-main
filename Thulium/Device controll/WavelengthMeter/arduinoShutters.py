@@ -36,7 +36,12 @@ class ArduinoShutters():
         # print(self.device.readline())
         # print('middle')
         # resp = write_read_com(self.device,b'*IDN?')
-        # print(resp)
+    #     # print(resp)
+    # def writeMsg(self,message):
+    #     self.device.write(message)
+    #     print('written')
+    #     print(self.device.readline())
+
 
 
 # if __name__ == '__main__':

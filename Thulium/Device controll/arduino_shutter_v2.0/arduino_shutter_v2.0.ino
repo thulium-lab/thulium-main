@@ -6,7 +6,7 @@
 
 #include "ctype.h"
 
-const double second_coefficient = 1/0.986; // coeffitien reflects arduino time for 1s interval 
+const double second_coefficient = 1;//1194.0/1200; //0.988; // coeffitien reflects arduino time for 1s interval 
 int available_ports[] = {A0, 12, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, A1, A2, A3, A4, A5};
 const int ports_number = 17;
 const int trig_pin = 2; // pin for triggering arduino on start of time sequence
@@ -20,7 +20,9 @@ int int_arr_current_length = 0; // current length of channels and states for bea
 char w[50];
 String ws;
 const byte n_words = 50; // maximum nuber of words in recieved messege
-unsigned long last_time = 0; // last time when edge (beam shutters states) was changed
+unsigned long last_time = 10; // last time when edge (beam shutters states) was changed
+unsigned long last_trigger_time = 0; // last time when triggered
+unsigned long t;
 int words_number = 0; // number of words in last recieved command
 int n_sequences; // number of sequencies t_ch1_s1_ch2_s2..._ where at time t channels' states chi changes ti si 
 String words[n_words]; // array of string to read from serial port to
@@ -48,11 +50,20 @@ void setup() {
 
 // interrupt (trigger) handler; rises flag 'interrupted' to then stat writing to beam shutter channels
 void interrupt_handler(){
-//  Serial.println("interrupted t=");
-  last_time = millis(); // write down time when trigger arrived (sequence is started)
-//  Serial.println(last_time);
-  current_edge = 0;
-  interrupted=true; // rise flag
+  Serial.print("interrupted t=");
+  t = millis();
+  Serial.print(t);
+  if (t - last_trigger_time > 2){ // it is not a noise
+    last_time = t; // write down time when trigger arrived (sequence is started)
+    last_trigger_time = t;
+    current_edge = 0;
+    interrupted=true; // rise flag
+    Serial.println("   good");
+  }
+  else {
+    Serial.println("   bad");
+  }
+  
 }
 void loop() {
   // if interruption occured (trigger came) this flag is rised 
@@ -101,9 +112,9 @@ void write_channels(){
 //  Serial.print("Start writing time ");
 //  Serial.println(micros());
   for (int i=0;i<int_arr_current_length;i+=2){
-//    Serial.print(i);
-//    Serial.print(available_ports[int_arr[i]]);
-//    Serial.println(int_arr[i+1]);
+    Serial.print(int_arr[i]);
+    Serial.print(" state ");
+    Serial.println(int_arr[i+1]);
     digitalWrite(available_ports[int_arr[i]], int_arr[i+1]); // write state to beam shutter output pin
   }
 //  Serial.print("End writing time ");

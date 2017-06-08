@@ -174,12 +174,13 @@ class PulseScheme(QWidget):
         self.channel_box.setLayout(grid)
 
     def shutterChanged(self):
+        # handles click on "Sh' button in the left - do not remember why did I need this
         print('shutterChanged')
         layout = self.channel_box.layout()
         index = layout.indexOf(self.sender())
         row, column, cols, rows = layout.getItemPosition(index)
         # self.onAnyChange()
-        self.updateFromScanner({('1 stage cooling', 'Blue', 'length'): 10.0, ('2 stage cooling', 'Green', 'length'): 22.0, ('1 stage cooling', 'Green', 'length'): 43.0})
+        # self.updateFromScanner({('1 stage cooling', 'Blue', 'length'): 10.0, ('2 stage cooling', 'Green', 'length'): 22.0, ('1 stage cooling', 'Green', 'length'): 43.0})
 
     def channelStateChanged(self, new_state):
         print('channelStateChanged')
@@ -403,8 +404,9 @@ class PulseScheme(QWidget):
                     if point[0] < p1[0]:
                         return i-1
                 return len(list_of_points)-1
+            shutters_data={}
             for shutter in self.active_shutters:
-                print(shutter)
+                print(shutter.__dict__)
                 linked_digital_channels = set()
                 # TODO
                 # update pulse_full_name in shutter.linked_digital_channels elsewhere
@@ -412,6 +414,7 @@ class PulseScheme(QWidget):
                 # hard to do because shutter.linked_digital_channels contains only string name, not index
                 # rework shutter class structure?
                 #
+                # DONE schane full_pulse_name when change either group or pulse name
                 for pulse_full_name in shutter.linked_digital_channels:
                     group_name, pulse_name = pulse_full_name.split('->')
                     print(group_name, pulse_name)
@@ -420,13 +423,46 @@ class PulseScheme(QWidget):
                     print(pulse_name)
                     linked_digital_channels.add(pulse.channel)
                 print(linked_digital_channels)
-                # if len(linked_digital_channels):
-                #     sh_out = self.output[linked_digital_channels[0]]
-                #     for chan in linked_digital_channels[1:]:
-                #         for point in self.output[chan]:
-                #             i = getPosition(point,sh_out)
-                #             if point[1]:
-                #                 pass
+                linked_digital_channels = list(linked_digital_channels)
+                # from here I assume that only one channel is connected to particular shutter.
+                # if not - rewrite code below
+                if len(linked_digital_channels):
+                    ch_out = self.output[linked_digital_channels[0]].copy()
+                    for i in range(len(ch_out)):
+                        if ch_out[i][1] == 1 and ch_out[i][0] >= shutter.start_delay: # rising
+                            ch_out[i] = (ch_out[i][0] -shutter.start_delay,1)
+                        elif ch_out[i][1] == 0 and ch_out[i][0] >= shutter.stop_delay: # rising
+                            ch_out[i] = (ch_out[i][0] -shutter.stop_delay,0)
+
+                    print(ch_out)
+                    shutters_data[shutter.channel]=ch_out
+                    # for chan in linked_digital_channels[1:]:
+                    #     for point in self.output[chan]:
+                    #         i = getPosition(point,sh_out)
+                    #         if point[1]:
+                    #             pass
+            if len(shutters_data):
+                t_points = sorted(set([int(y[0]+0.5) for x in shutters_data.values() for y in x]))
+                print(t_points)
+                msg = 'BeamShutters '
+                for t in t_points:
+                    msg += str(t)+'_'
+                    for sh, val in shutters_data.items():
+                        msg += str(sh) + '_'
+                        for i in range(len(val)):
+                            if val[i][0] > t:
+                                msg += str(val[i-1][1]) + '_'
+                                break
+                            if i==len(val)-1:
+                                msg += str(val[i][1]) + '_'
+                    msg += ' '
+                msg = msg[:-1] + '!'
+                print(msg)
+                self.parent.arduino.write(msg.encode('ascii'))
+                res = self.parent.arduino.readline().decode()
+                print(res)
+
+
 
     def updateGroupTime(self):
         print('updateGroupTime')
@@ -690,8 +726,7 @@ class PulseGroup():
             # print('Finish redraw')
             # print(self)
             # self.show()
-
-        # self.setMaximumHeight(200)
+            # self.setMaximumHeight(200)
             # QScrollArea().setWidget(self)
 
         def getPulseNumber(self):
@@ -774,7 +809,9 @@ class PulseGroup():
             print('pulseNameChanged')
             # there is no need to recalculate pulses if only name has changed
             pulse_number = self.getPulseNumber()
+            old_name = self.data.pulses[pulse_number].name
             self.data.pulses[pulse_number].name = self.getNewText()#self.gui.sender().text()
+            self.data.pulses[pulse_number].updateConnectedShutters(old_name='->'.join([self.data.name, old_name]), new_name='->'.join([self.data.name, self.data.pulses[pulse_number].name]))
             self.scheme.changeInGroup()
 
         def edgeChanged(self,new_edge):
@@ -819,7 +856,12 @@ class PulseGroup():
 
         def groupNameChanged(self):
             print('groupNameChanged')
+            old_name = self.data.name
             self.data.name = self.getNewText()
+            for pulse in self.data.pulses:
+                if 'shutters' in pulse.__dict__:
+                    pulse.updateConnectedShutters(old_name='->'.join([old_name, pulse.name]),
+                                             new_name='->'.join([self.data.name, pulse.name]))
             # print('jjj')
             # update scheme becaus tab name and references has to be changed
             self.scheme.schemeRedraw()
@@ -1168,6 +1210,13 @@ class IndividualPulse():
 
     def getPoints(self,idle):
         return [(self.t_start,1),(self.t_end,0)]
+
+    def updateConnectedShutters(self, old_name, new_name):
+        print('updateConnectedShutters')
+        for shutter in self.shutters:
+            for i,name in enumerate(shutter.linked_digital_channels):
+                if name == old_name:
+                    shutter.linked_digital_channels[i]=new_name
 
 
 class AnalogPulse(IndividualPulse):
