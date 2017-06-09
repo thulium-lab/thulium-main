@@ -37,7 +37,8 @@ EMPTY_CONFIG_FILE = -1
 
 class Scanner(QWidget):
 
-    def __init__(self,globals=None,all_updates_methods=None,signals=None,**argd):
+    def __init__(self,globals=None,all_updates_methods=None,signals=None,parent=None,**argd):
+        self.parent = parent
         self.all_updates_methods = all_updates_methods
         self.globals = globals
         self.signals = signals
@@ -195,6 +196,11 @@ class Scanner(QWidget):
         print('Globals: ',self.globals)
 
     def cycleFinished(self, number=None):
+        for i in range(20):
+            s = self.parent.arduino.readline().decode()
+            if s=='':
+                break
+            print("arduino >>   ",s,end='')
         print(number, 'cycleFinished')
         if not self.on_scan:
             return

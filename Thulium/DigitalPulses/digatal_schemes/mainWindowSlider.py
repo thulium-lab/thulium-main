@@ -6,6 +6,7 @@ import numpy as np
 sys.path.append(r'D:\Dropbox\Python\Thulium\Camera')
 sys.path.append(r'D:\Dropbox\Python\Thulium\DigitalPulses')
 sys.path.append(r'D:\Dropbox\Python\Thulium\Device controll')
+sys.path.append(r'D:\Dropbox\Python\Thulium\Device controll\WavelengthMeter')
 import matplotlib
 matplotlib.use('Qt5Agg',force=True)
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -40,6 +41,8 @@ from PlotPulse import PlotPulse
 from bgnd_runner import Bgnd_Thread
 from display_widget import DisplayWidget
 from device_lib import connectArduino
+from WMeter import WMMain,WMChannel
+import arduinoShutters
 import threading
 import time
 vertical_splitting = 0.7
@@ -73,6 +76,8 @@ class MainWindow(QMainWindow):
         self.bgnd_image_handler = Bgnd_Thread(globals = self.globals, signals = self.signals,
                                               image_folder=self.image_folder)
         self.bgnd_image_handler.start()
+        # self.wm = WMMain(arduino=arduinoShutters.ArduinoShutters(device=self.arduino))
+        # self.wm.load()
         self.widgets = {}
         self.default_widgets_names=['Scanner','PulseScheme']
         self.screenSize = QDesktopWidget().availableGeometry()
@@ -87,6 +92,7 @@ class MainWindow(QMainWindow):
         self.widgets['Pulses']=PulseScheme(parent=self,globals=self.globals,signals=self.signals)
         self.widgets['PulsePlot']=PlotPulse(parent=self,globals=self.globals)
         self.widgets['CamView'] = DisplayWidget(parent=self, globals=self.globals, signals=self.signals)
+        # self.widgets['WavelengthMeter'] = self.wm.WMWidget(data=self.wm)
         self.all_updates_methods['Pulses']=self.widgets['Pulses'].getUpdateMethod()
         hor_splitter = QSplitter(Qt.Horizontal)
         hor_splitter.setSizes([26, 74])
@@ -101,7 +107,7 @@ class MainWindow(QMainWindow):
         hor_splitter.addWidget(self.widgets['Pulses'])
 
         self.setFixedWidth(self.screenSize.width())
-
+        # self.widgets['WavelengthMeter'].show()
         self.widgets['CamView'].show()
 
         print('self_globals',self.globals)

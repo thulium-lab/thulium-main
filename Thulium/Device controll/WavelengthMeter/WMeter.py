@@ -14,6 +14,7 @@ from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraph
                              QLabel, QLineEdit, QPushButton, QWidget, QComboBox, QRadioButton, QSpinBox, QCheckBox,
                              QTabWidget, QFileDialog, QMessageBox, QDoubleSpinBox,QButtonGroup,QErrorMessage)
 
+import os
 import json
 import numpy as np
 import scipy.constants as ct
@@ -22,7 +23,7 @@ import arduinoShutters
 import time
 import pyqtgraph as pg
 
-pg.setConfigOption('background', 'w')
+# pg.setConfigOption('background', 'w')
 
 n_air = 1.0002926
 cicle_counter = 0
@@ -125,7 +126,7 @@ class WMChannel:
 class WMMain():
     channels = []
     N_SHOTS_MAX = 10
-    N_SHOTS_MIN = 2
+    N_SHOTS_MIN = 5
     EXCEPTABLE_WAVELENGTH_ERROR = 0.01 #nm
     current_index = 0
     active_channels_indexes = []
@@ -159,10 +160,11 @@ class WMMain():
                     d[attr] = getattr(channel,attr).getRgb()[:3]
             data_to_save['channels'].append(d)
         print(data_to_save)
-        with open('WM_config.json','w') as f:
+        with open(os.path.join(r'D:\Dropbox\Python\Thulium\Device controll\WavelengthMeter','WM_config.json'),'w') as f:
             json.dump(data_to_save,f)
 
     def load(self,file_name='WM_config.json'):
+        file_name = os.path.join(r'D:\Dropbox\Python\Thulium\Device controll\WavelengthMeter',file_name)
         with open(file_name,'r') as f:
             data = json.load(f)
         self.n_channels = data['n_channels']

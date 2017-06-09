@@ -6,7 +6,7 @@
 
 #include "ctype.h"
 
-const double second_coefficient = 1;//1194.0/1200; //0.988; // coeffitien reflects arduino time for 1s interval 
+const double second_coefficient = 1.014; // coeffitien reflects arduino time for 1s interval 0.988 - for second arduino
 int available_ports[] = {A0, 12, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, A1, A2, A3, A4, A5};
 const int ports_number = 17;
 const int trig_pin = 2; // pin for triggering arduino on start of time sequence
@@ -53,7 +53,7 @@ void interrupt_handler(){
   Serial.print("interrupted t=");
   t = millis();
   Serial.print(t);
-  if (t - last_trigger_time > 2){ // it is not a noise
+  if (t - last_trigger_time > 10){ // it is not a noise
     last_time = t; // write down time when trigger arrived (sequence is started)
     last_trigger_time = t;
     current_edge = 0;
@@ -167,12 +167,12 @@ void data_input_handler() {
         }
     for (int i = 1; i < words_number; i+=2)
     {
-//      Serial.print(words[i].toInt());
-//      Serial.print("   ");
-//      Serial.println(words[i+1].toInt());
+      Serial.print(words[i].toInt());
+      Serial.print("   ");
+      Serial.println(words[i+1].toInt());
       digitalWrite(available_ports[words[i].toInt()], words[i+1].toInt());
     }
-      Serial.println("Ok");
+      Serial.println("WMshutters written");
   }
  if ( (words[0]).equals("BeamShutters") ) { // saves all sequences to edge_sequence array of string
   //  test command BeamShutters 0_1_0_2_0_3_0_4_0_5_0_ 300_1_0_2_0_3_0_4_0_5_0_ 1000_1_1_2_1_3_1_4_1_5_1_

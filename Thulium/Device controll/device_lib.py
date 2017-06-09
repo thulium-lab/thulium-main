@@ -19,7 +19,7 @@ def connectArduino(response=''):
     for port in serial.tools.list_ports.comports():
         if port.description.startswith("USB-SERIAL CH340"):
             try:
-                arduino = Serial(port.device, baudrate=57600, timeout=1)
+                arduino = Serial(port.device, baudrate=57600, timeout=.01)
             except SerialException as e:
                 error = QErrorMessage()
                 error.showMessage("Can't open port %s !" % port.device + e.__str__())

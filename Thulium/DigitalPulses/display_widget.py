@@ -64,9 +64,9 @@ class DisplayWidget(DockArea):
         self.parent = parent
 
         self.all_plot_data = {'N':[],'width':[]}
-        self.do_fit1D_x = True
-        self.do_fit1D_y = True
-        self.do_fit2D = True
+        self.do_fit1D_x = False
+        self.do_fit1D_y = False
+        self.do_fit2D = False
         self.n_sigmas = 3
         self.image_data_to_display = np.array([
             ('N',0, 0,0),
@@ -162,12 +162,16 @@ class DisplayWidget(DockArea):
     def routine(self):
         # global current_data_index
         # current_data_index = (current_data_index + 1) % len(data)
-        # new_data = self.process_image()
-        # self.update_image_info(new_data)
+        new_data = self.process_image()
+        self.update_image_info(new_data)
         # self.update_plot(new_data)
         # self.imv.setImage(new_data.image,autoLevels=False,autoHistogramRange=False,autoRange=False)
         # print(self.imv.getHistogramWidget().gradient.colorMap())
-        self.imv.setImage(self.globals['image'])#, autoLevels=False, autoHistogramRange=False, autoRange=False)
+        self.imv.setImage(self.globals['image'],autoRange=False)#, autoLevels=False, autoHistogramRange=False, autoRange=False)
+
+        self.imv.getHistogramWidget().setHistogramRange(0,100000)
+        self.imv.getHistogramWidget().setLevels(0, 100000)
+
         self.updateIsocurve()
 
     def updateIsocurve(self):
@@ -188,9 +192,9 @@ class DisplayWidget(DockArea):
                 basic_data.fit1D_y = basic_data.fit_gaussian1D(1)
             if self.do_fit2D:
                 basic_data.fit2D = basic_data.fit_gaussian2D()
-            if self.do_fit1D_x and self.do_fit1D_y:
-                basic_data.total_small = np.sum(basic_data.image[basic_data.fit1D_y[1]-self.n_sigmas*basic_data.fit1D_y[2]:basic_data.fit1D_y[1]+self.n_sigmas*basic_data.fit1D_y[2],
-                                             basic_data.fit1D_x[1]-self.n_sigmas*basic_data.fit1D_x[2]:basic_data.fit1D_x[1]+self.n_sigmas*basic_data.fit1D_x[2]])
+            # if self.do_fit1D_x and self.do_fit1D_y:
+            #     basic_data.total_small = np.sum(basic_data.image[int(basic_data.fit1D_y[1]-self.n_sigmas*basic_data.fit1D_y[2]):int(basic_data.fit1D_y[1]+self.n_sigmas*basic_data.fit1D_y[2]),
+            #                                  int(basic_data.fit1D_x[1]-self.n_sigmas*basic_data.fit1D_x[2]):int(basic_data.fit1D_x[1]+self.n_sigmas*basic_data.fit1D_x[2])])
         except RuntimeError:
             print("RuntimeError, couldn't find fit for image")
             basic_data.isgood = False

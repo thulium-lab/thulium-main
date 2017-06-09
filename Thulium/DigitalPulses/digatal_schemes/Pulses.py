@@ -435,7 +435,7 @@ class PulseScheme(QWidget):
                             ch_out[i] = (ch_out[i][0] -shutter.stop_delay,0)
 
                     print(ch_out)
-                    shutters_data[shutter.channel]=ch_out
+                    shutters_data[shutter.channel]=ch_out[:-1]
                     # for chan in linked_digital_channels[1:]:
                     #     for point in self.output[chan]:
                     #         i = getPosition(point,sh_out)

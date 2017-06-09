@@ -11,7 +11,7 @@ class ArduinoShutters():
         elif port != None:
             # rewrite it based on library which I wrote on com port connection
             try:
-                self.device = Serial(port,baudrate=57600,timeout=1)
+                self.device = Serial(port,baudrate=57600,timeout=.05)
             except SerialException:
                 print('Nooo')
                 # actually do smth
@@ -28,7 +28,7 @@ class ArduinoShutters():
         print(message)
         self.device.write(message)
         print('written')
-        print(self.device.readline()) # here one should add check of correct writing
+        # print(self.device.readline()) # here one should add check of correct writing
         # add check of success
         return 1
         # print(self.device)
