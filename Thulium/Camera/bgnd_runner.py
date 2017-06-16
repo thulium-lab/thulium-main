@@ -28,8 +28,14 @@ class Bgnd_Thread(threading.Thread):
                 if f.endswith(self.suffics):
                     while(True):
                         try:
-                            time.sleep(0.15)
-                            self.globals['image'] = imread(os.path.join(self.folder,f))
+                            time.sleep(0.25)
+                            img = imread(os.path.join(self.folder,f)).T
+                            print(img.min())
+                            img = img >> 4
+                            img = img / (1 << 12)
+                            print(img.min())
+                            img = np.array([row - row.min() for row in img])
+                            self.globals['image'] = img
                             # print(self.globals['image'][:5,:2])
                             self.globals['imaged_updated'] = True
                             os.remove(os.path.join(self.folder,f))

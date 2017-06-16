@@ -38,6 +38,7 @@ from pyqtgraph.dockarea import *
 import thulium_python_lib.usefull_functions as usfuncs
 import thulium_python_lib.image_processing_new as impr
 
+from PyQt5.QtGui import QFont
 pg.setConfigOptions(imageAxisOrder='row-major')
 
 ds_dir = r'D:\!Data\2016_04_22\01 T no_ramp a=-6 f=363.9 b=0.8'
@@ -62,12 +63,13 @@ class DisplayWidget(DockArea):
         self.globals = globals
         self.signals = signals
         self.parent = parent
-
+        self.screen_size = QDesktopWidget().screenGeometry()
         self.all_plot_data = {'N':[],'width':[]}
-        self.do_fit1D_x = False
-        self.do_fit1D_y = False
+        self.do_fit1D_x = True
+        self.do_fit1D_y = True
         self.do_fit2D = False
         self.n_sigmas = 3
+        self.N_point_to_plot = 40
         self.image_data_to_display = np.array([
             ('N',0, 0,0),
             ('Center',0 , 0,0),
@@ -88,20 +90,24 @@ class DisplayWidget(DockArea):
     def initUI(self):
         # self.area = DockArea()
         # self.setCentralWidget(self.area)
-        self.resize(1000,500)
+        # self.resize(1000,500)
+        self.resize(self.screen_size.width(),self.screen_size.height())
         self.setWindowTitle('Dockarea')
-        self.d1 = Dock("Image", size=(500, 500))     ## give this dock the minimum possible size
-        self.d2 = Dock("Number of atoms", size=(500,300))
-        self.d3 = Dock("Image data", size=(200,500))
-        self.d4 = Dock("Cloud width", size=(200,300))
+        self.d1 = Dock("Image", size=(self.screen_size.width()/2, self.screen_size.height()))     ## give this dock the minimum possible size
+        self.d3 = Dock("Number of atoms", size=(self.screen_size.width()/2, self.screen_size.height()/3))
+        self.d2 = Dock("Image data", size=(self.screen_size.width()/2, self.screen_size.height()/3))
+        self.d4 = Dock("Cloud width", size=(self.screen_size.width()/2, self.screen_size.height()/3))
         self.area.addDock(self.d1, 'left')      ## place d1 at left edge of dock area (it will fill the whole space since there are no other docks yet)
-        self.area.addDock(self.d2, 'bottom', self.d1)## place d3 at bottom edge of d1
-        self.area.addDock(self.d3, 'right',self.d1)     ## place d4 at right edge of dock area
-        self.area.addDock(self.d4, 'right', self.d2)  ## place d5 at left edge of d1
+        self.area.addDock(self.d3, 'right', self.d1)## place d3 at bottom edge of d1
+        self.area.addDock(self.d2, 'top',self.d3)     ## place d4 at right edge of dock area
+        self.area.addDock(self.d4, 'bottom', self.d3)  ## place d5 at left edge of d1
 
         self.imv = pg.ImageView()
         self.imv.setColorMap(pg.ColorMap(np.array([ 0.  ,  0.25,  0.5 ,  0.75,  1.  ]), np.array([[  255, 255, 255, 255],       [  0,   0, 255, 255],       [  0,   0,   0, 255],       [255,   0,   0, 255],       [255, 255,   0, 255]], dtype=np.uint8)))
         self.imv.setImage(imread(r"D:\!Data\2016_04_22\01 T no_ramp a=-6 f=363.9 b=0.8\0ms\1_1.png"))
+
+        self.imv.getHistogramWidget().setHistogramRange(0,0.6)
+        self.imv.getHistogramWidget().setLevels(0, 0.6)
         self.d1.addWidget(self.imv)
 
         self.w2 = pg.PlotWidget()
@@ -113,6 +119,7 @@ class DisplayWidget(DockArea):
         self.d2.addWidget(self.w2)
 
         self.w3 = pg.TableWidget()
+        self.w3.setFont(QFont('Arial', 20))
         self.w3.setData(self.image_data_to_display)
         # self.w3 = pg.LayoutWidget()
         # self.w3.addWidget(QLabel('Parameter'), row=0, col=0)
@@ -164,13 +171,13 @@ class DisplayWidget(DockArea):
         # current_data_index = (current_data_index + 1) % len(data)
         new_data = self.process_image()
         self.update_image_info(new_data)
-        # self.update_plot(new_data)
+        self.update_plot(new_data)
         # self.imv.setImage(new_data.image,autoLevels=False,autoHistogramRange=False,autoRange=False)
         # print(self.imv.getHistogramWidget().gradient.colorMap())
-        self.imv.setImage(self.globals['image'],autoRange=False)#, autoLevels=False, autoHistogramRange=False, autoRange=False)
+        self.imv.setImage(self.globals['image'],autoRange=False, autoLevels=False,autoHistogramRange=False)#, autoLevels=False, autoHistogramRange=False, autoRange=False)
 
-        self.imv.getHistogramWidget().setHistogramRange(0,100000)
-        self.imv.getHistogramWidget().setLevels(0, 100000)
+        # self.imv.getHistogramWidget().setHistogramRange(0,0.6)
+        # self.imv.getHistogramWidget().setLevels(0, 0.6)
 
         self.updateIsocurve()
 
@@ -201,27 +208,29 @@ class DisplayWidget(DockArea):
         return basic_data
 
     def update_image_info(self,data):
-        if self.do_fit1D_x:
-            self.image_data_to_display['x'] = np.array([*data.fit1D_x[:3],'-'],dtype=object)
+        if 'fit1D_x' in data.__dict__:
+            self.image_data_to_display['x'] = np.array([*[int(x+0.5) for x in data.fit1D_x[:3]],'-'],dtype=object)
         else:
             self.image_data_to_display['x'] = np.array(['-']*4, dtype=object)
-        if self.do_fit1D_y:
-            self.image_data_to_display['y'] = np.array([*data.fit1D_y[:3],'-'],dtype=object)
+        if 'fit1D_y' in data.__dict__:
+            self.image_data_to_display['y'] = np.array([*[int(x+0.5) for x in data.fit1D_y[:3]],'-'],dtype=object)
         else:
             self.image_data_to_display['y'] = np.array(['-'] * 4, dtype=object)
-        if self.do_fit2D:
-            self.image_data_to_display['2D'] = np.array([data.fit2D[0],"%.0f, %.0f"%(data.fit2D[2],data.fit2D[1]),
-                                                         "%.0f, %.0f" %(data.fit2D[4],data.fit2D[3]),data.total_small],dtype=object)
-        else:
-            self.image_data_to_display['2D'] = np.array(['-'] * 4, dtype=object)
+        # if self.do_fit2D:
+        #     self.image_data_to_display['2D'] = np.array([data.fit2D[0],"%.0f, %.0f"%(data.fit2D[2],data.fit2D[1]),
+        #                                                  "%.0f, %.0f" %(data.fit2D[4],data.fit2D[3]),data.total_small],dtype=object)
+        # else:
+        #     self.image_data_to_display['2D'] = np.array(['-'] * 4, dtype=object)
         self.w3.setData(self.image_data_to_display)
 
     def update_plot(self,data):
-        if self.do_fit1D_x and self.do_fit1D_y and self.do_fit2D:
-            self.all_plot_data['N'].append((data.fit1D_x[0],data.fit1D_y[0],data.fit2D[0]))
-            self.all_plot_data['width'].append((data.fit1D_x[2], data.fit2D[4], data.fit1D_y[2], data.fit2D[3]))
-            if len(self.all_plot_data['N']) > 20:
-                points_to_show = 20
+        if 'fit1D_x' in data.__dict__ and 'fit1D_y' in data.__dict__:
+            # self.all_plot_data['N'].append((data.fit1D_x[0], data.fit1D_y[0], data.fit2D[0]))
+            # self.all_plot_data['width'].append((data.fit1D_x[2], data.fit2D[4], data.fit1D_y[2], data.fit2D[3]))
+            self.all_plot_data['N'].append((data.fit1D_x[0],data.fit1D_y[0]))
+            self.all_plot_data['width'].append((data.fit1D_x[2], data.fit1D_y[2]))
+            if len(self.all_plot_data['N']) > self.N_point_to_plot:
+                points_to_show = self.N_point_to_plot
             else :
                 points_to_show = len(self.all_plot_data['N'])
             # dataN = self.all_plot_data['N'][len(self.all_plot_data['N'])-points_to_show:len(self.all_plot_data['N'])]
@@ -229,18 +238,18 @@ class DisplayWidget(DockArea):
             dataN = np.array(self.all_plot_data['N'])
             # xx = np.arange(-points_to_show,0)+len(dataN)
             xx = np.arange(len(dataN))
-            self.w2.setYRange(0,dataN.max())
+            self.w2.setYRange(0,dataN[len(dataN)-points_to_show:len(dataN)].max())
             self.curve11.setData(xx,dataN[:,0])
             self.curve12.setData(xx, dataN[:, 1])
-            self.curve13.setData(xx, dataN[:, 2])
+            # self.curve13.setData(xx, dataN[:, 2])
             self.w2.setXRange(len(dataN)-points_to_show, len(dataN))
             # dataW = np.array(self.all_plot_data['width'][-points_to_show:])
             dataW = np.array(self.all_plot_data['width'])
-            self.w4.setYRange(0, dataW.max())
+            self.w4.setYRange(0, dataW[len(dataN)-points_to_show:len(dataN)].max())
             self.curve21.setData(xx, dataW[:, 0])
             self.curve22.setData(xx, dataW[:, 1])
-            self.curve23.setData(xx, dataW[:, 2])
-            self.curve24.setData(xx, dataW[:, 3])
+            # self.curve23.setData(xx, dataW[:, 2])
+            # self.curve24.setData(xx, dataW[:, 3])
             self.w4.setXRange(len(dataN) - points_to_show, len(dataN))
 
             # self.curve1.setData(range(len(self.all_plot_data['N'])-points_to_show,len(self.all_plot_data['N'])),
