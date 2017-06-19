@@ -26,7 +26,7 @@ import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 from itertools import chain
 from scanParameters import  SingleScanParameter,AllScanParameters,MeasurementFolderClass
-
+import time
 scanner_config_file = 'config_scanner.json'
 data_directory = '..'
 scan_params_str = 'scan_params'
@@ -41,6 +41,7 @@ class Scanner(QWidget):
         self.parent = parent
         self.all_updates_methods = all_updates_methods
         self.globals = globals
+        self.globals['image_stack']=[]
         self.signals = signals
         self.scan_parameters = AllScanParameters(globals=globals,parent=self)
         self.meas_folder1 = MeasurementFolderClass(globals=globals,parent=self)
@@ -175,17 +176,23 @@ class Scanner(QWidget):
                 return -1
             self.current_shot_number = 0
             changed_index = self.scan_parameters.updateIndexes(start=True)
-            # os.mkdir()    # create new measurement folder
+            print(os.path.join(self.meas_folder1.day_folder,self.meas_folder1.name))
+            self.globals['current_measurement_folder'] = self.meas_folder1.day_folder.strip() + '/' + self.meas_folder1.name.strip()
+            os.mkdir(self.globals['current_measurement_folder'])    # create new measurement folder
+            # self.globals['DAQ'].stop()
+            # time.sleep(1)
             self.updateParamAndSend(changed_index)
             self.updateSingleMeasFolder()
             self.startScan()
+            # self.globals['image_stack'].append(self.globals['current_data_folder'] + '/' + '0_0.png')
             print('Scan started')
 
     def updateSingleMeasFolder(self):
         print('updateSingleMeasFolder')
         self.single_meas_folder = self.scan_parameters.getSingleFolderName()+single_folder_suffix
-        # os.mkdir()        # create new folder
-        print(self.single_meas_folder)
+        self.globals['current_data_folder']= self.globals['current_measurement_folder'].strip() + '/' + self.single_meas_folder.strip()
+        os.mkdir(self.globals['current_data_folder'])        # create new folder
+        print(self.globals['current_data_folder'])
         self.updateGlobals()
 
     def updateGlobals(self):
@@ -196,17 +203,19 @@ class Scanner(QWidget):
         print('Globals: ',self.globals)
 
     def cycleFinished(self, number=None):
-        for i in range(20):
-            s = self.parent.arduino.readline().decode()
-            if s=='':
-                break
-            print("arduino >>   ",s,end='')
+        # for i in range(20):
+        #     s = self.parent.arduino.readline().decode()
+        #     if s=='':
+        #         break
+        #     print("arduino >>   ",s,end='')
         print(number, 'cycleFinished')
         if not self.on_scan:
             return
         # called when one cycle is finished
+        self.globals['image_stack'].append(
+            self.globals['current_data_folder'] + '/' + '%i_0.png' % self.current_shot_number)
         if self.current_shot_number < self.number_of_shots - 1:
-            self.current_shot_number += 1
+            self.current_shot_number += 1z
             return 0
 
         self.current_shot_number = 0
@@ -220,7 +229,10 @@ class Scanner(QWidget):
 
         # print(self.scan_parameters.current_indexs)
         self.updateParamAndSend(changed_index)
-        self.updateSingleMeasFolder()
+        if self.on_scan:
+            self.updateSingleMeasFolder()
+            self.globals['image_stack'].append(self.globals['current_data_folder'] + '/' + '0_0.png')
+
 
     def updateParamAndSend(self,changed_index):
         print('updateParamAndSend')
@@ -246,6 +258,7 @@ class Scanner(QWidget):
 
     def stopScan(self,stop_btn_text='Stop',is_scan_interrupted=False,**argd):
         print('stopScan')
+        print(self.globals['image_stack'])
         self.timer.stop()
         self.on_scan = False
         self.stop_btn.setText(stop_btn_text)

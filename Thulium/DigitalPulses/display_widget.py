@@ -33,6 +33,7 @@ import pyqtgraph as pg
 # from pyqtgraph.Qt import QtCore, QtGui
 import pyqtgraph.console
 import numpy as np
+from matplotlib.image import imsave
 
 from pyqtgraph.dockarea import *
 import thulium_python_lib.usefull_functions as usfuncs
@@ -170,6 +171,9 @@ class DisplayWidget(DockArea):
         # global current_data_index
         # current_data_index = (current_data_index + 1) % len(data)
         new_data = self.process_image()
+        if len(self.globals['image_stack']):
+            im_name = self.globals['image_stack'].pop(0)
+            imsave(im_name,self.globals['image'])
         self.update_image_info(new_data)
         self.update_plot(new_data)
         # self.imv.setImage(new_data.image,autoLevels=False,autoHistogramRange=False,autoRange=False)

@@ -71,7 +71,7 @@ class MainWindow(QMainWindow):
         self.globals = {}
         self.globals['image'] = None
         self.globals['image_updated'] = False
-        self.arduino = connectArduino()
+        # self.arduino = connectArduino()
 
         self.bgnd_image_handler = Bgnd_Thread(globals = self.globals, signals = self.signals,
                                               image_folder=self.image_folder)

@@ -63,6 +63,7 @@ class PulseScheme(QWidget):
         self.current_groups = []
         self.output = {}
         self.dq = DAQHandler(self.signals.scanCycleFinished.emit)
+        self.globals['DAQ'] = self.dq
         self.load()
         if 'Signals' not in globals:
             globals['Signals'] ={}
@@ -458,9 +459,9 @@ class PulseScheme(QWidget):
                     msg += ' '
                 msg = msg[:-1] + '!'
                 print(msg)
-                self.parent.arduino.write(msg.encode('ascii'))
-                res = self.parent.arduino.readline().decode()
-                print(res)
+                # self.parent.arduino.write(msg.encode('ascii'))
+                # res = self.parent.arduino.readline().decode()
+                # print(res)
 
 
 

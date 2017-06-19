@@ -30,10 +30,10 @@ class Bgnd_Thread(threading.Thread):
                         try:
                             time.sleep(0.25)
                             img = imread(os.path.join(self.folder,f)).T
-                            print(img.min())
+                            # print(img.min())
                             img = img >> 4
                             img = img / (1 << 12)
-                            print(img.min())
+                            # print(img.min())
                             img = np.array([row - row.min() for row in img])
                             self.globals['image'] = img
                             # print(self.globals['image'][:5,:2])
@@ -43,8 +43,8 @@ class Bgnd_Thread(threading.Thread):
                             break
                         except OSError:
                             time.sleep(0.05)
-                            print('w0.05',end=' ')
-                    print(f)
+                            # print('w0.05',end=' ')
+                    # print(f)
             time.sleep(0.001)
 
 if __name__ == '__main__':
