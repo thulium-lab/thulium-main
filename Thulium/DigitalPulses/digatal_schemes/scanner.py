@@ -215,7 +215,7 @@ class Scanner(QWidget):
         self.globals['image_stack'].append(
             self.globals['current_data_folder'] + '/' + '%i_0.png' % self.current_shot_number)
         if self.current_shot_number < self.number_of_shots - 1:
-            self.current_shot_number += 1z
+            self.current_shot_number += 1
             return 0
 
         self.current_shot_number = 0

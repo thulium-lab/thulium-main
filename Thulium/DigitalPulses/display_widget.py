@@ -33,8 +33,8 @@ import pyqtgraph as pg
 # from pyqtgraph.Qt import QtCore, QtGui
 import pyqtgraph.console
 import numpy as np
-from matplotlib.image import imsave
-
+# from matplotlib.image import imsave
+from scipy.misc import imsave
 from pyqtgraph.dockarea import *
 import thulium_python_lib.usefull_functions as usfuncs
 import thulium_python_lib.image_processing_new as impr
