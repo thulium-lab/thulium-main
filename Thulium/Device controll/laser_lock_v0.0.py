@@ -25,6 +25,9 @@ from serial.serialutil import SerialException
 from numpy import sign
 
 import pyqtgraph as pg
+
+import pymongo, datetime
+from pymongo import MongoClient
 #
 # class plotWidget(FigureCanvasi):
 #     def __init__(self, parent=None, width=4, height=3, dpi=100):
@@ -57,8 +60,8 @@ class BlueLock():
     piezo_voltage = None
     blue_lock_config_file = 'blue_lock_config.json'
     config = {}
-
     def __init__(self):
+        self.db = MongoClient('mongodb://192.168.1.15:27017/').measData.sacher_log
         self.load()
         self.updateCOMPortsInfo()
         self.srs = SRS()
@@ -172,6 +175,10 @@ class BlueLock():
             self.threshold_srs_error.valueChanged[float].connect(self.thresholdErrorChanged)
             lock_menu.addWidget(self.threshold_srs_error)
 
+            lock_menu.addWidget(QLabel('INSR'))
+            self.insr_lbl = QLabel('___')
+            lock_menu.addWidget(self.insr_lbl)
+
             self.lock_piezo_btn = QPushButton('Lock piezo')
             self.lock_piezo_btn.pressed.connect(self.lockPiezoBtnPressed)
             lock_menu.addWidget(self.lock_piezo_btn)
@@ -193,6 +200,10 @@ class BlueLock():
             self.piezo_voltage.setValue(1.353)
             lock_menu.addWidget(self.piezo_voltage)
 
+            lock_menu.addWidget(QLabel('Voltage change'))
+            self.voltage_change_lbl = QLabel()
+            lock_menu.addWidget(self.voltage_change_lbl)
+
             lock_menu.addStretch(1)
 
             lock_layout.addLayout(lock_menu)
@@ -202,6 +213,13 @@ class BlueLock():
             self.setLayout(main_layout)
             self.updateBtnPressed()
 
+        def getDataToDB(self):
+            return {'date':datetime.datetime.now(),
+                              'threshold_srs_error' : self.data.threshold_srs_error,
+                              'correction_limit': self.data.correction_limit,
+                               'srs_output':list(self.data.srs_output),
+                               'piezo_voltage':list(self.data.piezo_voltage)
+                              }
         def lockPiezoBtnPressed(self):
             print('lockPiezoBtnPressed')
             if not self.data.srs.connected or not self.data.sacher.connected:
@@ -217,6 +235,7 @@ class BlueLock():
             self.lock_srs_btn.setStyleSheet("QWidget { background-color: %s }" % 'green')
 
             if not self.data.piezo_lock:
+                self.data.srs.clearINSR()
                 self.lock_piezo_btn.setStyleSheet("QWidget { background-color: %s }" % 'green')
                 status = self.readData(new=True)
                 if not status:
@@ -230,6 +249,8 @@ class BlueLock():
                 # self.output_plots.piezo_plot.setYRange(self.data.piezo_voltage[0]-)
                 self.output_plots.sacher_piezo_curve.setData(self.data.piezo_voltage)
                 self.piezo_voltage.setValue(self.data.piezo_voltage[-1])
+                self.data.current_db_id = self.data.db.insert_one(self.getDataToDB()).inserted_id
+                print('Current entry mongodb id ',self.data.current_db_id)
                 self.data.piezo_lock = True
                 self.timer.start()
                 return
@@ -264,6 +285,14 @@ class BlueLock():
                 self.data.piezo_lock = False
                 return
 
+            self.data.db.update_one({'_id':self.data.current_db_id},{'$set':self.getDataToDB()})
+            status, insr = self.data.srs.readINSR()
+            if not status:
+                self.lock_piezo_btn.setStyleSheet("QWidget { background-color: %s }" % 'red')
+                self.timer.stop()
+                self.data.piezo_lock = False
+                return
+            self.insr_lbl.setText("%i%i%i"%((insr >> 2) % 2,(insr >> 1) % 2,(insr >> 0) % 2))
             self.output_plots.srs_output_curve.setData(self.data.srs_output)
             self.output_plots.sacher_piezo_curve.setData(self.data.piezo_voltage)
             if abs(self.data.srs_output[-1]) > self.data.threshold_srs_error:
@@ -289,6 +318,7 @@ class BlueLock():
                     self.data.piezo_lock = False
                     return
                 self.piezo_voltage.setValue(self.data.piezo_voltage[-1] + sign(self.data.srs_output[-1]) * 1e-3)
+                self.voltage_change_lbl.setText("%.3f"%(self.data.piezo_voltage[-1] + sign(self.data.srs_output[-1]) * 1e-3 - self.data.piezo_voltage[0]))
                 # sacher_offset = get_sacher_offset(sacher)
                 # print("CORRECTION; total %.3f mV" % (abs(sacher_offset - sacher_offset0)))
             # print('SRS output = %.3f mV ; Sacher offset = %.3f V ; overload = %i' % (
@@ -487,6 +517,24 @@ class SRS(COMPortDevice):
 
     def turnLockOff(self):
         return self.write_read_com(b'AMAN 0\r')
+
+    def readINSR(self):
+        # ovld = int(write_read_com(srs, b'INSR? 0\r'))
+        status, readout = self.write_read_com(b'INSR?\r')
+        if not status:
+            return False, 0
+        # return float(readout)
+        # is_lock_on = int(self.write_read_com(b'AMAN?\r'))
+        try:
+            output = int(readout)
+        except ValueError as e:
+            print("Can't convert %s in readINSR to int" %readout)
+            return False,0
+        return True,output
+
+    def clearINSR(self):
+        for i in range(3):
+            print(self.write_read_com(b'INSR? %i\r' % (i)))
 
 if __name__ == '__main__':
     # config = {}

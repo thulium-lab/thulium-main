@@ -1,1 +1,1 @@
-{"correction_limit": 0.02, "threshold_srs_error": 0.003}
+{"threshold_srs_error": 0.003, "correction_limit": 0.1}
