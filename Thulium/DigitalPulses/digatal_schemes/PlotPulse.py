@@ -54,14 +54,14 @@ class PlotPulse(pg.GraphicsWindow):
 
     def plotPulses2(self, output_data, t_first, digital_channels=None, analog_channels=None):
         print('PlotPulses2')
-        # print(output_data)
+        print(output_data)
         self.clear()
         digital_hight=1.2
         digital_counter = 0
         analog_counter = 0
         d_plot = self.addPlot()
-        self.nextRow()
-        a_plot = self.addPlot()
+        # self.nextRow()
+        # a_plot = self.addPlot()
         dig_list=[]
         dig_out = []
         analog_out = []
@@ -72,6 +72,7 @@ class PlotPulse(pg.GraphicsWindow):
                 value = output_data[name]
                 xx = []
                 yy = []
+                print(value)
                 for i, point in enumerate(value):
                     if i == 0:
                         xx.append(t_first-100)
@@ -82,19 +83,20 @@ class PlotPulse(pg.GraphicsWindow):
                         yy.append(not point[1])
                     xx.append(point[0])
                     yy.append(point[1])
+                print(xx,np.array(yy)+digital_counter*digital_hight)
                 local_plot.plot(xx,np.array(yy)+digital_counter*digital_hight)
                 local_plot.plot(xx, np.ones_like(xx)*digital_counter*digital_hight,pen=pg.mkPen('w', width=0.5, style=Qt.DashLine)    )
                 digital_counter += 1
 
-            elif name in analog_channels:
-                local_plot = a_plot
-                # TODO plot analogs
-                # xx, yy = list(zip(*output_data[name][1:]))
-                # local_plot.plot(xx,yy)
-                analog_counter += 1
-            else:
-                print('Wrong channel')
-                return -1
+            # elif name in analog_channels:
+            #     local_plot = a_plot
+            #     # TODO plot analogs
+            #     # xx, yy = list(zip(*output_data[name][1:]))
+            #     # local_plot.plot(xx,yy)
+            #     analog_counter += 1
+            # else:
+            #     print('Wrong channel')
+            #     return -1
                 # QMessageBox.warning(self, 'Message', "Not equal length of params", QMessageBox.Yes)
         print([np.arange(1,len(dig_list)+1)*digital_hight,dig_list])
         d_plot.getAxis('left').setTicks([list(zip((np.arange(len(dig_list))+1/2)*digital_hight,dig_list))])

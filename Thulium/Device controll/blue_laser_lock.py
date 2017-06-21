@@ -14,7 +14,7 @@ def connect_port_by_name(port, names, baudrate=9600, timeout=1, idn_message=b'*I
         p.write(idn_message)
         s = p.readline()
         s = s.decode().split(',')
-        # print(s)
+        print(s)
         if len(s) < len(names):
             p.close()
             return None
@@ -38,6 +38,7 @@ def connect_port_by_name(port, names, baudrate=9600, timeout=1, idn_message=b'*I
 def connect_port(names=['Stanford_Research_Systems', 'SIM960'], default_port='COM21', baudrate=9600):
     ports = [port.device for port in list(list_ports.comports())]
     if default_port in ports:
+        print('Connecting',names,default_port)
         srs = connect_port_by_name(default_port, names, baudrate)
         if srs != None:
             return srs
@@ -93,12 +94,12 @@ def start_correction(srs, sacher, threshold_error=0.003, correction_limit=0.05):
 if __name__ == '__main__':
     ports = [port.device for port in list(list_ports.comports())]
     print(ports)
-    srs = connect_port(names=['Stanford_Research_Systems', 'SIM960'], default_port='COM21', baudrate=9600)
+    srs = connect_port(names=['Stanford_Research_Systems', 'SIM960'], default_port='COM8', baudrate=9600)
     if srs == None:
         #     srs.write(b'*IDN?\r')
         print('Exit...')
         exit(1)
-    sacher = connect_port(names=['Sacher Lasertechnik', ' PilotPC 500', ' SN14098015'], default_port='COM19',
+    sacher = connect_port(names=['Sacher Lasertechnik', ' PilotPC 500', ' SN14098015'], default_port='COM6',
                           baudrate=57600)
     if sacher == None:
         #     sacher.write(b'*IDN?\r')

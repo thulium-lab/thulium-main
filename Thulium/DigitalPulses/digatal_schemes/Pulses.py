@@ -16,6 +16,7 @@ from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraph
                              QGridLayout, QVBoxLayout, QHBoxLayout, QSizePolicy,QMainWindow, QDialog,
                              QLabel, QLineEdit, QPushButton, QWidget, QComboBox,QRadioButton, QSpinBox, QCheckBox, QTabWidget, QFileDialog,QMessageBox, QDoubleSpinBox)
 # import pyqtgraph as pg
+from copy import deepcopy
 import json
 import time
 from sympy.utilities.lambdify import lambdify
@@ -463,8 +464,6 @@ class PulseScheme(QWidget):
                 # res = self.parent.arduino.readline().decode()
                 # print(res)
 
-
-
     def updateGroupTime(self):
         print('updateGroupTime')
         handled = []
@@ -499,12 +498,16 @@ class PulseScheme(QWidget):
         else:
             self.updateAndSendScanParameters()
         self.calculateOutput()
+        print(self.output)
+        self.globals['Pulses'][pulse_output_str] = deepcopy(self.output)
         # write new output to DAQ
         self.dq.write(self.output)
         self.dq.run()
-
-        self.globals['Pulses'][pulse_output_str] = self.output
+        # self.globals['Pulses'][pulse_output_str] = self.output
         self.globals['Pulses']['t_first']=self.t_first
+
+        print(self.globals['Pulses'][pulse_output_str])
+        print(self.globals['Pulses']['t_first'])
         self.pulse_signals.onAnyChangeSignal.emit()
         # print('Globals\n',self.globals)
 
