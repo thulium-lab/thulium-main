@@ -60,6 +60,9 @@ class BlueLock():
     piezo_voltage = None
     blue_lock_config_file = 'blue_lock_config.json'
     config = {}
+    srs_insr_error_counter=0
+    srs_insr_error_counter_threshold = 10
+
     def __init__(self):
         self.db = MongoClient('mongodb://192.168.1.15:27017/').measData.sacher_log
         self.load()
@@ -95,6 +98,31 @@ class BlueLock():
         self.com_ports_info = '\n\n'.join(
             ['\n'.join([key + ':' + str(val) for key, val in p.__dict__.items()]) for p in list(list_ports.comports())])
 
+    def readData(self, new=False):
+        status, v1 = self.srs.readOutput()  # read output voltage of srs
+        if not status:  # if there is a problem with reading return status false
+            return False
+        status, q1 = self.sacher.readPiezoVoltage()  # read piezo voltage of sacher
+        if not status:  # if there is a problem with reading return status false
+            return False
+        if new:  # if lock is just turned on
+            # create new data arrays
+            self.srs_output = np.array([v1])
+            self.piezo_voltage = np.array([q1])
+        else:  # if not - update arrays
+            self.srs_output = np.append(self.srs_output, v1)
+            self.piezo_voltage = np.append(self.piezo_voltage, q1)
+        return True  # return that readings are successfull
+
+    def getDataToDB(self):
+        return {'date': datetime.datetime.now(),
+                'threshold_srs_error': self.threshold_srs_error,
+                'correction_limit': self.correction_limit,
+                'srs_output': list(self.srs_output),
+                'piezo_voltage': list(self.piezo_voltage)
+                }
+
+
     class Widget(QWidget):
         def __init__(self,parent=None,data=None):
             super().__init__()
@@ -110,7 +138,6 @@ class BlueLock():
 
             initialization_layout = QHBoxLayout()
             self.ports_info = QTextEdit()
-            # self.ports_info.setText(str(self.data.available_com_ports) +'\n\n'+ self.data.com_ports_info)
             initialization_layout.addWidget(self.ports_info)
 
             info_layout = QVBoxLayout()
@@ -121,18 +148,11 @@ class BlueLock():
             info_layout.addWidget(QLabel('SRS'))
             self.srs_port_menu = QComboBox()
             self.srs_port_menu.currentTextChanged[str].connect(self.srsPortChanged)
-            # self.srs_port_menu.addItems(['-']+self.data.available_com_ports)
-            # self.data.srs.preCheck()
-            # self.srs_port_menu.setCurrentText(self.data.srs.port)
             info_layout.addWidget(self.srs_port_menu)
 
             info_layout.addWidget(QLabel('Sacher'))
             self.sacher_port_menu = QComboBox()
             self.sacher_port_menu.currentTextChanged[str].connect(self.sacherPortChanged)
-
-            # self.sacher_port_menu.addItems(['-']+self.data.available_com_ports)
-            # self.data.sacher.preCheck()
-            # self.sacher_port_menu.setCurrentText(self.data.sacher.port)
             info_layout.addWidget(self.sacher_port_menu)
 
             info_layout.addStretch(1)
@@ -158,12 +178,17 @@ class BlueLock():
 
             main_layout.addLayout(initialization_layout)
 
+            # add layout with readings of ULE transmission photodiode
+
+            # layout with plots and lock controlls
             lock_layout = QHBoxLayout()
+
             self.output_plots = OutputPlotWindow()
             lock_layout.addWidget(self.output_plots)
 
             lock_menu = QVBoxLayout()
             self.lock_srs_btn = QPushButton('Lock SRS')
+            self.lock_srs_btn.pressed.connect(self.lockSrsBtnPressed)
             lock_menu.addWidget(self.lock_srs_btn)
 
             lock_menu.addWidget(QLabel('Threshold SRS error'))
@@ -213,32 +238,31 @@ class BlueLock():
             self.setLayout(main_layout)
             self.updateBtnPressed()
 
-        def getDataToDB(self):
-            return {'date':datetime.datetime.now(),
-                              'threshold_srs_error' : self.data.threshold_srs_error,
-                              'correction_limit': self.data.correction_limit,
-                               'srs_output':list(self.data.srs_output),
-                               'piezo_voltage':list(self.data.piezo_voltage)
-                              }
+        def lockSrsBtnPressed(self):
+            print('lockSrsBtnPressed')
+
         def lockPiezoBtnPressed(self):
             print('lockPiezoBtnPressed')
             if not self.data.srs.connected or not self.data.sacher.connected:
+                #if ither of com ports is disconnectid
                 print('No connection')
                 return
-            status,self.data.srs_lock = self.data.srs.isLockOn()
-            if not status:
+            status,self.data.srs_lock = self.data.srs.isLockOn() # check if srs is locked
+            if not status: #if error in readings simply do nothing
                 return
-            if not self.data.srs_lock:
+            if not self.data.srs_lock: # if srs isn't locked
                 print("SRS is not locked")
                 self.lock_srs_btn.setStyleSheet("QWidget { background-color: %s }" % 'red')
                 return
-            self.lock_srs_btn.setStyleSheet("QWidget { background-color: %s }" % 'green')
 
-            if not self.data.piezo_lock:
-                self.data.srs.clearINSR()
+            # if srs is locked
+            self.lock_srs_btn.setStyleSheet("QWidget { background-color: %s }" % 'green')
+            if not self.data.piezo_lock: # if piezo is not locked yet
+                self.data.srs.clearINSR() # clean register INSR from srs - about it's overload or reaching limit
                 self.lock_piezo_btn.setStyleSheet("QWidget { background-color: %s }" % 'green')
-                status = self.readData(new=True)
-                if not status:
+                status = self.data.readData(new=True) # try read data from srs and sacher
+                if not status: # if there error while reading (most likely due to breaking com-port connections)
+                    # don't lock and indicate it via red piezo_lock btn
                     self.lock_piezo_btn.setStyleSheet("QWidget { background-color: %s }" % 'red')
                     self.timer.stop()
                     return
@@ -246,56 +270,65 @@ class BlueLock():
                 self.output_plots.srs_output_curve.setData(self.data.srs_output)
                 self.output_plots.srs_lower_threshold.setValue(-self.data.threshold_srs_error)
                 self.output_plots.srs_upper_threshold.setValue(self.data.threshold_srs_error)
-                # self.output_plots.piezo_plot.setYRange(self.data.piezo_voltage[0]-)
+
                 self.output_plots.sacher_piezo_curve.setData(self.data.piezo_voltage)
                 self.piezo_voltage.setValue(self.data.piezo_voltage[-1])
-                self.data.current_db_id = self.data.db.insert_one(self.getDataToDB()).inserted_id
+                #create new entry in database
+                self.data.current_db_id = self.data.db.insert_one(self.data.getDataToDB()).inserted_id
                 print('Current entry mongodb id ',self.data.current_db_id)
+                #start locking
                 self.data.piezo_lock = True
+                self.data.srs_insr_error_counter = 0 # dump this counter
                 self.timer.start()
                 return
-            elif self.data.piezo_lock:
-                self.data.piezo_lock = False
-                self.lock_piezo_btn.setStyleSheet("QWidget { background-color: %s }" % 'grey')
-                self.timer.stop()
+            elif self.data.piezo_lock: # if already locked
+                # unlock sacher (simply stop corrections)
+                self.stopLock(piezo_lock_btn_color='grey', msg_to_db='Stoped by user')
+                # self.data.piezo_lock = False
+                # self.lock_piezo_btn.setStyleSheet("QWidget { background-color: %s }" % 'grey')
+                # self.timer.stop()
 
-        def readData(self,new=False):
-            status,v1 = self.data.srs.readOutput()
-            if not status:
-                # self.problemHandler()
-                return False
-            status,q1 = self.data.sacher.readPiezoVoltage()
-            if not status:
-                # self.problemHandler()
-                return False
-            if new:
-                self.data.srs_output = np.array([v1])
-                self.data.piezo_voltage = np.array([q1])
-            else:
-                self.data.srs_output = np.append(self.data.srs_output,v1)
-                self.data.piezo_voltage = np.append(self.data.piezo_voltage,q1)
-            return True
-
-        def routine(self):
+        def routine(self): # programm that run on timer
             # print('routine')
-            status=self.readData()
-            if not status:
-                self.lock_piezo_btn.setStyleSheet("QWidget { background-color: %s }" % 'red')
-                self.timer.stop()
-                self.data.piezo_lock = False
+            status=self.data.readData() # try to read srs and sacher data
+            if not status: # if readings unsuccessfull
+                # stop lock (stop timer) and color piezo_lock button
+                self.stopLock(msg_to_db='Error in reading data from srs or sacher')
                 return
-
-            self.data.db.update_one({'_id':self.data.current_db_id},{'$set':self.getDataToDB()})
-            status, insr = self.data.srs.readINSR()
-            if not status:
-                self.lock_piezo_btn.setStyleSheet("QWidget { background-color: %s }" % 'red')
-                self.timer.stop()
-                self.data.piezo_lock = False
+            # if readings are good
+            self.data.db.update_one({'_id':self.data.current_db_id},{'$set':self.data.getDataToDB()}) #updata database
+            status, insr = self.data.srs.readINSR() # check status redister of SRS
+            if not status: # if readings unsuccessfull
+                # stop lock (stop timer) and color piezo_lock button
+                self.stopLock(msg_to_db='Error in reading data from srs or sacher')
                 return
-            self.insr_lbl.setText("%i%i%i"%((insr >> 2) % 2,(insr >> 1) % 2,(insr >> 0) % 2))
+            # show INSR register in GUI first bit is lowerst
+            self.insr_lbl.setText("%i%i%i"%((insr >> 0) % 2,(insr >> 1) % 2,(insr >> 2) % 2))
+            if insr % 8 != 0: # if overload (0-bit) upperlimit(1-bit) or lowerlimit(2-bit) has happened
+                print('Smth wrong with status register of SRS:%i%i%i'%((insr >> 0) % 2,(insr >> 1) % 2,(insr >> 2) % 2))
+                bd_data = self.data.db.find_one({'_id':self.data.current_db_id})
+                if 'insr' not in bd_data:
+                    bd_data['insr']=[]
+                bd_data['insr'].append((len(self.data.srs_output),insr))
+                self.data.db.update_one({'_id': self.data.current_db_id}, {'$set': {'insr':bd_data['insr']}})
+                self.data.srs.clearINSR()
+                self.data.srs_insr_error_counter += 1
+                print('srs_insr_error_counter ', self.data.srs_insr_error_counter)
+                if self.data.srs_insr_error_counter > self.data.srs_insr_error_counter_threshold:
+                    print('SRS INSR error reached threshold')
+                    print('System is switched to Manual mode')
+                    self.data.srs.turnLockOff() # turn off srs lock
+                    self.data.srs_lock = False
+                    self.lock_srs_btn.setStyleSheet("QWidget { background-color: %s }" % 'red')
+                    self.stopLock(msg_to_db='SRS status register exception')# :%i%i%i'%((insr >> 0) % 2,(insr >> 1) % 2,(insr >> 2) % 2))
+                    return
+            else:
+                self.data.srs_insr_error_counter = 0 # dump counter if INSR is ok
             self.output_plots.srs_output_curve.setData(self.data.srs_output)
             self.output_plots.sacher_piezo_curve.setData(self.data.piezo_voltage)
-            if abs(self.data.srs_output[-1]) > self.data.threshold_srs_error:
+
+            if abs(self.data.srs_output[-1]) > self.data.threshold_srs_error: # if srs_output reached threshold
+                # set color of the piezo_lock btn depending on how large is cuurrent correction
                 if abs(self.data.piezo_voltage[-1] - self.data.piezo_voltage[0]) < self.data.correction_limit/2:
                     self.lock_piezo_btn.setStyleSheet("QWidget { background-color: %s }" % 'green')
                 elif 0.9*self.data.correction_limit > abs(self.data.piezo_voltage[-1] - self.data.piezo_voltage[0]) >= self.data.correction_limit/2:
@@ -303,34 +336,31 @@ class BlueLock():
                 elif 1 * self.data.correction_limit > abs(
                     self.data.piezo_voltage[-1] - self.data.piezo_voltage[0]) >= 0.9*self.data.correction_limit :
                     self.lock_piezo_btn.setStyleSheet("QWidget { background-color: %s }" % 'orange')
+                # if correction limit  is reached
                 elif abs(self.data.piezo_voltage[-1] - self.data.piezo_voltage[0]) >= self.data.correction_limit:
-                    print('Correction limit of piezo is reached. System will switched to Manual mode')
-                    self.data.srs.turnLockOff()
-                    self.data.piezo_lock = False
-                    self.lock_piezo_btn.setStyleSheet("QWidget { background-color: %s }" % 'red')
-                    self.timer.stop()
-                    self.data.piezo_lock = False
+                    print('Correction limit of piezo is reached. System is switched to Manual mode')
+                    self.data.srs.turnLockOff() # turn off srs lock
+                    self.data.srs_lock = False
+                    self.lock_srs_btn.setStyleSheet("QWidget { background-color: %s }" % 'red')
+                    self.stopLock(msg_to_db='Correction limit %i was reached' % (self.data.piezo_voltage[-1] - self.data.piezo_voltage[0]))
                     return
+                # if correction limit  WASN'T reached
+                # correct sacher piezo voltage by 1mV
                 status = self.data.sacher.writePiezoVoltage(self.data.piezo_voltage[-1] + sign(self.data.srs_output[-1]) * 1e-3)
                 if not status:
-                    self.lock_piezo_btn.setStyleSheet("QWidget { background-color: %s }" % 'red')
-                    self.timer.stop()
-                    self.data.piezo_lock = False
+                    self.stopLock(msg_to_db='Error in reading data from srs or sacher')
                     return
+                # update labels
                 self.piezo_voltage.setValue(self.data.piezo_voltage[-1] + sign(self.data.srs_output[-1]) * 1e-3)
                 self.voltage_change_lbl.setText("%.3f"%(self.data.piezo_voltage[-1] + sign(self.data.srs_output[-1]) * 1e-3 - self.data.piezo_voltage[0]))
-                # sacher_offset = get_sacher_offset(sacher)
-                # print("CORRECTION; total %.3f mV" % (abs(sacher_offset - sacher_offset0)))
-            # print('SRS output = %.3f mV ; Sacher offset = %.3f V ; overload = %i' % (
-            # 1e3 * error, get_sacher_offset(sacher), ovld))
 
-        def correctionLimitChanged(self,new_val):
+        def correctionLimitChanged(self,new_val): # correction limit of sacher piezo voltage
             print('correctionLimitChanged to ',new_val)
             self.data.correction_limit = new_val
             self.data.config['correction_limit'] = self.data.correction_limit
             self.data.save_config()
 
-        def thresholdErrorChanged(self,new_val):
+        def thresholdErrorChanged(self,new_val): # threshold for srs output voltage to do corrections
             print('thresholdErrorChanged to ',new_val)
             self.data.threshold_srs_error = new_val
             self.data.config['threshold_srs_error'] = self.data.threshold_srs_error
@@ -346,31 +376,32 @@ class BlueLock():
 
         def connectBtnPressed(self):
             print('connectBtnPressed')
-            if not self.data.srs.connected and not self.data.sacher.connected:
+            if not self.data.srs.connected and not self.data.sacher.connected: # if SRS and Sacher are not connected yet
+                # try to connect SRS
                 res = self.data.srs.connect()
                 if res < 0:
                     print("Can't connect SRS")
                     return
+                # try to connect Sacher
                 res = self.data.sacher.connect()
                 if res < 0:
                     self.data.srs.stream.close()
                     print("Can't connect Sacher")
                     return
+
                 print('SRS and Sacher connected!')
                 self.srs_connected_lbl.setStyleSheet("QWidget { background-color: %s }" % 'green')
                 self.srs_connected_lbl.setText('On')
                 self.sacher_connected_lbl.setStyleSheet("QWidget { background-color: %s }" % 'green')
                 self.sacher_connected_lbl.setText('On')
                 self.connect_btn.setText('Disconnect')
-            else:
-                self.disconnectPorts()
+            else: # if SRS and Sacher are already connected
+                self.disconnectPorts() # disconnect them
                 self.connect_btn.setText('Connect')
                 self.srs_connected_lbl.setText('Off')
                 self.srs_connected_lbl.setStyleSheet("QWidget { background-color: %s }" % 'red')
-                # self.srs_connected_lbl.show()
                 self.sacher_connected_lbl.setText('Off')
                 self.sacher_connected_lbl.setStyleSheet("QWidget { background-color: %s }" % 'red')
-                self.repaint()
 
         def disconnectPorts(self):
             print('disconnectPorts')
@@ -380,9 +411,7 @@ class BlueLock():
             except:
                 print("Can't close ports")
 
-            # print('Finished')
-
-        def updateBtnPressed(self):
+        def updateBtnPressed(self): # updates ports info and tries to find srs and sacher ports
             print('updateBtnPressed')
             self.data.updateCOMPortsInfo()
             self.ports_info.setText(str(self.data.available_com_ports) +'\n\n'+ self.data.com_ports_info)
@@ -395,7 +424,15 @@ class BlueLock():
             self.data.sacher.preCheck()
             self.sacher_port_menu.setCurrentText(self.data.sacher.port)
 
+        def stopLock(self,piezo_lock_btn_color='red',msg_to_db='No message'):
+            self.lock_piezo_btn.setStyleSheet("QWidget { background-color: %s }" % piezo_lock_btn_color)
+            self.timer.stop()
+            self.data.piezo_lock = False
+            self.data.db.update_one({'_id': self.data.current_db_id},
+                                    {'$set': {'stop_message':msg_to_db}})  # updata database
+
 class OutputPlotWindow(pg.GraphicsWindow):
+    """Widget for displaying srs output and sacher piezo voltage"""
     def __init__(self):
         super().__init__()
         self.srs_plot = self.addPlot()
@@ -409,6 +446,7 @@ class OutputPlotWindow(pg.GraphicsWindow):
         self.sacher_piezo_curve = self.piezo_plot.plot()
 
 class COMPortDevice:
+    """General class for com ports. """
     connected = False
     port = ''
     baudrate = 9600
@@ -419,11 +457,12 @@ class COMPortDevice:
     def preCheck(self):
         return True
 
-    def close(self):
+    def close(self): # closes port
         self.stream.close()
         self.connected = False
 
     def write_read_com(self, command):
+        """tries to write command to devise and read it's response"""
         status = True
         readout = ''
         try:
@@ -432,37 +471,40 @@ class COMPortDevice:
         except SerialException as e:
             status = False
             print(e)
-        return (status,readout)
+        return (status,readout) # return statuus of reading and readout
 
     def connect(self,idn_message=b'*IDN?\r'):
+        """tries to connect port.
+        idn_message - message to be sent to devise to identify it
+        If connected returns 0, if not - value < 0 """
         try:
             p = Serial(self.port, self.baudrate, timeout=self.timeout)
             p.write(idn_message)
             s = p.readline()
             s = s.decode().split(',')
             print('Port answer ', s)
-            if len(s) < len(self.identification_names):
+            # below is check for IDN command respons
+            if len(s) < len(self.identification_names): # if length of identification names is smaller than expected
                 p.close()
                 self.stream = None
                 return -1
             else:
                 status = True
-                for i in range(len(self.identification_names)):
+                for i in range(len(self.identification_names)): # checks every name
                     if s[i] != self.identification_names[i]:
                         status = False
                         break
-                if status:
+                if status: # if there no mistakes while name comparison
                     print('\n' + 'Divese ' + str(self.identification_names) + ' connected on port ' + self.port + '\n')
                     self.connected = True
                     self.stream = p
                     return 0
-                else:
+                else: # if any mistake while name comparison
                     p.close()
                     return -1
         except SerialException as e:
             print(e)
             return -2
-
 
 class Sacher(COMPortDevice):
     baudrate = 57600
@@ -474,6 +516,7 @@ class Sacher(COMPortDevice):
                 self.port = port.device
 
     def readPiezoVoltage(self):
+        """Reads voltage of piezo in Volts"""
         status,readout = self.write_read_com(b'P:OFFS?\r')
         if not status:
             return False,0
@@ -481,6 +524,7 @@ class Sacher(COMPortDevice):
         return (True,float(piezo_offset))
 
     def writePiezoVoltage(self,new_voltage):
+        """writes new_voltage to piezo voltage"""
         return self.write_read_com(b'P:OFFS %.3fV\r' % new_voltage)
 
 class SRS(COMPortDevice):
@@ -492,6 +536,7 @@ class SRS(COMPortDevice):
                 self.port = port.device
 
     def readOutput(self):
+        """Reads SRS output voltage in mVolts"""
         status, readout = self.write_read_com(b'OMON?\r')
         if not status:
             return False,0
@@ -503,12 +548,11 @@ class SRS(COMPortDevice):
         return True,output
 
     def isLockOn(self):
+        """Checks if SRS is locked"""
         status, readout = self.write_read_com(b'AMAN?\r')
         if not status:
             return False, 0
-        # return float(readout)
-        # is_lock_on = int(self.write_read_com(b'AMAN?\r'))
-        try:
+        try: # somewhy here were errors - now do it with try
             output = int(readout)
         except ValueError as e:
             print("Can't convert %s in isLockOn to int" %readout)
@@ -516,15 +560,14 @@ class SRS(COMPortDevice):
         return True,output
 
     def turnLockOff(self):
+        """Turns SRS lock off"""
         return self.write_read_com(b'AMAN 0\r')
 
     def readINSR(self):
-        # ovld = int(write_read_com(srs, b'INSR? 0\r'))
+        """Read SRS  Instrument Status (INSR) register"""
         status, readout = self.write_read_com(b'INSR?\r')
         if not status:
             return False, 0
-        # return float(readout)
-        # is_lock_on = int(self.write_read_com(b'AMAN?\r'))
         try:
             output = int(readout)
         except ValueError as e:
@@ -533,19 +576,11 @@ class SRS(COMPortDevice):
         return True,output
 
     def clearINSR(self):
+        """Clears SRS  Instrument Status (INSR) register (usually needed befor new lock"""
         for i in range(3):
-            print(self.write_read_com(b'INSR? %i\r' % (i)))
-
+            # print(self.write_read_com(b'INSR? %i\r' % (i)))
+            self.write_read_com(b'INSR? %i\r' % (i))
 if __name__ == '__main__':
-    # config = {}
-    # config['day_folder'] = '2016_10_10'
-    # config['all_meas_type'] = ['CL', 'LT', 'FB', 'T']
-    # config['current_meas_type'] = 'CL'
-    # config['add_points_flag']=  False
-    # config['notes'] = 'some note'
-    # config['number_of_shots'] = 10
-    # with open(scanner_config_file,'w') as f:
-    #     json.dump(config,f)
     import sys
     app = QApplication(sys.argv)
     inst = BlueLock()
