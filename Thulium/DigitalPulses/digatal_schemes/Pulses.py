@@ -217,11 +217,11 @@ class PulseScheme(QWidget):
         self.onAnyChange()
 
     def schemeRedraw(self,tab_index=None):
-        print('schemeRedraw')
+        # print('schemeRedraw')
         if tab_index == None:
             tab_index = self.tabbox.currentIndex()
         self.tabbox.clear()
-        print('Current scheme: ', self.current_scheme)
+        # print('Current scheme: ', self.current_scheme)
         for group in self.current_groups:
             tab = group.PulseGroupQt(scheme=self, data=group)
             self.tabbox.addTab(tab, group.name)
@@ -397,10 +397,10 @@ class PulseScheme(QWidget):
             for channel, points in output.items():
                 points.append((self.t_last + self.end_delay, points[-1][1]))
             self.output = output
-            print(self.t_first, self.t_last)
-            print(self.output)
+            # print(self.t_first, self.t_last)
+            # print(self.output)
             # update shutters times now
-            print('proceed with shutters')
+            # print('proceed with shutters')
             def getPosition(point,list_of_points):
                 for i,p1 in enumerate(list_of_points):
                     if point[0] < p1[0]:
@@ -408,7 +408,7 @@ class PulseScheme(QWidget):
                 return len(list_of_points)-1
             shutters_data={}
             for shutter in self.active_shutters:
-                print(shutter.__dict__)
+                # print(shutter.__dict__)
                 linked_digital_channels = set()
                 # TODO
                 # update pulse_full_name in shutter.linked_digital_channels elsewhere
@@ -419,12 +419,12 @@ class PulseScheme(QWidget):
                 # DONE schane full_pulse_name when change either group or pulse name
                 for pulse_full_name in shutter.linked_digital_channels:
                     group_name, pulse_name = pulse_full_name.split('->')
-                    print(group_name, pulse_name)
+                    # print(group_name, pulse_name)
                     group = [group for group in self.current_groups if group.name == group_name][0]
                     pulse = [pulse for pulse in group.pulses if pulse.name == pulse_name][0]
-                    print(pulse_name)
+                    # print(pulse_name)
                     linked_digital_channels.add(pulse.channel)
-                print(linked_digital_channels)
+                # print(linked_digital_channels)
                 linked_digital_channels = list(linked_digital_channels)
                 # from here I assume that only one channel is connected to particular shutter.
                 # if not - rewrite code below
@@ -436,7 +436,7 @@ class PulseScheme(QWidget):
                         elif ch_out[i][1] == 0 and ch_out[i][0] >= shutter.stop_delay: # rising
                             ch_out[i] = (ch_out[i][0] -shutter.stop_delay,0)
 
-                    print(ch_out)
+                    # print(ch_out)
                     shutters_data[shutter.channel]=ch_out[:-1]
                     # for chan in linked_digital_channels[1:]:
                     #     for point in self.output[chan]:
@@ -445,7 +445,7 @@ class PulseScheme(QWidget):
                     #             pass
             if len(shutters_data):
                 t_points = sorted(set([int(y[0]+0.5) for x in shutters_data.values() for y in x]))
-                print(t_points)
+                # print(t_points)
                 msg = 'BeamShutters '
                 for t in t_points:
                     msg += str(t)+'_'
@@ -459,13 +459,13 @@ class PulseScheme(QWidget):
                                 msg += str(val[i][1]) + '_'
                     msg += ' '
                 msg = msg[:-1] + '!'
-                print(msg)
+                # print(msg)
                 # self.parent.arduino.write(msg.encode('ascii'))
                 # res = self.parent.arduino.readline().decode()
                 # print(res)
 
     def updateGroupTime(self):
-        print('updateGroupTime')
+        # print('updateGroupTime')
         handled = []
         for group in self.current_groups:
             # print(group.__dict__)
@@ -498,7 +498,7 @@ class PulseScheme(QWidget):
         else:
             self.updateAndSendScanParameters()
         self.calculateOutput()
-        print(self.output)
+        # print(self.output)
         self.globals['Pulses'][pulse_output_str] = deepcopy(self.output)
         # write new output to DAQ
         self.dq.write(self.output)
@@ -506,8 +506,8 @@ class PulseScheme(QWidget):
         # self.globals['Pulses'][pulse_output_str] = self.output
         self.globals['Pulses']['t_first']=self.t_first
 
-        print(self.globals['Pulses'][pulse_output_str])
-        print(self.globals['Pulses']['t_first'])
+        # print(self.globals['Pulses'][pulse_output_str])
+        # print(self.globals['Pulses']['t_first'])
         self.pulse_signals.onAnyChangeSignal.emit()
         # print('Globals\n',self.globals)
 
@@ -541,7 +541,7 @@ class PulseScheme(QWidget):
                 pulse_names = [pulse.name for pulse in group.pulses]
                 # print(pulse_names)
                 item_to_change = group.pulses[pulse_names.index(key[1])]
-            print(item_to_change.variables)
+            # print(item_to_change.variables)
             item_to_change.variables[key[2]] = val
         # print('Here')
         self.schemeRedraw()

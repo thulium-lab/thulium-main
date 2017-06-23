@@ -57,12 +57,14 @@ class DigitalOutput(dq.Task):
         return
     
     def run(self):
+        print('DAQ start')
         self.count = 0
         self.time = time.perf_counter()
         self.running = True
         return self.StartTask()
     
     def stop(self):
+        print('DAQ stop')
         if not self.running:
             return 0
         self.running = False

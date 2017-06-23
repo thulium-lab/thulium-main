@@ -124,7 +124,7 @@ class AllScanParameters():
             return SCAN_FINISHED
 
     def updateCurrentValues(self):
-        print('updateCurrentValues')
+        # print('updateCurrentValues')
         # print(self.active_params_list)
         # print(self.current_indexs)
         for i,group in enumerate(self.active_params_list):
@@ -132,9 +132,9 @@ class AllScanParameters():
                 param.current_value = param.param_list[self.current_indexs[i]]
 
     def updateAdditionalName(self):
-        print('updateAdditionalName')
+        # print('updateAdditionalName')
         # self.updateActiveParameters()
-        self.updateCurrentValues()
+        # self.updateCurrentValues()
         res = ' '.join([param.short_name + '=' + str(int(param.current_value) if (param.current_value).is_integer() else param.current_value) for param in
                         list(chain.from_iterable(self.all_params_list)) if param.nesting > 0 and param.is_active])
         self.globals['additional_scan_param_name'] = res
@@ -361,7 +361,7 @@ class AllScanParameters():
 
         def redrawCurrentValues(self):
             """only draws current values, they are updated in updateIndex"""
-            print('redrawCurrentValues')
+            # print('redrawCurrentValues')
             itter = 0
             for group in self.data.all_params_list:
                 for param in group:

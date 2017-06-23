@@ -54,7 +54,7 @@ class PlotPulse(pg.GraphicsWindow):
 
     def plotPulses2(self, output_data, t_first, digital_channels=None, analog_channels=None):
         print('PlotPulses2')
-        print(output_data)
+        # print(output_data)
         self.clear()
         digital_hight=1.2
         digital_counter = 0
@@ -72,7 +72,7 @@ class PlotPulse(pg.GraphicsWindow):
                 value = output_data[name]
                 xx = []
                 yy = []
-                print(value)
+                # print(value)
                 for i, point in enumerate(value):
                     if i == 0:
                         xx.append(t_first-100)
@@ -83,7 +83,7 @@ class PlotPulse(pg.GraphicsWindow):
                         yy.append(not point[1])
                     xx.append(point[0])
                     yy.append(point[1])
-                print(xx,np.array(yy)+digital_counter*digital_hight)
+                # print(xx,np.array(yy)+digital_counter*digital_hight)
                 local_plot.plot(xx,np.array(yy)+digital_counter*digital_hight)
                 local_plot.plot(xx, np.ones_like(xx)*digital_counter*digital_hight,pen=pg.mkPen('w', width=0.5, style=Qt.DashLine)    )
                 digital_counter += 1
@@ -98,7 +98,7 @@ class PlotPulse(pg.GraphicsWindow):
             #     print('Wrong channel')
             #     return -1
                 # QMessageBox.warning(self, 'Message', "Not equal length of params", QMessageBox.Yes)
-        print([np.arange(1,len(dig_list)+1)*digital_hight,dig_list])
+        # print([np.arange(1,len(dig_list)+1)*digital_hight,dig_list])
         d_plot.getAxis('left').setTicks([list(zip((np.arange(len(dig_list))+1/2)*digital_hight,dig_list))])
         # self.resize(700, 30 * len(output_data))
         # self.resize()

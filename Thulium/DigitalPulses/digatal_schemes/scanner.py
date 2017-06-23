@@ -27,6 +27,8 @@ from sympy.parsing.sympy_parser import parse_expr
 from itertools import chain
 from scanParameters import  SingleScanParameter,AllScanParameters,MeasurementFolderClass
 import time
+import datetime
+
 scanner_config_file = 'config_scanner.json'
 data_directory = '..'
 scan_params_str = 'scan_params'
@@ -176,23 +178,24 @@ class Scanner(QWidget):
                 return -1
             self.current_shot_number = 0
             changed_index = self.scan_parameters.updateIndexes(start=True)
-            print(os.path.join(self.meas_folder1.day_folder,self.meas_folder1.name))
+            # print('Data folder: ', os.path.join(self.meas_folder1.day_folder,self.meas_folder1.name))
             self.globals['current_measurement_folder'] = self.meas_folder1.day_folder.strip() + '/' + self.meas_folder1.name.strip()
             os.mkdir(self.globals['current_measurement_folder'])    # create new measurement folder
+            print('Data folder: ',self.globals['current_measurement_folder'])
             # self.globals['DAQ'].stop()
             # time.sleep(1)
             self.updateParamAndSend(changed_index)
             self.updateSingleMeasFolder()
             self.startScan()
             # self.globals['image_stack'].append(self.globals['current_data_folder'] + '/' + '0_0.png')
-            print('Scan started')
+            print('Scan started at ',datetime.datetime.now().time())
 
     def updateSingleMeasFolder(self):
         print('updateSingleMeasFolder')
         self.single_meas_folder = self.scan_parameters.getSingleFolderName()+single_folder_suffix
         self.globals['current_data_folder']= self.globals['current_measurement_folder'].strip() + '/' + self.single_meas_folder.strip()
         os.mkdir(self.globals['current_data_folder'])        # create new folder
-        print(self.globals['current_data_folder'])
+        print('Current folder for images: ',self.globals['current_data_folder'])
         self.updateGlobals()
 
     def updateGlobals(self):
@@ -200,7 +203,7 @@ class Scanner(QWidget):
         # self.globals['meas_folder'] = self.meas_folder
         self.globals['on_scan'] = self.on_scan
         self.globals['current_shot_number'] = self.current_shot_number
-        print('Globals: ',self.globals)
+        # print('Globals: ',self.globals)
 
     def cycleFinished(self, number=None):
         # for i in range(20):
@@ -208,7 +211,7 @@ class Scanner(QWidget):
         #     if s=='':
         #         break
         #     print("arduino >>   ",s,end='')
-        print(number, 'cycleFinished')
+        print(number, 'cycleFinished at ',datetime.datetime.now().time())
         if not self.on_scan:
             return
         # called when one cycle is finished
@@ -231,15 +234,15 @@ class Scanner(QWidget):
         self.updateParamAndSend(changed_index)
         if self.on_scan:
             self.updateSingleMeasFolder()
-            self.globals['image_stack'].append(self.globals['current_data_folder'] + '/' + '0_0.png')
+            # self.globals['image_stack'].append(self.globals['current_data_folder'] + '/' + '0_0.png')
 
 
     def updateParamAndSend(self,changed_index):
         print('updateParamAndSend')
-        print(changed_index)
+        # print(changed_index)
         # STOP DAQ
         params_to_send = self.scan_parameters.getParamsToSend()
-        print(params_to_send)
+        print('Scanning parameters: ',params_to_send)
         # update parameters by calling update methods of subprogramm
         is_Ok = True    # now it's not used but may be later
         if self.all_updates_methods != None:

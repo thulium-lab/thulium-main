@@ -406,8 +406,8 @@ class BlueLock():
         def disconnectPorts(self):
             print('disconnectPorts')
             try:
-                self.data.sacher.close()
                 self.data.srs.close()
+                self.data.sacher.close()
             except:
                 print("Can't close ports")
 

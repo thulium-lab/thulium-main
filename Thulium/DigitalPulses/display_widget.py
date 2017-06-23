@@ -26,6 +26,7 @@ from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraph
 
 
 import os, sys
+import datetime
 # sys.path.append(r'/Users/artemgolovizin/GitHub')
 sys.path.append(r'D:\!Data')
 from matplotlib.pyplot import imread
@@ -173,6 +174,7 @@ class DisplayWidget(DockArea):
         new_data = self.process_image()
         if len(self.globals['image_stack']):
             im_name = self.globals['image_stack'].pop(0)
+            print('Save image ', im_name, 'at time ',datetime.datetime.now().time())
             imsave(im_name,self.globals['image'])
         self.update_image_info(new_data)
         self.update_plot(new_data)
@@ -198,7 +200,7 @@ class DisplayWidget(DockArea):
         try:
             if self.do_fit1D_x:
                 basic_data.fit1D_x = basic_data.fit_gaussian1D(0)
-                print(basic_data.fit1D_x)
+                # print(basic_data.fit1D_x)
             if self.do_fit1D_y:
                 basic_data.fit1D_y = basic_data.fit_gaussian1D(1)
             if self.do_fit2D:
