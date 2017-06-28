@@ -1,30 +1,14 @@
-# -*- coding: utf-8 -*-
-"""
-This example demonstrates the use of pyqtgraph's dock widget system.
 
-The dockarea system allows the design of user interfaces which can be rearranged by
-the user at runtime. Docks can be moved, resized, stacked, and torn out of the main
-window. This is similar in principle to the docking system built into Qt, but
-offers a more deterministic dock placement API (in Qt it is very difficult to
-programatically generate complex dock arrangements). Additionally, Qt's docks are
-designed to be used as small panels around the outer edge of a window. Pyqtgraph's
-docks were created with the notion that the entire window (or any portion of it)
-would consist of dockable components.
-
-"""
-
-
-
-# import initExample ## Add path to library (just for examples; you do not need this)
 from sympy.parsing.sympy_parser import parse_expr
 from PyQt5.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer)
-from PyQt5.QtGui import (QBrush, QColor, QPainter)
+from PyQt5.QtGui import (QBrush, QColor, QPainter, QIcon)
 from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem, QMenu, QAction, QMdiArea,QMdiSubWindow,
                              QMenu, QAction, QScrollArea, QFrame,QDesktopWidget,QSplitter,
                              QGridLayout, QVBoxLayout, QHBoxLayout, QSizePolicy,QMainWindow, QDialog,QTextEdit,
                              QLabel, QLineEdit, QPushButton, QWidget, QComboBox,QRadioButton, QSpinBox, QCheckBox, QTabWidget, QFileDialog,QMessageBox, QDoubleSpinBox)
 
-
+import json
+import time
 import os, sys
 import datetime
 # sys.path.append(r'/Users/artemgolovizin/GitHub')
@@ -36,23 +20,27 @@ import pyqtgraph.console
 import numpy as np
 # from matplotlib.image import imsave
 from scipy.misc import imsave
+import scipy.misc
+
 from pyqtgraph.dockarea import *
 import thulium_python_lib.usefull_functions as usfuncs
 import thulium_python_lib.image_processing_new as impr
+
+import threading
 
 from PyQt5.QtGui import QFont
 pg.setConfigOptions(imageAxisOrder='row-major')
 
 ds_dir = r'D:\!Data\2016_04_22\01 T no_ramp a=-6 f=363.9 b=0.8'
-data = []
-for d in os.listdir(ds_dir):
-    d_dir  = os.path.join(ds_dir,d)
-    if os.path.isdir(d_dir):
-        x = imread(os.path.join(d_dir,os.listdir(d_dir)[0]))
-        data.append(x)
-data = np.array(data)
-
-current_data_index = 0;
+# data = []
+# for d in os.listdir(ds_dir):
+#     d_dir  = os.path.join(ds_dir,d)
+#     if os.path.isdir(d_dir):
+#         x = imread(os.path.join(d_dir,os.listdir(d_dir)[0]))
+#         data.append(x)
+# data = np.array(data)
+#
+# current_data_index = 0;
 # app = QApplication([])
 # win = QMainWindow()
 #
@@ -62,16 +50,21 @@ current_data_index = 0;
 
 class DisplayWidget(DockArea):
     def __init__(self,parent=None,globals=None,signals=None,**argd):
+        self.config={}
         self.globals = globals
         self.signals = signals
         self.parent = parent
+        self.config_file = 'display_widget_config.json'
         self.screen_size = QDesktopWidget().screenGeometry()
+        self.roi_center = [200,200]
+        self.roi_size = [100,100]
         self.all_plot_data = {'N':[],'width':[]}
+        self.N_point_to_plot = 40
         self.do_fit1D_x = True
         self.do_fit1D_y = True
         self.do_fit2D = False
         self.n_sigmas = 3
-        self.N_point_to_plot = 40
+
         self.image_data_to_display = np.array([
             ('N',0, 0,0),
             ('Center',0 , 0,0),
@@ -79,8 +72,12 @@ class DisplayWidget(DockArea):
             ("N_small",0,0 , 0)
         ], dtype=[('Parameter', object), ('x', object), ('y', object), ('2D', object)])
 
+        self.load()
+        self.globals['image_lower_left_corner'] = self.roi_center
+
         super(DisplayWidget, self).__init__(parent)
         self.initUI()
+
         self.iso = pg.IsocurveItem(pen='g')
         self.iso.setZValue(1000)
         self.show()
@@ -89,12 +86,45 @@ class DisplayWidget(DockArea):
         self.timer.timeout.connect(self.routine)
         # self.timer.start()
 
+    def load(self):
+        try:
+            with open(self.config_file,'r') as f:
+                self.config = json.load(f)
+        except json.decoder.JSONDecodeError:
+            print('ERROR in reading ', self.config_file)
+            return
+        except FileNotFoundError:
+            print('File not yet exist')
+            return
+        for key in self.config:
+            self.__dict__[key] = self.config[key]
+
+    def save_config(self):
+        self.globals['image_lower_left_corner'] = self.roi_center
+        print('saveConfig')
+        try:
+            with open(self.config_file, 'r') as f:
+                old_config = json.load(f)
+        except json.decoder.JSONDecodeError:
+            old_config = {}
+        except FileNotFoundError:
+            old_config = {}
+            print('File not yet exist')
+        with open(self.config_file, 'w') as f:
+            try:
+                json.dump(self.config,f)
+            except: # find what error does it raise when cannot dump
+                json.dump(old_config, f)
+                QMessageBox.warning(None, 'Message', "can not dump config to json, old version will be saved",
+                                    QMessageBox.Ok)
+
     def initUI(self):
         # self.area = DockArea()
         # self.setCentralWidget(self.area)
         # self.resize(1000,500)
         self.resize(self.screen_size.width(),self.screen_size.height())
-        self.setWindowTitle('Dockarea')
+        self.setWindowTitle('Display widget')
+        self.setWindowIcon(QIcon('display_image_icon.jpg'))
         self.d1 = Dock("Image", size=(self.screen_size.width()/2, self.screen_size.height()))     ## give this dock the minimum possible size
         self.d3 = Dock("Number of atoms", size=(self.screen_size.width()/2, self.screen_size.height()/3))
         self.d2 = Dock("Image data", size=(self.screen_size.width()/2, self.screen_size.height()/3))
@@ -103,14 +133,41 @@ class DisplayWidget(DockArea):
         self.area.addDock(self.d3, 'right', self.d1)## place d3 at bottom edge of d1
         self.area.addDock(self.d2, 'top',self.d3)     ## place d4 at right edge of dock area
         self.area.addDock(self.d4, 'bottom', self.d3)  ## place d5 at left edge of d1
+        # #old version
+        # self.imv = pg.ImageView()
+        # self.imv.setColorMap(pg.ColorMap(np.array([ 0.  ,  0.25,  0.5 ,  0.75,  1.  ]), np.array([[  255, 255, 255, 255],       [  0,   0, 255, 255],       [  0,   0,   0, 255],       [255,   0,   0, 255],       [255, 255,   0, 255]], dtype=np.uint8)))
+        # self.imv.setImage(imread(r"D:\!Data\2016_04_22\01 T no_ramp a=-6 f=363.9 b=0.8\0ms\1_1.png"))
+        #
+        # self.imv.getHistogramWidget().setHistogramRange(0,0.6)
+        # self.imv.getHistogramWidget().setLevels(0, 0.6)
+        # self.d1.addWidget
 
-        self.imv = pg.ImageView()
-        self.imv.setColorMap(pg.ColorMap(np.array([ 0.  ,  0.25,  0.5 ,  0.75,  1.  ]), np.array([[  255, 255, 255, 255],       [  0,   0, 255, 255],       [  0,   0,   0, 255],       [255,   0,   0, 255],       [255, 255,   0, 255]], dtype=np.uint8)))
-        self.imv.setImage(imread(r"D:\!Data\2016_04_22\01 T no_ramp a=-6 f=363.9 b=0.8\0ms\1_1.png"))
+        # new version with ROI
+        win = pg.GraphicsLayoutWidget()
+        p1 = win.addPlot()
+        self.img = pg.ImageItem()
+        self.img.setZValue(1)
+        p1.addItem(self.img)
+        self.img.setImage(imread(r"D:\!Data\2016_04_22\01 T no_ramp a=-6 f=363.9 b=0.8\0ms\1_1.png"))
+        self.roi = pg.ROI(self.roi_center, self.roi_size,pen=pg.mkPen('g', width=1)) #, style=pg.QtCore.Qt.DotLine
+        self.roi.addScaleHandle([1, 1], [0, 0])
+        # self.roi.addScaleHandle([1, 0.5], [0, 1])
+        p1.addItem(self.roi)
+        self.roi.setZValue(100)
+        self.hist = pg.HistogramLUTItem()
+        self.hist.setImageItem(self.img)
+        self.hist.setHistogramRange(0,0.6)
+        self.hist.setLevels(0, 0.6)
+        self.hist.gradient.setColorMap(pg.ColorMap(np.array([ 0.  ,  0.25,  0.5 ,  0.75,  1.  ]),
+                                         np.array([[  255, 255, 255, 255],[  0,   0, 255, 255],
+                                                   [  0,   0,   0, 255],[255,   0,   0, 255],[255, 255,   0, 255]],
+                                                  dtype=np.uint8)))
+        win.addItem(self.hist)
+        # self.hist.sigLookupTableChanged.connect(self.LUTChanged)
+        self.img.setLookupTable(self.hist.getLookupTable(n=256))
+        self.roi.sigRegionChangeFinished.connect(self.updateROI)
 
-        self.imv.getHistogramWidget().setHistogramRange(0,0.6)
-        self.imv.getHistogramWidget().setLevels(0, 0.6)
-        self.d1.addWidget(self.imv)
+        self.d1.addWidget(win)
 
         self.w2 = pg.PlotWidget()
         self.w2.addLegend()
@@ -123,40 +180,44 @@ class DisplayWidget(DockArea):
         self.w3 = pg.TableWidget()
         self.w3.setFont(QFont('Arial', 20))
         self.w3.setData(self.image_data_to_display)
-        # self.w3 = pg.LayoutWidget()
-        # self.w3.addWidget(QLabel('Parameter'), row=0, col=0)
-        # self.w3.addWidget(QLabel('x'), row=0, col=1)
-        # self.w3.addWidget(QLabel('y'), row=0, col=2)
-        # self.w3.addWidget(QLabel('Center'), row=1, col=0)
-        # self.w3.addWidget(QLabel('0'), row=1, col=1)
-        # self.w3.addWidget(QLabel('0'), row=1, col=2)
-        # self.w3.addWidget(QLabel('Width'), row=2, col=0)
-        # self.w3.addWidget(QLabel('0'), row=2, col=1)
-        # self.w3.addWidget(QLabel('0'), row=2, col=2)
-        # self.w3.addWidget(QLabel('N'), row=3, col=0)
-        # self.w3.addWidget(QLabel('0'), row=3, col=1)
-        # self.w3.addWidget(QLabel('0'), row=3, col=2)
         self.d3.addWidget(self.w3)
 
-        # self.w4 = pg.LayoutWidget()
-        # self.w4.addWidget(QLabel('Var'), row=0, col=0)
-        # self.w4.addWidget(QLabel('Show'), row=0, col=1)
-        # self.w4.addWidget(QLabel('N'), row=1, col=0)
-        # chb1 = QCheckBox()
-        # chb1.setChecked(True)
-        # # ch.stateChanged.connect(self.addPointsChanged)
-        # self.w4.addWidget(chb1, row=1, col=1)
-        # self.w4.addWidget(QLabel('sigma_x'), row=2, col=0)
-        # chb2 = QCheckBox()
-        # chb2.setChecked(True)
-        # # ch.stateChanged.connect(self.addPointsChanged)
-        # self.w4.addWidget(chb2, row=2, col=1)
-        # self.w4.addWidget(QLabel('sigma_y'), row=3, col=0)
-        # chb3 = QCheckBox()
-        # chb3.setChecked(True)
-        # # ch.stateChanged.connect(self.addPointsChanged)
-        # self.w4.addWidget(chb3, row=3, col=1)
-        # # self.w4.addStretch(1)
+        # w6 = QHBoxLayout()
+        # w6.addWidget(QLabel('fit1D_x'))
+        chbx_widget = QWidget()
+        chbx_layout = QHBoxLayout()
+        chbx_layout.addWidget(QLabel('fit1D_x'))
+        self.fit1D_x_chbx = QCheckBox()
+        self.fit1D_x_chbx.setChecked(self.do_fit1D_x)
+        self.fit1D_x_chbx.stateChanged.connect(lambda state:self.chbxClicked('do_fit1D_x',state))
+        chbx_layout.addWidget(self.fit1D_x_chbx)
+
+        chbx_layout.addWidget(QLabel('fit1D_y'))
+        self.fit1D_y_chbx = QCheckBox()
+        self.fit1D_y_chbx.setChecked(self.do_fit1D_y)
+        self.fit1D_y_chbx.stateChanged.connect(lambda state:self.chbxClicked('do_fit1D_y',state))
+        chbx_layout.addWidget(self.fit1D_y_chbx)
+
+        chbx_layout.addWidget(QLabel('fit2D'))
+        self.fit2D_chbx = QCheckBox()
+        self.fit2D_chbx.setChecked(self.do_fit2D)
+        self.fit2D_chbx.stateChanged.connect(lambda state:self.chbxClicked('do_fit2D',state))
+        chbx_layout.addWidget(self.fit2D_chbx)
+        # w6.addWidget(self.fit1D_x_chbx)
+        # self.d3.addWidget(QLabel('fit1D_x'),row=1,col=0)
+        # self.d3.addWidget(self.fit1D_x_chbx,row=1,col=1)
+
+        chbx_layout.addStretch(1)
+        chbx_widget.setLayout(chbx_layout)
+        self.d3.addWidget(chbx_widget)
+
+        self.w5 = pg.TableWidget(editable=True,sortable=False)
+        self.w5.setFont(QFont('Arial', 20))
+        self.w5.setData(self.getROITableData())
+        self.w5.cellChanged.connect(self.roiTableChanged)
+        self.d3.addWidget(self.w5,row=0,col=1)
+
+
         self.w4 = pg.PlotWidget()
         # self.w2.setYRange(0,100)
         self.w4.addLegend(size=(5,20))
@@ -168,65 +229,137 @@ class DisplayWidget(DockArea):
         self.d4.addWidget(self.w4)
         self.signals.newImageRead.connect(self.routine)
 
+    # def LUTChanged(self):
+    #     print('LUTChanged')
+    #     print(self.hist.gradient.getGradient())
+
+    def chbxClicked(self,attribute,state):
+        self.__dict__[attribute] = bool(state)
+        # print(attribute, state)
+    def getROITableData(self):
+        return np.array([
+            ('ll corner',*self.roi_center),
+            ('Size',*self.roi_size),
+        ], dtype=[(' ', object), ('x', object), ('y', object)])
+
+    def roiTableChanged(self,row,column):
+        new_val = int(self.w5.item(row,column).data(0))
+        column -= 1
+        if row ==0: #
+            self.roi_center[column] = new_val
+            self.roi.setPos(*self.roi_center)
+        elif row == 1:
+            self.roi_size[column] = new_val
+            self.roi.setSize(self.roi_size)
+        self.config['roi_center'] = self.roi_center
+        self.config['roi_size'] = self.roi_size
+        self.save_config()
+
     def routine(self):
         # global current_data_index
         # current_data_index = (current_data_index + 1) % len(data)
-        new_data = self.process_image()
-        if len(self.globals['image_stack']):
+        self.image_bounds = [(0 if 0>self.roi_center[1]>self.globals['image'].shape[0] else self.roi_center[1],
+                            self.globals['image'].shape[0] if (self.roi_center[1] + self.roi_size[1]) > self.globals['image'].shape[0] else (self.roi_center[1] + self.roi_size[1])),
+                             (0 if 0 > self.roi_center[0] > self.globals['image'].shape[1] else self.roi_center[0],
+                              self.globals['image'].shape[1] if (self.roi_center[0] + self.roi_size[0]) >self.globals['image'].shape[1] else ( self.roi_center[0] + self.roi_size[0]))
+                            ]
+        self.new_data = impr.Image_Basics(self.globals['image'][self.image_bounds[0][0]:self.image_bounds[0][1],
+                                                            self.image_bounds[1][0]:self.image_bounds[1][1]])
+        # print(new_data.image.shape)
+        self.img.setImage(self.globals['image'],autoRange=False, autoLevels=False,autoHistogramRange=False)
+        self.updateIsocurve()
+        # new_data = self.process_image()
+        if len(self.globals['image_stack']): # if scan is on images have to be saved
             im_name = self.globals['image_stack'].pop(0)
             print('Save image ', im_name, 'at time ',datetime.datetime.now().time())
-            imsave(im_name,self.globals['image'])
-        self.update_image_info(new_data)
-        self.update_plot(new_data)
+            # imsave(im_name,self.globals['image'])
+            #old
+            # imsave(im_name, new_data.image)
+            #new
+            scipy.misc.toimage(self.new_data.image,cmin=0,cmax=1).save(im_name)
+        else:
+            print('Recieved image at time ',datetime.datetime.now().time())
+        sthrd = threading.Thread(target=self.data_processing)
+        sthrd.start()
+        # print('DOne')
+        # self.process_image(new_data) # pprocess image - may be this and below should be done in thread, because fits take time
+        # self.update_image_info(new_data)
+        # self.update_plot(new_data)
         # self.imv.setImage(new_data.image,autoLevels=False,autoHistogramRange=False,autoRange=False)
         # print(self.imv.getHistogramWidget().gradient.colorMap())
-        self.imv.setImage(self.globals['image'],autoRange=False, autoLevels=False,autoHistogramRange=False)#, autoLevels=False, autoHistogramRange=False, autoRange=False)
-
+        # # old
+        # self.imv.setImage(self.globals['image'],autoRange=False, autoLevels=False,autoHistogramRange=False)#, autoLevels=False, autoHistogramRange=False, autoRange=False)
         # self.imv.getHistogramWidget().setHistogramRange(0,0.6)
         # self.imv.getHistogramWidget().setLevels(0, 0.6)
 
-        self.updateIsocurve()
+    def data_processing(self):
+        # there all image analisis is performed
+        self.process_image(self.new_data) # pprocess image - may be this and below should be done in thread, because fits take time
+        self.update_image_info(self.new_data)
+        self.update_plot(self.new_data)
+        print('Finished image data processing at ', datetime.datetime.now().time())
+
+    def updateROI(self):
+        print('updateRoi')
+        self.roi_center = [int(self.roi.pos()[0]),int(self.roi.pos()[1])]
+        self.roi_size = [int(self.roi.size()[0]),int(self.roi.size()[1])]
+        self.w5.cellChanged.disconnect(self.roiTableChanged)
+        self.w5.setData(self.getROITableData())
+        self.w5.cellChanged.connect(self.roiTableChanged)
+        self.config['roi_center'] = self.roi_center
+        self.config['roi_size'] = self.roi_size
+        self.save_config()
+        # print(self.roi.pos())
+        # print(self.roi.size())
+
 
     def updateIsocurve(self):
-        # global isoLine, iso,imv
-        cur_data = pg.gaussianFilter(self.imv.getImageItem().image, (4, 4))
-        self.iso.setParentItem(self.imv.getImageItem())
+        # #old
+        # cur_data = pg.gaussianFilter(self.imv.getImageItem().image, (4, 4))
+        # self.iso.setParentItem(self.imv.getImageItem())
+        cur_data = pg.gaussianFilter(self.img.image, (4, 4))
+        self.iso.setParentItem(self.img)
         self.iso.setData(cur_data)
         self.iso.setLevel(cur_data.max()/np.e)
+        self.iso.setZValue(1000)
 
-    def process_image(self):
-        # basic_data = impr.Image_Basics(data[current_data_index])
-        basic_data = impr.Image_Basics(self.globals['image'])
-        try:
-            if self.do_fit1D_x:
+    def process_image(self,basic_data):
+        if self.do_fit1D_x:
+            try:
                 basic_data.fit1D_x = basic_data.fit_gaussian1D(0)
-                # print(basic_data.fit1D_x)
-            if self.do_fit1D_y:
+            except RuntimeError:
+                print("RuntimeError, couldn't find 1D_x fit for image")
+                basic_data.isgood = False
+        if self.do_fit1D_y:
+            try:
                 basic_data.fit1D_y = basic_data.fit_gaussian1D(1)
-            if self.do_fit2D:
+            except RuntimeError:
+                print("RuntimeError, couldn't find 1D_y fit for image")
+                basic_data.isgood = False
+        if self.do_fit2D and ('fit1D_x' in basic_data.__dict__ and 'fit1D_y' in basic_data.__dict__):
+            try:
                 basic_data.fit2D = basic_data.fit_gaussian2D()
-            # if self.do_fit1D_x and self.do_fit1D_y:
-            #     basic_data.total_small = np.sum(basic_data.image[int(basic_data.fit1D_y[1]-self.n_sigmas*basic_data.fit1D_y[2]):int(basic_data.fit1D_y[1]+self.n_sigmas*basic_data.fit1D_y[2]),
-            #                                  int(basic_data.fit1D_x[1]-self.n_sigmas*basic_data.fit1D_x[2]):int(basic_data.fit1D_x[1]+self.n_sigmas*basic_data.fit1D_x[2])])
-        except RuntimeError:
-            print("RuntimeError, couldn't find fit for image")
-            basic_data.isgood = False
-        return basic_data
+            except RuntimeError:
+                print("RuntimeError, couldn't find 2D fit for image")
+                basic_data.isgood = False
+            basic_data.total_small = np.sum(basic_data.image[int(basic_data.fit1D_y[1]-self.n_sigmas*basic_data.fit1D_y[2]):int(basic_data.fit1D_y[1]+self.n_sigmas*basic_data.fit1D_y[2]),
+                                             int(basic_data.fit1D_x[1]-self.n_sigmas*basic_data.fit1D_x[2]):int(basic_data.fit1D_x[1]+self.n_sigmas*basic_data.fit1D_x[2])])
 
     def update_image_info(self,data):
         if 'fit1D_x' in data.__dict__:
-            self.image_data_to_display['x'] = np.array([*[int(x+0.5) for x in data.fit1D_x[:3]],'-'],dtype=object)
+            self.image_data_to_display['x'] = np.array([*[int(x+0.5) for x in data.fit1D_x[:3]],' '],dtype=object)
         else:
             self.image_data_to_display['x'] = np.array(['-']*4, dtype=object)
         if 'fit1D_y' in data.__dict__:
-            self.image_data_to_display['y'] = np.array([*[int(x+0.5) for x in data.fit1D_y[:3]],'-'],dtype=object)
+            self.image_data_to_display['y'] = np.array([*[int(x+0.5) for x in data.fit1D_y[:3]],' '],dtype=object)
         else:
             self.image_data_to_display['y'] = np.array(['-'] * 4, dtype=object)
-        # if self.do_fit2D:
-        #     self.image_data_to_display['2D'] = np.array([data.fit2D[0],"%.0f, %.0f"%(data.fit2D[2],data.fit2D[1]),
-        #                                                  "%.0f, %.0f" %(data.fit2D[4],data.fit2D[3]),data.total_small],dtype=object)
-        # else:
-        #     self.image_data_to_display['2D'] = np.array(['-'] * 4, dtype=object)
+        if'fit2D' in data.__dict__:
+            self.image_data_to_display['2D'] = np.array([data.fit2D[0],"%.0f, %.0f"%(data.fit2D[2],data.fit2D[1]),
+                                                         "%.0f, %.0f" %(data.fit2D[4],data.fit2D[3]),data.total_small],dtype=object)
+        else:
+            self.image_data_to_display['2D'] = np.array(['-'] * 4, dtype=object)
+        self.w3.clear()
         self.w3.setData(self.image_data_to_display)
 
     def update_plot(self,data):
@@ -258,17 +391,6 @@ class DisplayWidget(DockArea):
             # self.curve24.setData(xx, dataW[:, 3])
             self.w4.setXRange(len(dataN) - points_to_show, len(dataN))
 
-            # self.curve1.setData(range(len(self.all_plot_data['N'])-points_to_show,len(self.all_plot_data['N'])),
-            #                 [x[0] for x in self.all_plot_data['N'][len(self.all_plot_data['N'])-points_to_show:len(self.all_plot_data['N'])]])
-            # self.curve2.setData(range(len(self.all_plot_data['N']) - points_to_show, len(self.all_plot_data['N'])),
-            #                     [x[1] for x in self.all_plot_data['N'][
-            #                                    len(self.all_plot_data['N']) - points_to_show:len(
-            #                                        self.all_plot_data['N'])]])
-            # self.curve3.setData(range(len(self.all_plot_data['N']) - points_to_show, len(self.all_plot_data['N'])),
-            #                     [x[2] for x in self.all_plot_data['N'][
-            #                                    len(self.all_plot_data['N']) - points_to_show:len(
-            #                                        self.all_plot_data['N'])]])
-            # self.curve.setData(np.array([x[0] for x in self.all_plot_data['N']]))
 ## Start Qt event loop unless running in interactive mode or using pyside.
 if __name__ == '__main__':
     import sys

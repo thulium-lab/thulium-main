@@ -27,7 +27,7 @@ import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 
 scan_params_str = 'scan_params'
-data_directory = '..'
+data_directory = 'D:\!Data'
 scan_folder_data_str = 'scan_folder_data'
 SCAN_FINISHED = -1
 class SingleScanParameter():

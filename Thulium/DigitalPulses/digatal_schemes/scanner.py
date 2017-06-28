@@ -34,7 +34,7 @@ data_directory = '..'
 scan_params_str = 'scan_params'
 scan_folder_data_str = 'scan_folder_data'
 single_folder_suffix = 'ms'
-
+meas_config_file = 'meas_config.json'
 EMPTY_CONFIG_FILE = -1
 
 class Scanner(QWidget):
@@ -181,6 +181,7 @@ class Scanner(QWidget):
             # print('Data folder: ', os.path.join(self.meas_folder1.day_folder,self.meas_folder1.name))
             self.globals['current_measurement_folder'] = self.meas_folder1.day_folder.strip() + '/' + self.meas_folder1.name.strip()
             os.mkdir(self.globals['current_measurement_folder'])    # create new measurement folder
+            self.writeMeasConfig()
             print('Data folder: ',self.globals['current_measurement_folder'])
             # self.globals['DAQ'].stop()
             # time.sleep(1)
@@ -189,6 +190,20 @@ class Scanner(QWidget):
             self.startScan()
             # self.globals['image_stack'].append(self.globals['current_data_folder'] + '/' + '0_0.png')
             print('Scan started at ',datetime.datetime.now().time())
+
+    def writeMeasConfig(self):
+        fname = self.globals['current_measurement_folder'] + '/' + meas_config_file
+        meas_config_data = {}
+        if 'image_lower_left_corner' in self.globals:
+            meas_config_data['image_lower_left_corner'] = self.globals['image_lower_left_corner']
+        with open(fname, 'w') as f:
+            try:
+                json.dump(meas_config_data,f)
+            except: # find what error does it raise when cannot dump
+                print("can't dump meas_config_data")
+                # json.dump(old_config, f)
+                # QMessageBox.warning(None, 'Message', "can not dump config to json, old version will be saved",
+                #                     QMessageBox.Ok)
 
     def updateSingleMeasFolder(self):
         print('updateSingleMeasFolder')
@@ -235,7 +250,6 @@ class Scanner(QWidget):
         if self.on_scan:
             self.updateSingleMeasFolder()
             # self.globals['image_stack'].append(self.globals['current_data_folder'] + '/' + '0_0.png')
-
 
     def updateParamAndSend(self,changed_index):
         print('updateParamAndSend')
