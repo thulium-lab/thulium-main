@@ -28,38 +28,21 @@ import pyqtgraph as pg
 
 import pymongo, datetime
 from pymongo import MongoClient
-#
-# class plotWidget(FigureCanvasi):
-#     def __init__(self, parent=None, width=4, height=3, dpi=100):
-#         fig, self.axes = plt.subplots()
-#         # fig = Figure(figsize=(width, height), dpi=dpi)
-#         # self.axes = fig.add_subplot(111)
-#         # self.axes2 = fig.add_subplot(111)
-#         # self.axes.hold(False)
-#         # self.axes2.hold(False)
-#         super(plotWidget, self).__init__(fig)
-#         self.setParent(parent)
-# class ApplicationWindow(QtWidgets.QMainWindow):
-#     def __init__(self):
-#         QtWidgets.QMainWindow.__init__(self)
-#         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-#         self.setWindowTitle("Blue laser lock")
-#         self.main_widget = QtWidgets.QWidget(self)
-#         layout1 = QtWidgets.QHBoxLayout(self.main_widget)
-#         layout1l = plotWidget(self.main_widget)
-#         layout1r = QtWidgets.QVBoxLayout(self.main_widget)
-#         connect_btn = QPushButton('Connect',self)
+
 class BlueLock():
     available_com_ports = []
     com_ports_info= ''
     correction_limit = 0.1
     threshold_srs_error = 0.003
+    # Flags
     srs_lock = False
     piezo_lock = False
+    # output arrays
     srs_output  = None
     piezo_voltage = None
     blue_lock_config_file = 'blue_lock_config.json'
     config = {}
+    # INSR error counter
     srs_insr_error_counter=0
     srs_insr_error_counter_threshold = 10
 
@@ -240,6 +223,32 @@ class BlueLock():
 
         def lockSrsBtnPressed(self):
             print('lockSrsBtnPressed')
+            status, res = self.data.srs.isLockOn()
+            if not status:
+                print('Error while reading if SRS is locked')
+                self.lock_srs_btn.setStyleSheet("QWidget { background-color: %s }" % 'red')
+                return
+            if res: # srs is locked
+                # confirm that you want to unlock it
+                reply = QMessageBox.question(self, 'Message',
+                                                   'Unlock SRS?', QMessageBox.Yes, QMessageBox.No)
+
+                if reply == QMessageBox.Yes:
+                    status, readout = self.data.srs.turnLockOff()
+                    if status:
+                        self.lock_srs_btn.setStyleSheet("QWidget { background-color: %s }" % 'red')
+                        print('SRS unlocked')
+                    else:
+                        print('Problems with unlocking SRS')
+            else: # srs is not locked
+                # lock it
+                status, readout = self.data.srs.turnLockOn()
+                if status:
+                    self.lock_srs_btn.setStyleSheet("QWidget { background-color: %s }" % 'green')
+                    print('SRS locked')
+                else:
+                    print('Problems with locking SRS')
+
 
         def lockPiezoBtnPressed(self):
             print('lockPiezoBtnPressed')
@@ -562,6 +571,10 @@ class SRS(COMPortDevice):
     def turnLockOff(self):
         """Turns SRS lock off"""
         return self.write_read_com(b'AMAN 0\r')
+
+    def turnLockOn(self):
+        """Turns SRS lock on"""
+        return self.write_read_com(b'AMAN 1\r')
 
     def readINSR(self):
         """Read SRS  Instrument Status (INSR) register"""
