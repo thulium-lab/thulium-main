@@ -2,6 +2,7 @@ import PyDAQmx as dq
 import numpy as np
 import ctypes
 import time
+import datetime
 
 class DigitalOutput(dq.Task):
     """
@@ -57,6 +58,7 @@ class DigitalOutput(dq.Task):
         return
     
     def run(self):
+        print('DAQ started at',datetime.datetime.now().time())
         self.count = 0
         self.time = time.perf_counter()
         self.running = True
@@ -79,7 +81,7 @@ class DigitalOutput(dq.Task):
         if abs(self.time-timeOld-self.wait)>0.1*self.wait:
             return 0
         self.count += 1
-        # print(self.count)
+        print('DAQ count ',self.count, ' at ', datetime.datetime.now().time())
         if self.func:
             self.func(self.count)
         return 0

@@ -29,11 +29,15 @@ from numpy import *
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
 from PyQt5.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer,QObject,pyqtSignal)
-from PyQt5.QtGui import (QBrush, QColor, QPainter)
+from PyQt5.QtGui import (QBrush, QColor, QPainter,QIcon)
 from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem, QMenu, QAction, QMdiArea,QMdiSubWindow,
                              QMenu, QAction, QScrollArea, QFrame,QDesktopWidget,QSplitter,
                              QGridLayout, QVBoxLayout, QHBoxLayout, QSizePolicy,QMainWindow, QDialog,QTextEdit,
                              QLabel, QLineEdit, QPushButton, QWidget, QComboBox,QRadioButton, QSpinBox, QCheckBox, QTabWidget, QFileDialog,QMessageBox, QDoubleSpinBox)
+
+import ctypes
+myappid = u'LPI.MainScanWindow' # arbitrary string
+ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 from Pulses import PulseScheme, PulseGroup,IndividualPulse,AnalogPulse
 from scanner import Scanner
@@ -65,6 +69,8 @@ class MainWindow(QMainWindow):
 
     def __init__(self, parent = None):
         super(MainWindow, self).__init__(parent)
+        self.setWindowTitle('Scan and Pulses')
+        self.setWindowIcon(QIcon('pulse.ico'))
         # self.showFullScreen()
         self.all_updates_methods = {}
         # self.slots_to_bound={}

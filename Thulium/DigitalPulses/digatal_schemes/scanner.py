@@ -28,6 +28,7 @@ from itertools import chain
 from scanParameters import  SingleScanParameter,AllScanParameters,MeasurementFolderClass
 import time
 import datetime
+import threading
 
 scanner_config_file = 'config_scanner.json'
 data_directory = '..'
@@ -188,6 +189,8 @@ class Scanner(QWidget):
             self.updateParamAndSend(changed_index)
             self.updateSingleMeasFolder()
             self.startScan()
+            # sthrd = threading.Thread(target=self.addFirstFolder)
+            # sthrd.start()
             # self.globals['image_stack'].append(self.globals['current_data_folder'] + '/' + '0_0.png')
             print('Scan started at ',datetime.datetime.now().time())
 
@@ -204,6 +207,10 @@ class Scanner(QWidget):
                 # json.dump(old_config, f)
                 # QMessageBox.warning(None, 'Message', "can not dump config to json, old version will be saved",
                 #                     QMessageBox.Ok)
+
+    def addFirstFolder(self):
+        time.sleep(0.7)
+        self.globals['image_stack'].append(self.globals['current_data_folder'] + '/' + '0_0.png')
 
     def updateSingleMeasFolder(self):
         print('updateSingleMeasFolder')
@@ -234,9 +241,12 @@ class Scanner(QWidget):
             self.globals['current_data_folder'] + '/' + '%i_0.png' % self.current_shot_number)
         if self.current_shot_number < self.number_of_shots - 1:
             self.current_shot_number += 1
+            # self.globals['image_stack'].append(
+            #     self.globals['current_data_folder'] + '/' + '%i_0.png' % self.current_shot_number)
             return 0
-
         self.current_shot_number = 0
+        # self.globals['image_stack'].append(
+        #     self.globals['current_data_folder'] + '/' + '%i_0.png' % self.current_shot_number)
         changed_index = self.scan_parameters.updateIndexes()
         if changed_index != 0:
             # we proceed with to the next outter parameter

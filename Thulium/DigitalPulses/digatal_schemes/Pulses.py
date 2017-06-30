@@ -9,7 +9,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from copy import deepcopy
-
+import time
 from PyQt5.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer,QObject,pyqtSignal)
 from PyQt5.QtGui import (QBrush, QColor, QPainter)
 from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem,QScrollArea, QFrame,QMenu,
@@ -502,7 +502,9 @@ class PulseScheme(QWidget):
         self.globals['Pulses'][pulse_output_str] = deepcopy(self.output)
         # write new output to DAQ
         self.dq.write(self.output)
+        # time.sleep(1)
         self.dq.run()
+        # print('DAQ cicle ', self.dq.count)
         # self.globals['Pulses'][pulse_output_str] = self.output
         self.globals['Pulses']['t_first']=self.t_first
 

@@ -7,7 +7,7 @@ import json
 # Make sure that we are using QT5
 matplotlib.use('Qt5Agg')
 from PyQt5.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer)
-from PyQt5.QtGui import (QBrush, QColor, QPainter)
+from PyQt5.QtGui import (QBrush, QColor, QPainter,QIcon)
 from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem, QMenu, QAction, QScrollArea,QFrame,
                              QGridLayout, QVBoxLayout, QHBoxLayout, QSizePolicy,QMainWindow, QDialog,QTextEdit,
                              QLabel, QLineEdit, QPushButton, QWidget, QComboBox,QRadioButton, QSpinBox, QCheckBox, QTabWidget, QFileDialog,QMessageBox, QDoubleSpinBox)
@@ -29,11 +29,16 @@ import pyqtgraph as pg
 import pymongo, datetime
 from pymongo import MongoClient
 
+import ctypes
+myappid = u'LPI.BlueZalseLock' # arbitrary string
+ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+
 class BlueLock():
     available_com_ports = []
     com_ports_info= ''
     correction_limit = 0.1
     threshold_srs_error = 0.003
+    maximum_srs_error = 0.03 # reaching this value srs will unlock
     # Flags
     srs_lock = False
     piezo_lock = False
@@ -109,6 +114,8 @@ class BlueLock():
     class Widget(QWidget):
         def __init__(self,parent=None,data=None):
             super().__init__()
+            self.setWindowTitle('Blue Laser Lock')
+            self.setWindowIcon(QIcon('maxresdefault.jpg')) #circle_blue.ico
             self.data = data
             self.parent = parent
             self.timer = QTimer()
@@ -299,6 +306,17 @@ class BlueLock():
 
         def routine(self): # programm that run on timer
             # print('routine')
+            status, res = self.data.srs.isLockOn()
+            if not status:
+                print('Error while reading if SRS is locked')
+                self.lock_srs_btn.setStyleSheet("QWidget { background-color: %s }" % 'red')
+                self.data.srs_lock = False
+                self.lock_srs_btn.setStyleSheet("QWidget { background-color: %s }" % 'red')
+                return
+            if not res:
+                print('Srs was unclocked')
+                self.stopLock(msg_to_db='SRS was unlocked')
+                return
             status=self.data.readData() # try to read srs and sacher data
             if not status: # if readings unsuccessfull
                 # stop lock (stop timer) and color piezo_lock button
@@ -336,6 +354,14 @@ class BlueLock():
             self.output_plots.srs_output_curve.setData(self.data.srs_output)
             self.output_plots.sacher_piezo_curve.setData(self.data.piezo_voltage)
 
+            if abs(self.data.srs_output[-1]) > self.data.maximum_srs_error:
+                print('SRS error is too large: %.3f'%self.data.srs_output[-1])
+                print('System is switched to Manual mode')
+                self.data.srs.turnLockOff()  # turn off srs lock
+                self.data.srs_lock = False
+                self.lock_srs_btn.setStyleSheet("QWidget { background-color: %s }" % 'red')
+                self.stopLock(msg_to_db='SRS error is too large: %.3f'%self.data.srs_output[-1])
+                return
             if abs(self.data.srs_output[-1]) > self.data.threshold_srs_error: # if srs_output reached threshold
                 # set color of the piezo_lock btn depending on how large is cuurrent correction
                 if abs(self.data.piezo_voltage[-1] - self.data.piezo_voltage[0]) < self.data.correction_limit/2:

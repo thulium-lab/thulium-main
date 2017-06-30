@@ -27,6 +27,10 @@ import thulium_python_lib.usefull_functions as usfuncs
 import thulium_python_lib.image_processing_new as impr
 
 import threading
+#
+# import ctypes
+# myappid = u'LPI.DisplayWidget' # arbitrary string
+# ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 from PyQt5.QtGui import QFont
 pg.setConfigOptions(imageAxisOrder='row-major')
@@ -236,6 +240,7 @@ class DisplayWidget(DockArea):
     def chbxClicked(self,attribute,state):
         self.__dict__[attribute] = bool(state)
         # print(attribute, state)
+
     def getROITableData(self):
         return np.array([
             ('ll corner',*self.roi_center),
@@ -267,7 +272,6 @@ class DisplayWidget(DockArea):
                                                             self.image_bounds[1][0]:self.image_bounds[1][1]])
         # print(new_data.image.shape)
         self.img.setImage(self.globals['image'],autoRange=False, autoLevels=False,autoHistogramRange=False)
-        self.updateIsocurve()
         # new_data = self.process_image()
         if len(self.globals['image_stack']): # if scan is on images have to be saved
             im_name = self.globals['image_stack'].pop(0)
@@ -279,6 +283,8 @@ class DisplayWidget(DockArea):
             scipy.misc.toimage(self.new_data.image,cmin=0,cmax=1).save(im_name)
         else:
             print('Recieved image at time ',datetime.datetime.now().time())
+        self.updateIsocurve()
+        # self.data_processing()
         sthrd = threading.Thread(target=self.data_processing)
         sthrd.start()
         # print('DOne')
