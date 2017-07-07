@@ -23,6 +23,7 @@ from serial.tools import list_ports
 from time import sleep
 from serial.serialutil import SerialException
 from numpy import sign
+# from device_lib import COMPortDevice
 
 import pyqtgraph as pg
 
@@ -112,6 +113,7 @@ class BlueLock():
 
 
     class Widget(QWidget):
+
         def __init__(self,parent=None,data=None):
             super().__init__()
             self.setWindowTitle('Blue Laser Lock')
@@ -119,7 +121,7 @@ class BlueLock():
             self.data = data
             self.parent = parent
             self.timer = QTimer()
-            self.timer.setInterval(1000)
+            self.timer.setInterval(500)
             self.timer.timeout.connect(self.routine)
             self.initUI()
 
@@ -255,7 +257,6 @@ class BlueLock():
                     print('SRS locked')
                 else:
                     print('Problems with locking SRS')
-
 
         def lockPiezoBtnPressed(self):
             print('lockPiezoBtnPressed')

@@ -228,8 +228,9 @@ class Scanner(QWidget):
         # print('Globals: ',self.globals)
 
     def cycleFinished(self, number=None):
+        # self.parent.arduino.read_serial()
         # for i in range(20):
-        #     s = self.parent.arduino.readline().decode()
+        #     s = self.parent.arduino.stream.readline().decode()
         #     if s=='':
         #         break
         #     print("arduino >>   ",s,end='')

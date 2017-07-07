@@ -410,13 +410,6 @@ class PulseScheme(QWidget):
             for shutter in self.active_shutters:
                 # print(shutter.__dict__)
                 linked_digital_channels = set()
-                # TODO
-                # update pulse_full_name in shutter.linked_digital_channels elsewhere
-                #
-                # hard to do because shutter.linked_digital_channels contains only string name, not index
-                # rework shutter class structure?
-                #
-                # DONE schane full_pulse_name when change either group or pulse name
                 for pulse_full_name in shutter.linked_digital_channels:
                     group_name, pulse_name = pulse_full_name.split('->')
                     # print(group_name, pulse_name)
@@ -459,9 +452,11 @@ class PulseScheme(QWidget):
                                 msg += str(val[i][1]) + '_'
                     msg += ' '
                 msg = msg[:-1] + '!'
-                # print(msg)
-                # self.parent.arduino.write(msg.encode('ascii'))
-                # res = self.parent.arduino.readline().decode()
+                print(msg)
+                status, res = self.parent.arduino.write_read_com(msg.encode('ascii'))
+                if status:
+                    self.parent.arduino.append_readings(res)
+                # # res = self.parent.arduino.readline().decode()
                 # print(res)
 
     def updateGroupTime(self):

@@ -45,8 +45,9 @@ from PlotPulse import PlotPulse
 from bgnd_runner import Bgnd_Thread
 from display_widget import DisplayWidget
 from device_lib import connectArduino
+from arduinoShutters import Arduino
 from WMeter import WMMain,WMChannel
-import arduinoShutters
+# import arduinoShutters
 import threading
 import time
 vertical_splitting = 0.7
@@ -78,7 +79,11 @@ class MainWindow(QMainWindow):
         self.globals['image'] = None
         self.globals['image_updated'] = False
         # self.arduino = connectArduino()
-
+        self.arduino = Arduino()
+        # self.arduino.preCheck()
+        # print('Arduino port', self.arduino.port)
+        # res = self.arduino.connect()
+        # print('Arduino connection',res)
         self.bgnd_image_handler = Bgnd_Thread(globals = self.globals, signals = self.signals,
                                               image_folder=self.image_folder)
         self.bgnd_image_handler.start()
@@ -98,6 +103,7 @@ class MainWindow(QMainWindow):
         self.widgets['Pulses']=PulseScheme(parent=self,globals=self.globals,signals=self.signals)
         self.widgets['PulsePlot']=PlotPulse(parent=self,globals=self.globals)
         self.widgets['CamView'] = DisplayWidget(parent=self, globals=self.globals, signals=self.signals)
+        self.widgets['Arduino'] = self.arduino.Widget(parent=self,data=self.arduino)
         # self.widgets['WavelengthMeter'] = self.wm.WMWidget(data=self.wm)
         self.all_updates_methods['Pulses']=self.widgets['Pulses'].getUpdateMethod()
         hor_splitter = QSplitter(Qt.Horizontal)
@@ -110,7 +116,11 @@ class MainWindow(QMainWindow):
         ver_splitter.addWidget(self.widgets['Scanner'])
         ver_splitter.addWidget(self.widgets['PulsePlot'])
         hor_splitter.addWidget(ver_splitter)
-        hor_splitter.addWidget(self.widgets['Pulses'])
+
+        ver_splitter2 = QSplitter(Qt.Vertical)
+        ver_splitter2.addWidget(self.widgets['Pulses'])
+        ver_splitter2.addWidget(self.widgets['Arduino'])
+        hor_splitter.addWidget(ver_splitter2)
 
         self.setFixedWidth(self.screenSize.width())
         # self.widgets['WavelengthMeter'].show()

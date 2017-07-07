@@ -33,7 +33,8 @@ int current_edge=0; // serial number of currently set edge (state)
 bool handled ; // artifact from previous version (not used now); if serial input command is handled
 bool interrupted = false; // if interruption from trigger occured this flag rises, when interruption is handled it crears
 bool sequence_finished=false; // rises when beam shutter sequence is finished, after that programm waits when next trigger comes
-
+// 0 for no unnesessery data to serial, 1 - for the most needed, 2 - for debugging pulse_scheme, 3 - for debugging WavelenghtMeter, 10 - for all 
+int debug=1; 
   int counter = 0;
 int input_size;
 String full, tail;
@@ -50,18 +51,24 @@ void setup() {
 
 // interrupt (trigger) handler; rises flag 'interrupted' to then stat writing to beam shutter channels
 void interrupt_handler(){
-  Serial.print("interrupted t=");
   t = millis();
+  if (debug > 0 ){
+  Serial.print("interrupted t=");
   Serial.print(t);
+  }
   if (t - last_trigger_time > 10){ // it is not a noise
     last_time = t; // write down time when trigger arrived (sequence is started)
     last_trigger_time = t;
     current_edge = 0;
     interrupted=true; // rise flag
+    if (debug > 0 ){
     Serial.println("   good");
+    }
   }
   else {
+    if (debug > 0 ){
     Serial.println("   bad");
+    }
   }
   
 }
@@ -112,9 +119,11 @@ void write_channels(){
 //  Serial.print("Start writing time ");
 //  Serial.println(micros());
   for (int i=0;i<int_arr_current_length;i+=2){
+    if (debug == 2 or debug == 10 ){
     Serial.print(int_arr[i]);
     Serial.print(" state ");
     Serial.println(int_arr[i+1]);
+    }
     digitalWrite(available_ports[int_arr[i]], int_arr[i+1]); // write state to beam shutter output pin
   }
 //  Serial.print("End writing time ");
@@ -149,7 +158,9 @@ void data_input_handler() {
   //delay(1); // to all data come
   i = get_string_array(); // reads input and separates words
   if (i == -1){
+    if (debug > 0 ){
     Serial.println("Bad");
+    }
     return;
   }
   handled = false; // dedicated
@@ -159,20 +170,34 @@ void data_input_handler() {
   if ( (words[0]).equals("*IDN") ) { // identification
     Serial.println("ArduinoUnoShutters");
   }
-
+  if ( (words[0]).equals("debug") ) { // set debug mode
+    if  (words_number == 2){
+    debug = words[1].toInt();
+    Serial.println("Debug state updated");
+    }
+    else {
+      Serial.println("uncorrect command");
+    }
+  }
   if ( (words[0]).equals("WMShutters") ) { // set state of wavelength meter shutters
         if( (words_number-1)%2 ) { // check if input more or less correct
+          if (debug ==3 or debug==10 ){
           Serial.println("-1");
+          }
           return;
         }
     for (int i = 1; i < words_number; i+=2)
     {
+      if (debug ==3 or debug==10 ){
       Serial.print(words[i].toInt());
       Serial.print("   ");
       Serial.println(words[i+1].toInt());
+      }
       digitalWrite(available_ports[words[i].toInt()], words[i+1].toInt());
     }
+    if (debug ==3 or debug==10 ){
       Serial.println("WMshutters written");
+    }
   }
  if ( (words[0]).equals("BeamShutters") ) { // saves all sequences to edge_sequence array of string
   //  test command BeamShutters 0_1_0_2_0_3_0_4_0_5_0_ 300_1_0_2_0_3_0_4_0_5_0_ 1000_1_1_2_1_3_1_4_1_5_1_
@@ -193,7 +218,9 @@ void data_input_handler() {
 //    Serial.print(i);     
 //    Serial.println(edge_sequence[i]);
     }
+    if (debug ==2 or debug==10 ){
       Serial.println("Ok");
+    }
  }
 }
 
