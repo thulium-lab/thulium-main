@@ -78,6 +78,7 @@ class MainWindow(QMainWindow):
         self.globals = {}
         self.globals['image'] = None
         self.globals['image_updated'] = False
+        self.globals['image_stack']=[]
         # self.arduino = connectArduino()
         self.arduino = Arduino()
         # self.arduino.preCheck()
@@ -101,9 +102,10 @@ class MainWindow(QMainWindow):
         # self.slots_to_bound['cycleFinished'].connect(self.widgets['Scanner'].cycleFinished)
         # self.triggerCycle.connect(self.widgets['Scanner'].cycleFinished)
         self.widgets['Pulses']=PulseScheme(parent=self,globals=self.globals,signals=self.signals)
-        self.widgets['PulsePlot']=PlotPulse(parent=self,globals=self.globals)
+        self.widgets['PulsePlot']=PlotPulse(parent=self,globals=self.globals,signals=self.signals)
         self.widgets['CamView'] = DisplayWidget(parent=self, globals=self.globals, signals=self.signals)
         self.widgets['Arduino'] = self.arduino.Widget(parent=self,data=self.arduino)
+        self.widgets['Arduino'].connectBtnPressed()
         # self.widgets['WavelengthMeter'] = self.wm.WMWidget(data=self.wm)
         self.all_updates_methods['Pulses']=self.widgets['Pulses'].getUpdateMethod()
         hor_splitter = QSplitter(Qt.Horizontal)
@@ -122,8 +124,9 @@ class MainWindow(QMainWindow):
         ver_splitter2.addWidget(self.widgets['Arduino'])
         hor_splitter.addWidget(ver_splitter2)
 
-        self.setFixedWidth(self.screenSize.width())
+        # self.setFixedWidth(self.screenSize.width())
         # self.widgets['WavelengthMeter'].show()
+        # self.widgets['CamView'].showFullScreen()
         self.widgets['CamView'].show()
 
         print('self_globals',self.globals)

@@ -28,6 +28,7 @@ from itertools import chain
 from scanParameters import  SingleScanParameter,AllScanParameters,MeasurementFolderClass
 import time
 import datetime
+import shutil
 import threading
 
 scanner_config_file = 'config_scanner.json'
@@ -41,32 +42,36 @@ EMPTY_CONFIG_FILE = -1
 class Scanner(QWidget):
 
     def __init__(self,globals=None,all_updates_methods=None,signals=None,parent=None,**argd):
+        super().__init__()
         self.parent = parent
-        self.all_updates_methods = all_updates_methods
         self.globals = globals
-        self.globals['image_stack']=[]
         self.signals = signals
+        self.all_updates_methods = all_updates_methods  # needed to apply changes while scanning
+        # subprogramms
         self.scan_parameters = AllScanParameters(globals=globals,parent=self)
         self.meas_folder1 = MeasurementFolderClass(globals=globals,parent=self)
-        self.add_points_flag = False
-        # self.all_scan_params = {}#{'pulses':a}
-        self.notes = ''
+
+        self.add_points_flag = False    # whether add points if meas_folder exists or not
+        self.notes = ''     # textfield to save notes
         self.current_meas_number = 0
         self.on_scan = False
         self.scan_interrupted = False
-        self.number_of_shots = 5
+        self.number_of_shots = 5        # per parameter to average
         self.current_shot_number = 0
-        self.single_meas_folder = ''
+        self.single_meas_folder = ''    # folder with pictures
         self.loadConfig()
-        super().__init__()
+
         self.initUI()
-        # for now while without real scan
-        self.timer = QTimer(self)
-        self.timer.setInterval(1000)
-        # self.timer.timeout.connect(self.cycleFinished)
+        self.setMinimumWidth(800)
+
         self.signals.scanCycleFinished.connect(self.cycleFinished)
         # add variable to global namespace
         self.updateGlobals()
+
+        # for tests (OLD)
+        # self.timer = QTimer(self)
+        # self.timer.setInterval(1000)
+        # self.timer.timeout.connect(self.cycleFinished)
 
     def loadConfig(self):
         print('loadConfigScanner')
@@ -88,7 +93,7 @@ class Scanner(QWidget):
 
     def saveConfig(self,changed_key=None,changed_value=None):
         print('saveConfig')
-        if changed_key:
+        if changed_key: # to specify what in config to update
             print('Changed Value',changed_value)
             self.config[changed_key] =changed_value if changed_value!=None else self.__dict__[changed_key]
         try:
@@ -120,7 +125,7 @@ class Scanner(QWidget):
         hor3.addWidget(add_points_box)
 
         hor3.addWidget(QLabel('add points to the folder'))
-        # hor3.addStretch(0.5)
+        hor3.addStretch(0.5)
         number_of_shots_box = QSpinBox()
         number_of_shots_box.setMinimum(0)
         number_of_shots_box.setMaximum(100)
@@ -129,6 +134,7 @@ class Scanner(QWidget):
         hor3.addWidget(number_of_shots_box)
 
         hor3.addWidget(QLabel('Shots'))
+        hor3.addStretch(0.5)
 
         self.stop_btn = QPushButton('Stop')
         self.stop_btn.clicked.connect(self.stopBtnPressed)
@@ -166,7 +172,7 @@ class Scanner(QWidget):
         print('stopBtnPressed')
         if self.on_scan:
             self.stopScan(stop_btn_text='Continue', is_scan_interrupted=True)
-        elif self.scan_interrupted:
+        elif self.scan_interrupted: # to continue previously statred scan
             self.startScan()
             print('Scan restarted')
 
@@ -179,25 +185,32 @@ class Scanner(QWidget):
                 return -1
             self.current_shot_number = 0
             changed_index = self.scan_parameters.updateIndexes(start=True)
-            # print('Data folder: ', os.path.join(self.meas_folder1.day_folder,self.meas_folder1.name))
             self.globals['current_measurement_folder'] = self.meas_folder1.day_folder.strip() + '/' + self.meas_folder1.name.strip()
-            os.mkdir(self.globals['current_measurement_folder'])    # create new measurement folder
-            self.writeMeasConfig()
+            # if folder already exists and add_points_flag isn't risen
+            if os.path.isdir(self.globals['current_measurement_folder']) and not self.add_points_flag:
+                # remove all directory
+                print('Removing directory')
+                shutil.rmtree(self.globals['current_measurement_folder'])
+                os.mkdir(self.globals['current_measurement_folder'])    # create new measurement folder
+            elif not os.path.isdir(self.globals['current_measurement_folder']):
+                os.mkdir(self.globals['current_measurement_folder'])    # create new measurement folder
             print('Data folder: ',self.globals['current_measurement_folder'])
-            # self.globals['DAQ'].stop()
-            # time.sleep(1)
+
+            self.writeMeasConfig()
             self.updateParamAndSend(changed_index)
             self.updateSingleMeasFolder()
             self.startScan()
+            # below are few tries with solving saving image bug
             # sthrd = threading.Thread(target=self.addFirstFolder)
             # sthrd.start()
             # self.globals['image_stack'].append(self.globals['current_data_folder'] + '/' + '0_0.png')
             print('Scan started at ',datetime.datetime.now().time())
 
     def writeMeasConfig(self):
+        """This function saves configuration (i.e. position of ROI in image) to file in current_meas_folder"""
         fname = self.globals['current_measurement_folder'] + '/' + meas_config_file
         meas_config_data = {}
-        if 'image_lower_left_corner' in self.globals:
+        if 'image_lower_left_corner' in self.globals: # ROI position
             meas_config_data['image_lower_left_corner'] = self.globals['image_lower_left_corner']
         with open(fname, 'w') as f:
             try:
@@ -209,6 +222,7 @@ class Scanner(QWidget):
                 #                     QMessageBox.Ok)
 
     def addFirstFolder(self):
+        """Not used now. Was written to start in thread and delay creation of first folder name to image_stack """
         time.sleep(0.7)
         self.globals['image_stack'].append(self.globals['current_data_folder'] + '/' + '0_0.png')
 
@@ -216,7 +230,8 @@ class Scanner(QWidget):
         print('updateSingleMeasFolder')
         self.single_meas_folder = self.scan_parameters.getSingleFolderName()+single_folder_suffix
         self.globals['current_data_folder']= self.globals['current_measurement_folder'].strip() + '/' + self.single_meas_folder.strip()
-        os.mkdir(self.globals['current_data_folder'])        # create new folder
+        if not os.path.isdir(self.globals['current_data_folder']): # if there no such folder
+            os.mkdir(self.globals['current_data_folder'])        # create new folder
         print('Current folder for images: ',self.globals['current_data_folder'])
         self.updateGlobals()
 
@@ -228,44 +243,40 @@ class Scanner(QWidget):
         # print('Globals: ',self.globals)
 
     def cycleFinished(self, number=None):
-        # self.parent.arduino.read_serial()
-        # for i in range(20):
-        #     s = self.parent.arduino.stream.readline().decode()
-        #     if s=='':
-        #         break
-        #     print("arduino >>   ",s,end='')
+        """called when cycle is finished"""
         print(number, 'cycleFinished at ',datetime.datetime.now().time())
         if not self.on_scan:
             return
-        # called when one cycle is finished
+        # add image_name for saving image
         self.globals['image_stack'].append(
             self.globals['current_data_folder'] + '/' + '%i_0.png' % self.current_shot_number)
-        if self.current_shot_number < self.number_of_shots - 1:
+
+        if self.current_shot_number < self.number_of_shots - 1: # same shots to average
             self.current_shot_number += 1
             # self.globals['image_stack'].append(
             #     self.globals['current_data_folder'] + '/' + '%i_0.png' % self.current_shot_number)
             return 0
-        self.current_shot_number = 0
+
+        self.current_shot_number = 0 # new parameter will be launched
         # self.globals['image_stack'].append(
         #     self.globals['current_data_folder'] + '/' + '%i_0.png' % self.current_shot_number)
-        changed_index = self.scan_parameters.updateIndexes()
+        changed_index = self.scan_parameters.updateIndexes() # for nested scans
         if changed_index != 0:
-            # we proceed with to the next outter parameter
+            # we proceed to the next outter parameter
             self.scan_parameters.updateAdditionalName()     # update additional name
             self.meas_folder1.current_meas_number += 1      # increment meas folder number
             self.meas_folder1.gui.updateMeasFolder()
-            # os.mkdir()    # create new folder
+            # os.mkdir()    # create new measurement folder
 
-        # print(self.scan_parameters.current_indexs)
-        self.updateParamAndSend(changed_index)
+        self.updateParamAndSend(changed_index) # update parameter on scan
+
         if self.on_scan:
             self.updateSingleMeasFolder()
             # self.globals['image_stack'].append(self.globals['current_data_folder'] + '/' + '0_0.png')
 
     def updateParamAndSend(self,changed_index):
+        """Updates scanning parameter and sends it to the module from which this parameter"""
         print('updateParamAndSend')
-        # print(changed_index)
-        # STOP DAQ
         params_to_send = self.scan_parameters.getParamsToSend()
         print('Scanning parameters: ',params_to_send)
         # update parameters by calling update methods of subprogramm
@@ -281,13 +292,9 @@ class Scanner(QWidget):
 
         if changed_index == -1:
             self.stopScan(stop_btn_text='Fihished')
-        # START DAQ mayby somehow check if is_Ok
-                # print(name, res_of_update)
 
     def stopScan(self,stop_btn_text='Stop',is_scan_interrupted=False,**argd):
         print('stopScan')
-        print(self.globals['image_stack'])
-        self.timer.stop()
         self.on_scan = False
         self.stop_btn.setText(stop_btn_text)
         self.scan_btn.setText('New scan')
@@ -295,7 +302,6 @@ class Scanner(QWidget):
 
     def startScan(self,**argd):
         self.scan_interrupted = False
-        self.timer.start()
         self.stop_btn.setText('Stop')
         self.scan_btn.setText('On scan!')
         self.on_scan = True
@@ -303,21 +309,12 @@ class Scanner(QWidget):
     def notesChanged(self):
         print('notesChanged')
         self.notes = self.sender().toPlainText()
-        print(repr(self.notes))
+        # print(repr(self.notes))
         self.saveConfig('notes')
 
 
 
 if __name__ == '__main__':
-    # config = {}
-    # config['day_folder'] = '2016_10_10'
-    # config['all_meas_type'] = ['CL', 'LT', 'FB', 'T']
-    # config['current_meas_type'] = 'CL'
-    # config['add_points_flag']=  False
-    # config['notes'] = 'some note'
-    # config['number_of_shots'] = 10
-    # with open(scanner_config_file,'w') as f:
-    #     json.dump(config,f)
     import sys
     app = QApplication(sys.argv)
     mainWindow = Scanner()

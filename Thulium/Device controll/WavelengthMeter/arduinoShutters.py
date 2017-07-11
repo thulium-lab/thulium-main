@@ -1,5 +1,5 @@
 from serial import Serial, SerialException
-import time
+# import time
 import sys
 sys.path.append(r'D:\Dropbox\Python\Thulium\Device controll')
 from device_lib import COMPortDevice
@@ -7,24 +7,20 @@ from serial.tools import list_ports
 from PyQt5.QtCore import (QTimer)
 from PyQt5.QtGui import (QTextCursor)
 from PyQt5.QtWidgets import (QWidget, QComboBox,QRadioButton, QSpinBox, QCheckBox, QTabWidget, QFileDialog,QMessageBox, QDoubleSpinBox,QTextEdit)
-# import matplotlib.pyplot as plt
-# from numpy import arange, sin, pi
-# from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-# from matplotlib.figure import Figure
-from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem,
-                             QGridLayout, QVBoxLayout, QHBoxLayout, QSizePolicy,
+from PyQt5.QtWidgets import (QApplication, QVBoxLayout, QHBoxLayout,
                              QLabel, QLineEdit, QPushButton)
 
 
 class Arduino(COMPortDevice):
     """This class is based on COMPortDevice from device_lib
         Comment: arduino not always sends unswer, so checking its answer isn't the best way"""
-    baudrate = 57600
+    baudrate = 9600
     identification_names = []#['ArduinoUnoShutters']
     timeout = 0.01
     n_lines = 50    # number of lines (readings from arduino) to display in QTextEdit window
     readings = []   # array of string where to contain readings
     available_com_ports = []
+    n_chars_in_string = 400
 
     def __init__(self):
         pass
@@ -72,17 +68,20 @@ class Arduino(COMPortDevice):
     def append_readings(self,s):
         """append last readings from arduino to the list"""
         # print("arduino >>   ", s, end='')
-        if len(self.readings) < self.n_lines: # if it's less the n_lines in readings
-            self.readings.append(s)
+
+        # if there no \n on the end (string s is small) - just add it to the last string
+        if (not s.endswith('\n')) and len(self.readings) and len(self.readings[-1] + s)<self.n_chars_in_string:
+            self.readings[-1] += s
         else:
-            self.readings[:-1] = self.readings[1:]
-            self.readings[-1] = s
+            if len(self.readings) < self.n_lines: # if it's less the n_lines in readings
+                self.readings.append(s)
+            else:
+                self.readings[:-1] = self.readings[1:]
+                self.readings[-1] = s
 
     def updateCOMPortsInfo(self):
         """updates all serial ports info - here is needed for construction of available_com_ports list"""
         self.available_com_ports = [port.device for port in list(list_ports.comports())]
-        # self.com_ports_info = '\n\n'.join(
-        #     ['\n'.join([key + ':' + str(val) for key, val in p.__dict__.items()]) for p in list(list_ports.comports())])
 
     class Widget(QWidget):
         """GUI for arduino"""
@@ -91,10 +90,10 @@ class Arduino(COMPortDevice):
             self.parent = parent
             super().__init__()
             self.initUI()
+            # self.setWindowTitle('Arduino') # Doesn't work
             self.updateBtnPressed() # to get preChecked port from start
-            # timer is needed for readings from serial port
-            self.timer = QTimer()
-            self.timer.setInterval(1000)
+            self.timer = QTimer() # timer is needed for readings from serial port
+            self.timer.setInterval(500)
             self.timer.timeout.connect(self.updateReadings)
             self.timer.start()
 
@@ -205,17 +204,19 @@ class Arduino(COMPortDevice):
             """updates reading from arduino"""
             self.data.read_serial()
             if self.do_update.isChecked():
-                self.readings_text.setText('\n'.join(self.data.readings))
+                self.readings_text.setText(''.join(self.data.readings))
                 self.readings_text.moveCursor(QTextCursor.End)
 
 if __name__ == '__main__':
-    import sys
+    # import sys
 
     app = QApplication(sys.argv)
     arduino = Arduino()
     mainWindow = arduino.Widget(data=arduino)
     mainWindow.show()
     sys.exit(app.exec_())
+
+    # OLD
 
 #     # a = ArduinoShutters(port = 'COM27')
 #     arduino = Serial('COM27', baudrate=57600, timeout=1)
@@ -240,7 +241,6 @@ if __name__ == '__main__':
 # print(arduino.readline())
 # arduino.close()
 
-#OLD
 
 # def write_read_com(port,command):
 #     port.write(command)
