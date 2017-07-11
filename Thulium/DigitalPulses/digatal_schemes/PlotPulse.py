@@ -1,81 +1,49 @@
-from PyQt5.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer)
-from PyQt5.QtGui import (QBrush, QColor, QPainter)
+from PyQt5.QtCore import ( Qt, QTimer)
 import matplotlib
 matplotlib.use('Qt5Agg',force=True)
 from PyQt5.QtWidgets import (QApplication)
 import pyqtgraph as pg
 import numpy as np
-# output_data = {'A0': [(0, 0), (1.0, 1), (1110.0, 1)], '11': [(0, 0), (1.0, 1), (1000.0, 0), (1110.0, 0)], '9': [(0, 0), (1.0, 1), (1000.0, 0), (1110.0, 0)], '10': [(0, 0), (1.0, 1), (1100.0, 0), (1110.0, 0)], '12': [(0, 1), (1100.0, 0), (1110.0, 0)]}
 
 class PlotPulse(pg.GraphicsWindow):
-    def __init__(self,parent=None,globals={},**argd):
+    def __init__(self,parent=None,globals={},signals=None,**argd):
+        self.signals = signals
         self.parent=parent
         self.globals = globals
         super().__init__(title="PulsePlot")
         # self.resize(600, 600)
-        if 'Signals' in self.globals and 'Pulses' in self.globals['Signals']:
-            self.globals['Signals']['Pulses']['onAnyChange'].connect(self.updatePlot)
-        else:
-            self.parent.slots_to_bound.append(lambda : self.globals['Signals']['Pulses']['onAnyChange'].connect(self.updatePlot))
+        self.signals.anyPulseChange.connect(self.updatePlot)
         self.updatePlot()
-        # self.show()
 
     def updatePlot(self):
-        """used as a slot called by Pulses class to redraw pulses"""
+        """used as a slot called by Pulses class to redraw pulses
+            CAN BE DONE IN THREAD"""
         self.plotPulses2(self.globals['Pulses']['pulse_output'],self.globals['Pulses']['t_first'],
                          self.globals['Pulses']['digital_channels'],self.globals['Pulses']['analog_channels'])
 
-    # def plotPulses(self,output_data,t_first,digital_channels=None,analog_channels=None):
-    #     print('PlotPulses')
-    #     # self.clear()
-    #     for name in sorted(output_data):
-    #         value = output_data[name]
-    #         p = self.addPlot()
-    #         xx = []
-    #         yy = []
-    #         for i,point in enumerate(value[1:]):
-    #             if i==0:
-    #                 xx.append(t_first)
-    #                 yy.append(point[1])
-    #                 continue
-    #             if (not i==0) and (not i == (len(value[1:])-1)):
-    #                 xx.append(point[0])
-    #                 yy.append(not point[1])
-    #             xx.append(point[0])
-    #             yy.append(point[1])
-    #         p.setYRange(0,1)
-    #         p.plot(xx,yy)
-    #         # if i != len(output_data)-1:
-    #         #     p.hideAxis('bottom')
-    #         p.showGrid(x=True)
-    #         self.nextRow()
-    #         p.showButtons()
-    #         # self.resize(600,100*len(output_data))
 
     def plotPulses2(self, output_data, t_first, digital_channels=None, analog_channels=None):
         print('PlotPulses2')
-        # print(output_data)
-        self.clear()
-        digital_hight=1.2
-        digital_counter = 0
-        analog_counter = 0
+        self.clear()    # clear plot
         d_plot = self.addPlot()
+        digital_hight=1.2   # place for each curve of height=1
+        digital_counter = 0 # number of plotted channel
+        dig_list=[]     # list of active digital channels
+        # for analog puslses -- not used now
+        # analog_counter = 0
         # self.nextRow()
         # a_plot = self.addPlot()
-        dig_list=[]
-        dig_out = []
-        analog_out = []
-        for name in reversed(sorted(output_data)):
+        # analog_out = []
+        for name in reversed(sorted(output_data,key=lambda x:int(x,base=16))):
             if name in digital_channels:
                 dig_list.append(name)
-                local_plot = d_plot
                 value = output_data[name]
                 xx = []
                 yy = []
-                # print(value)
+                # construct points to show
                 for i, point in enumerate(value):
                     if i == 0:
-                        xx.append(t_first-100)
+                        xx.append(t_first-(100 if t_first > 100 else t_first))
                         yy.append(point[1])
                         continue
                     if (not i == 0) and (not i == (len(value) - 1)):
@@ -83,14 +51,14 @@ class PlotPulse(pg.GraphicsWindow):
                         yy.append(not point[1])
                     xx.append(point[0])
                     yy.append(point[1])
-                # print(xx,np.array(yy)+digital_counter*digital_hight)
-                local_plot.plot(xx,np.array(yy)+digital_counter*digital_hight)
-                local_plot.plot(xx, np.ones_like(xx)*digital_counter*digital_hight,pen=pg.mkPen('w', width=0.5, style=Qt.DashLine)    )
+                d_plot.plot(xx,np.array(yy)+digital_counter*digital_hight) # plot data
+                d_plot.plot(xx, np.ones_like(xx)*digital_counter*digital_hight,
+                                pen=pg.mkPen('w', width=0.5, style=Qt.DashLine)) # plot zero
                 digital_counter += 1
-
+            # TODO plot analogs
             # elif name in analog_channels:
             #     local_plot = a_plot
-            #     # TODO plot analogs
+            #
             #     # xx, yy = list(zip(*output_data[name][1:]))
             #     # local_plot.plot(xx,yy)
             #     analog_counter += 1
@@ -98,18 +66,12 @@ class PlotPulse(pg.GraphicsWindow):
             #     print('Wrong channel')
             #     return -1
                 # QMessageBox.warning(self, 'Message', "Not equal length of params", QMessageBox.Yes)
-        # print([np.arange(1,len(dig_list)+1)*digital_hight,dig_list])
-        d_plot.getAxis('left').setTicks([list(zip((np.arange(len(dig_list))+1/2)*digital_hight,dig_list))])
-        # self.resize(700, 30 * len(output_data))
-        # self.resize()
-            # p.setYRange(0, 1)
-            # p.plot(xx, yy)
-            # if i != len(output_data)-1:
-            #     p.hideAxis('bottom')
-            # p.showGrid(x=True)
-            # self.nextRow()
-            # p.showButtons()
-            # self.resize(600, 100 * len(output_data))
+        # set tiks names
+        if 'channels_affiliation' in self.globals:
+            tiks_names = ['\n'.join([x] + list(set(self.globals['channels_affiliation'][x]))) for x in dig_list]
+        else:
+            tiks_names = dig_list
+        d_plot.getAxis('left').setTicks([list(zip((np.arange(len(dig_list))+1/2)*digital_hight,tiks_names))])
 
 
 

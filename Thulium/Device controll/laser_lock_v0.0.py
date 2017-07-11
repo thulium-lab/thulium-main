@@ -265,6 +265,7 @@ class BlueLock():
                 print('No connection')
                 return
             status,self.data.srs_lock = self.data.srs.isLockOn() # check if srs is locked
+            print('1')
             if not status: #if error in readings simply do nothing
                 return
             if not self.data.srs_lock: # if srs isn't locked
@@ -276,20 +277,27 @@ class BlueLock():
             self.lock_srs_btn.setStyleSheet("QWidget { background-color: %s }" % 'green')
             if not self.data.piezo_lock: # if piezo is not locked yet
                 self.data.srs.clearINSR() # clean register INSR from srs - about it's overload or reaching limit
+                print('1')
                 self.lock_piezo_btn.setStyleSheet("QWidget { background-color: %s }" % 'green')
+                print('1')
                 status = self.data.readData(new=True) # try read data from srs and sacher
+                print('1')
                 if not status: # if there error while reading (most likely due to breaking com-port connections)
                     # don't lock and indicate it via red piezo_lock btn
                     self.lock_piezo_btn.setStyleSheet("QWidget { background-color: %s }" % 'red')
                     self.timer.stop()
                     return
                 self.output_plots.srs_plot.setYRange(-5*self.data.threshold_srs_error,5*self.data.threshold_srs_error)
+                print('1')
                 self.output_plots.srs_output_curve.setData(self.data.srs_output)
                 self.output_plots.srs_lower_threshold.setValue(-self.data.threshold_srs_error)
                 self.output_plots.srs_upper_threshold.setValue(self.data.threshold_srs_error)
+                print('1')
 
                 self.output_plots.sacher_piezo_curve.setData(self.data.piezo_voltage)
+                print('0')
                 self.piezo_voltage.setValue(self.data.piezo_voltage[-1])
+                print('0')
                 #create new entry in database
                 self.data.current_db_id = self.data.db.insert_one(self.data.getDataToDB()).inserted_id
                 print('Current entry mongodb id ',self.data.current_db_id)

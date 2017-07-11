@@ -134,9 +134,9 @@ class DisplayWidget(DockArea):
         self.d2 = Dock("Image data", size=(self.screen_size.width()/2, self.screen_size.height()/3))
         self.d4 = Dock("Cloud width", size=(self.screen_size.width()/2, self.screen_size.height()/3))
         self.area.addDock(self.d1, 'left')      ## place d1 at left edge of dock area (it will fill the whole space since there are no other docks yet)
-        self.area.addDock(self.d3, 'right', self.d1)## place d3 at bottom edge of d1
-        self.area.addDock(self.d2, 'top',self.d3)     ## place d4 at right edge of dock area
-        self.area.addDock(self.d4, 'bottom', self.d3)  ## place d5 at left edge of d1
+        self.area.addDock(self.d2, 'right', self.d1)## place d3 at bottom edge of d1
+        self.area.addDock(self.d4, 'bottom',self.d2)     ## place d4 at right edge of dock area
+        self.area.addDock(self.d3, 'bottom', self.d4)  ## place d5 at left edge of d1
         # #old version
         # self.imv = pg.ImageView()
         # self.imv.setColorMap(pg.ColorMap(np.array([ 0.  ,  0.25,  0.5 ,  0.75,  1.  ]), np.array([[  255, 255, 255, 255],       [  0,   0, 255, 255],       [  0,   0,   0, 255],       [255,   0,   0, 255],       [255, 255,   0, 255]], dtype=np.uint8)))
@@ -207,6 +207,13 @@ class DisplayWidget(DockArea):
         self.fit2D_chbx.setChecked(self.do_fit2D)
         self.fit2D_chbx.stateChanged.connect(lambda state:self.chbxClicked('do_fit2D',state))
         chbx_layout.addWidget(self.fit2D_chbx)
+
+        chbx_layout.addWidget(QLabel('N points to show'))
+        self.n_points_spin_box = QSpinBox()
+        self.n_points_spin_box.setRange(10,1000)
+        self.n_points_spin_box.setValue(self.N_point_to_plot)
+        self.n_points_spin_box.valueChanged.connect(self.nPointsChanged)
+        chbx_layout.addWidget(self.n_points_spin_box)
         # w6.addWidget(self.fit1D_x_chbx)
         # self.d3.addWidget(QLabel('fit1D_x'),row=1,col=0)
         # self.d3.addWidget(self.fit1D_x_chbx,row=1,col=1)
@@ -236,6 +243,11 @@ class DisplayWidget(DockArea):
     # def LUTChanged(self):
     #     print('LUTChanged')
     #     print(self.hist.gradient.getGradient())
+
+    def nPointsChanged(self,new_val):
+        self.N_point_to_plot = new_val
+        self.config['N_point_to_plot'] = self.N_point_to_plot
+        self.save_config()
 
     def chbxClicked(self,attribute,state):
         self.__dict__[attribute] = bool(state)

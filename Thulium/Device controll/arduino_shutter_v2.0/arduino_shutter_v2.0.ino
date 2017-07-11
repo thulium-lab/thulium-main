@@ -40,9 +40,9 @@ int input_size;
 String full, tail;
 char b;
 int first_space;
-  
+String msg;
 void setup() {
-  Serial.begin(57600); // boud rate 
+  Serial.begin(9600); // boud rate 
   attachInterrupt(0,interrupt_handler,RISING); // connect trigger on pin 2 to interrupt with handler function interrupt_handler, edge is rising
   for (i = 0; i < ports_number; i++) {
     pinMode(available_ports[i], OUTPUT); // configure output shutter pins
@@ -52,23 +52,22 @@ void setup() {
 // interrupt (trigger) handler; rises flag 'interrupted' to then stat writing to beam shutter channels
 void interrupt_handler(){
   t = millis();
-  if (debug > 0 ){
-  Serial.print("interrupted t=");
-  Serial.print(t);
-  }
+  msg = "interrupt t=" + String(t);
   if (t - last_trigger_time > 10){ // it is not a noise
     last_time = t; // write down time when trigger arrived (sequence is started)
     last_trigger_time = t;
     current_edge = 0;
     interrupted=true; // rise flag
-    if (debug > 0 ){
-    Serial.println("   good");
-    }
+    msg += "   good";
   }
   else {
-    if (debug > 0 ){
-    Serial.println("   bad");
-    }
+    msg += "   bad";
+  }
+  if (debug == 2 or debug == 10){
+    Serial.println(msg);
+  }
+  if (debug == 1){
+    Serial.print("i");
   }
   
 }
@@ -96,9 +95,6 @@ void loop() {
 
 // writing beam shutter states 
 void write_channels(){
-//  Serial.print(millis());
-//  Serial.print("; current_edge ");
-//  Serial.print(current_edge);
   j=0;
   k=0;
   ws = edge_sequence[current_edge]; // read current state as string
@@ -181,8 +177,8 @@ void data_input_handler() {
   }
   if ( (words[0]).equals("WMShutters") ) { // set state of wavelength meter shutters
         if( (words_number-1)%2 ) { // check if input more or less correct
-          if (debug ==3 or debug==10 ){
-          Serial.println("-1");
+          if (debug > 0 ){
+          Serial.println("Bad WMShutters command");
           }
           return;
         }
@@ -195,8 +191,8 @@ void data_input_handler() {
       }
       digitalWrite(available_ports[words[i].toInt()], words[i+1].toInt());
     }
-    if (debug ==3 or debug==10 ){
-      Serial.println("WMshutters written");
+    if (debug > 0 ){
+      Serial.println("WS Ok");
     }
   }
  if ( (words[0]).equals("BeamShutters") ) { // saves all sequences to edge_sequence array of string
@@ -218,8 +214,8 @@ void data_input_handler() {
 //    Serial.print(i);     
 //    Serial.println(edge_sequence[i]);
     }
-    if (debug ==2 or debug==10 ){
-      Serial.println("Ok");
+    if (debug > 0 ){
+      Serial.println("BS Ok");
     }
  }
 }

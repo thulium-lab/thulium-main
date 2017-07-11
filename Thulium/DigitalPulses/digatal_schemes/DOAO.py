@@ -58,7 +58,7 @@ class DigitalOutput(dq.Task):
         return
     
     def run(self):
-        print('DAQ started at',datetime.datetime.now().time())
+        # print('DAQ started at',datetime.datetime.now().time())
         self.count = 0
         self.time = time.perf_counter()
         self.running = True
@@ -81,7 +81,7 @@ class DigitalOutput(dq.Task):
         if abs(self.time-timeOld-self.wait)>0.1*self.wait:
             return 0
         self.count += 1
-        print('DAQ count ',self.count, ' at ', datetime.datetime.now().time())
+        # print('DAQ count ',self.count, ' at ', datetime.datetime.now().time())
         if self.func:
             self.func(self.count)
         return 0

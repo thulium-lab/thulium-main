@@ -1,26 +1,14 @@
-# from PyQt5.QtCore import QObject
-import os, sys
-import pickle
-import random
-import numpy as np
+import os
 import matplotlib
 matplotlib.use('Qt5Agg',force=True)
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
-from copy import deepcopy
 
-from PyQt5.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer)
-from PyQt5.QtGui import (QBrush, QColor, QPainter)
 from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem, QMenu, QAction, QScrollArea,QFrame,
                              QGridLayout, QVBoxLayout, QHBoxLayout, QSizePolicy,QMainWindow, QDialog,QTextEdit,
                              QLabel, QLineEdit, QPushButton, QWidget, QComboBox,QRadioButton, QSpinBox, QCheckBox, QTabWidget, QFileDialog,QMessageBox, QDoubleSpinBox)
-# import pyqtgraph as pg
+
 import json
-import time
-from sympy.utilities.lambdify import lambdify
+#import time
 import re
-import numpy as np
 from numpy import *
 from itertools import chain
 import sympy as sp
@@ -30,6 +18,7 @@ scan_params_str = 'scan_params'
 data_directory = 'D:\!Data'
 scan_folder_data_str = 'scan_folder_data'
 SCAN_FINISHED = -1
+
 class SingleScanParameter():
     is_active = False
     name = ('',)  # tuple of name i.e. ('pulse','1 stage cooling',..)

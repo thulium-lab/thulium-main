@@ -14,7 +14,7 @@ from PyQt5.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer,QObject,pyqtSignal
 from PyQt5.QtGui import (QBrush, QColor, QPainter)
 
 from PyQt5.QtWidgets import (QGridLayout, QWidget, QVBoxLayout, QHBoxLayout, QLabel,QLineEdit, QSpinBox, QComboBox,
-                             QDoubleSpinBox, QApplication, QDialog, QPushButton,QDialogButtonBox)
+                             QDoubleSpinBox, QApplication, QDialog, QPushButton,QDialogButtonBox,QCheckBox)
 #class BasicShutter():
     
 class Shutter():
@@ -25,6 +25,8 @@ class Shutter():
         self.linked_digital_channels = []
         self.start_delay = 0
         self.stop_delay = 0
+        self.always_on = False
+        self.always_off = False
 
     def load(self,shutter_dict=None):
         print('shutter-load')
@@ -72,9 +74,18 @@ class Shutter():
             stop_delay_box.valueChanged.connect(self.stopDelayChanged)
             self.grid_layout.addWidget(stop_delay_box, 3,1)
 
-            self.grid_layout.addWidget(QLabel('Linked pulses'), 4, 0)
+            self.alwaysOnChbx = QCheckBox('Always On')
+            self.alwaysOnChbx.setChecked(self.data.always_on)
+            self.grid_layout.addWidget(self.alwaysOnChbx, 4, 0)
+            self.alwaysOnChbx.stateChanged.connect(lambda x: self.alwaysOnOffChanged('on',x))
+            self.alwaysOffChbx = QCheckBox('Always Off')
+            self.alwaysOffChbx.setChecked(self.data.always_off)
+            self.grid_layout.addWidget(self.alwaysOffChbx, 4, 1)
+            self.alwaysOffChbx.stateChanged.connect(lambda x: self.alwaysOnOffChanged('off',x))
+
+            self.grid_layout.addWidget(QLabel('Linked pulses'), 5, 0)
             # self.grid_layout.addWidget(QLabel('First pulse\nSecond pulse\nthird'), 4, 1)
-            self.grid_layout.addWidget(QLabel('\n'.join(self.data.linked_digital_channels)), 4, 1)
+            self.grid_layout.addWidget(QLabel('\n'.join(self.data.linked_digital_channels)), 5, 1)
             main_layout.addLayout(self.grid_layout)
 
             buttons = QDialogButtonBox(
@@ -87,6 +98,19 @@ class Shutter():
             self.setLayout(main_layout)
 
             print('finisht ShutterGUI')
+
+        def alwaysOnOffChanged(self, btn,new_state):
+            # print(btn, new_state)
+            if btn=='on':
+                self.data.always_on = bool(new_state)
+                if new_state:
+                    self.data.always_off = False
+                    self.alwaysOffChbx.setChecked(False)
+            if btn == 'off':
+                self.data.always_off = bool(new_state)
+                if new_state:
+                    self.data.always_on = False
+                    self.alwaysOnChbx.setChecked(False)
 
         def nameChanged(self):
             print('shutter-nameChanged')
