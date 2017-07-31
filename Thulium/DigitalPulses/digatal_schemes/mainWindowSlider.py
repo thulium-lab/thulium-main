@@ -1,43 +1,19 @@
-# from PyQt5.QtCore import QObject
-import os, sys
-import pickle
-import random
+import sys, ctypes, matplotlib
+from numpy import *
 import numpy as np
+
+from PyQt5.QtCore import (Qt, QObject,pyqtSignal)
+from PyQt5.QtGui import (QIcon)
+from PyQt5.QtWidgets import (QApplication, QMdiSubWindow, QDesktopWidget, QSplitter, QMainWindow, QTextEdit)
+
 sys.path.append(r'D:\Dropbox\Python\Thulium\Camera')
 sys.path.append(r'D:\Dropbox\Python\Thulium\DigitalPulses')
 sys.path.append(r'D:\Dropbox\Python\Thulium\Device controll')
 sys.path.append(r'D:\Dropbox\Python\Thulium\Device controll\WavelengthMeter')
-import matplotlib
 matplotlib.use('Qt5Agg',force=True)
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
-from copy import deepcopy
 
-from PyQt5.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer)
-from PyQt5.QtGui import (QBrush, QColor, QPainter)
-from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem, QMenu, QAction,
-                             QGridLayout, QVBoxLayout, QHBoxLayout, QSizePolicy,QMainWindow, QDialog,QTextEdit,
-                             QLabel, QLineEdit, QPushButton, QWidget, QComboBox,QRadioButton, QSpinBox, QCheckBox, QTabWidget, QFileDialog,QMessageBox, QDoubleSpinBox)
-# import pyqtgraph as pg
-import json
-import time
-from sympy.utilities.lambdify import lambdify
-import re
-import numpy as np
-from numpy import *
-import sympy as sp
-from sympy.parsing.sympy_parser import parse_expr
-from PyQt5.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer,QObject,pyqtSignal)
-from PyQt5.QtGui import (QBrush, QColor, QPainter,QIcon)
-from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem, QMenu, QAction, QMdiArea,QMdiSubWindow,
-                             QMenu, QAction, QScrollArea, QFrame,QDesktopWidget,QSplitter,
-                             QGridLayout, QVBoxLayout, QHBoxLayout, QSizePolicy,QMainWindow, QDialog,QTextEdit,
-                             QLabel, QLineEdit, QPushButton, QWidget, QComboBox,QRadioButton, QSpinBox, QCheckBox, QTabWidget, QFileDialog,QMessageBox, QDoubleSpinBox)
-
-import ctypes
-myappid = u'LPI.MainScanWindow' # arbitrary string
-ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+myAppID = u'LPI.MainScanWindow' # arbitrary string
+ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myAppID)
 
 from Pulses import PulseScheme, PulseGroup,IndividualPulse,AnalogPulse
 from scanner import Scanner
@@ -66,16 +42,15 @@ class OurSignals(QObject):
 class MainWindow(QMainWindow):
     count = 0
     signals = OurSignals()
+    globals = {}
     image_folder = r'Z:\Camera'
 
     def __init__(self, parent = None):
         super(MainWindow, self).__init__(parent)
         self.setWindowTitle('Scan and Pulses')
         self.setWindowIcon(QIcon('pulse.ico'))
-        # self.showFullScreen()
         self.all_updates_methods = {}
         # self.slots_to_bound={}
-        self.globals = {}
         self.globals['image'] = None
         self.globals['image_updated'] = False
         self.globals['image_stack']=[]

@@ -20,23 +20,128 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="camera.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Camera/camera.py">
+      <file leaf-file-name="display_widget.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/DigitalPulses/display_widget.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="11">
-              <caret line="70" column="14" selection-start-line="70" selection-start-column="14" selection-end-line="70" selection-end-column="14" />
-              <folding />
+            <state relative-caret-position="136">
+              <caret line="8" column="0" selection-start-line="8" selection-start-column="0" selection-end-line="8" selection-end-column="0" />
+              <folding>
+                <element signature="e#3173#3566#0" expanded="false" />
+                <element signature="e#4379#10383#0" expanded="false" />
+                <element signature="e#10389#10412#0" expanded="false" />
+                <element signature="e#10712#10784#0" expanded="false" />
+                <element signature="e#10825#10987#0" expanded="false" />
+                <element signature="e#11039#11458#0" expanded="false" />
+                <element signature="e#14993#15352#0" expanded="false" />
+                <element signature="e#15402#16597#0" expanded="false" />
+                <element signature="e#16645#17585#0" expanded="false" />
+                <element signature="e#17627#19408#0" expanded="false" />
+              </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="bgnd_runner.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Camera/bgnd_runner.py">
+      <file leaf-file-name="Pulses.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/Pulses.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="504">
-              <caret line="39" column="5" selection-start-line="39" selection-start-column="5" selection-end-line="39" selection-end-column="5" />
+            <state relative-caret-position="1020">
+              <caret line="64" column="65" selection-start-line="64" selection-start-column="65" selection-end-line="64" selection-end-column="65" />
               <folding>
-                <element signature="e#0#16#0" expanded="true" />
+                <element signature="e#35#49#0" expanded="true" />
+                <element signature="e#2911#3301#0" expanded="false" />
+                <element signature="e#3345#5450#0" expanded="false" />
+                <element signature="e#5488#6848#0" expanded="false" />
+                <element signature="e#8938#9483#0" expanded="false" />
+                <element signature="e#9523#9597#0" expanded="false" />
+                <element signature="e#9637#10314#0" expanded="false" />
+                <element signature="e#10367#10785#0" expanded="false" />
+                <element signature="e#10815#12651#0" expanded="false" />
+                <element signature="e#12702#12919#0" expanded="false" />
+                <element signature="e#12953#13207#0" expanded="false" />
+                <element signature="e#13259#13895#0" expanded="false" />
+                <element signature="e#13933#14796#0" expanded="false" />
+                <element signature="e#14840#14935#0" expanded="false" />
+                <element signature="e#14974#15056#0" expanded="false" />
+                <element signature="e#15094#15850#0" expanded="false" />
+                <element signature="e#15891#22576#0" expanded="false" />
+                <element signature="e#22617#23805#0" expanded="false" />
+                <element signature="e#23842#24638#0" expanded="false" />
+                <element signature="e#24691#25400#0" expanded="false" />
+                <element signature="e#25459#26254#0" expanded="false" />
+                <element signature="e#26295#26324#0" expanded="false" />
+                <element signature="e#26456#26885#0" expanded="false" />
+                <element signature="e#26935#27134#0" expanded="false" />
+                <element signature="e#27233#27429#0" expanded="false" />
+                <element signature="e#27469#34693#0" expanded="false" />
+                <element signature="e#34741#35015#0" expanded="false" />
+                <element signature="e#35055#35169#0" expanded="false" />
+                <element signature="e#35213#35240#0" expanded="false" />
+                <element signature="e#35282#35457#0" expanded="false" />
+                <element signature="e#35502#36090#0" expanded="false" />
+                <element signature="e#36135#36492#0" expanded="false" />
+                <element signature="e#36558#38146#0" expanded="false" />
+                <element signature="e#38196#38730#0" expanded="false" />
+                <element signature="e#38784#39117#0" expanded="false" />
+                <element signature="e#39180#39537#0" expanded="false" />
+                <element signature="e#39593#39957#0" expanded="false" />
+                <element signature="e#40015#40384#0" expanded="false" />
+                <element signature="e#40434#40968#0" expanded="false" />
+                <element signature="e#41038#41221#0" expanded="false" />
+                <element signature="e#41267#41527#0" expanded="false" />
+                <element signature="e#41853#48204#0" expanded="false" />
+                <element signature="e#48317#48668#0" expanded="false" />
+                <element signature="e#48716#49439#0" expanded="false" />
+                <element signature="e#49489#50327#0" expanded="false" />
+                <element signature="e#50379#50851#0" expanded="false" />
+                <element signature="e#51963#52119#0" expanded="false" />
+                <element signature="e#52172#52522#0" expanded="false" />
+                <element signature="e#52577#53254#0" expanded="false" />
+                <element signature="e#53308#53417#0" expanded="false" />
+                <element signature="e#53480#54037#0" expanded="false" />
+                <element signature="e#54178#54616#0" expanded="false" />
+                <element signature="e#54658#55542#0" expanded="false" />
+                <element signature="e#55691#55932#0" expanded="false" />
+                <element signature="e#56018#56229#0" expanded="false" />
+                <element signature="e#56276#58563#0" expanded="false" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="shutter.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/shutter.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="476">
+              <caret line="32" column="0" selection-start-line="32" selection-start-column="0" selection-end-line="32" selection-end-column="0" />
+              <folding>
+                <element signature="e#1418#4220#0" expanded="false" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="mainWindowSlider.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/mainWindowSlider.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="765">
+              <caret line="45" column="31" selection-start-line="45" selection-start-column="31" selection-end-line="45" selection-end-column="31" />
+              <folding>
+                <element signature="e#0#30#0" expanded="true" />
+                <element signature="e#4600#4604#0" expanded="false" />
+                <element signature="e#4645#5088#0" expanded="false" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="device_lib.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Device controll/device_lib.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="867">
+              <caret line="51" column="45" selection-start-line="51" selection-start-column="45" selection-end-line="51" selection-end-column="45" />
+              <folding>
+                <element signature="e#253#278#0" expanded="true" />
+                <element signature="e#2253#3670#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -45,35 +150,115 @@
       <file leaf-file-name="arduinoShutters.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Device controll/WavelengthMeter/arduinoShutters.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="634">
-              <caret line="38" column="21" selection-start-line="38" selection-start-column="21" selection-end-line="38" selection-end-column="21" />
+            <state relative-caret-position="799">
+              <caret line="83" column="88" selection-start-line="83" selection-start-column="88" selection-end-line="83" selection-end-column="88" />
               <folding>
                 <element signature="e#0#42#0" expanded="true" />
+                <element signature="e#1077#1139#0" expanded="false" />
+                <element signature="e#1173#1345#0" expanded="false" />
+                <element signature="e#1390#2105#0" expanded="false" />
+                <element signature="e#2749#3335#0" expanded="false" />
+                <element signature="e#3379#3565#0" expanded="false" />
+                <element signature="e#4177#5604#0" expanded="false" />
+                <element signature="e#5654#5934#0" expanded="false" />
+                <element signature="e#5984#6521#0" expanded="false" />
+                <element signature="e#6570#6708#0" expanded="false" />
+                <element signature="e#6759#7449#0" expanded="false" />
+                <element signature="e#7497#8094#0" expanded="false" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="wlm.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/Device controll/WavelengthMeter/wlm.py">
+      <file leaf-file-name="scanner.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/scanner.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="221">
-              <caret line="13" column="19" selection-start-line="13" selection-start-column="19" selection-end-line="13" selection-end-column="19" />
+            <state relative-caret-position="1122">
+              <caret line="294" column="0" selection-start-line="294" selection-start-column="0" selection-end-line="294" selection-end-column="0" />
               <folding>
-                <element signature="e#99#114#0" expanded="true" />
+                <element signature="e#1594#2779#0" expanded="false" />
+                <element signature="e#2815#3493#0" expanded="false" />
+                <element signature="e#3565#4417#0" expanded="false" />
+                <element signature="e#4449#6177#0" expanded="false" />
+                <element signature="e#6230#6339#0" expanded="false" />
+                <element signature="e#6396#6509#0" expanded="false" />
+                <element signature="e#6549#6814#0" expanded="false" />
+                <element signature="e#6854#8544#0" expanded="false" />
+                <element signature="e#8585#9399#0" expanded="false" />
+                <element signature="e#9439#9667#0" expanded="false" />
+                <element signature="e#9715#10268#0" expanded="false" />
+                <element signature="e#10307#10584#0" expanded="false" />
+                <element signature="e#10636#12192#0" expanded="false" />
+                <element signature="e#12250#13219#0" expanded="false" />
+                <element signature="e#13307#13492#0" expanded="false" />
+                <element signature="e#13534#13671#0" expanded="false" />
+                <element signature="e#13709#13846#0" expanded="false" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="WMeter.py" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/Device controll/WavelengthMeter/WMeter.py">
+      <file leaf-file-name="DOAO.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/DOAO.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="391">
-              <caret line="23" column="0" selection-start-line="23" selection-start-column="0" selection-end-line="23" selection-end-column="0" />
+            <state relative-caret-position="1156">
+              <caret line="72" column="19" selection-start-line="72" selection-start-column="19" selection-end-line="72" selection-end-column="19" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="scanParameters.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/scanParameters.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="153">
+              <caret line="10" column="9" selection-start-line="10" selection-start-column="9" selection-end-line="10" selection-end-column="9" />
               <folding>
-                <element signature="e#1096#4991#0" expanded="false" />
-                <element signature="e#20916#21643#0" expanded="false" />
+                <element signature="e#0#9#0" expanded="true" />
+                <element signature="e#1943#1979#0" expanded="false" />
+                <element signature="e#2038#2159#0" expanded="false" />
+                <element signature="e#2208#2359#0" expanded="false" />
+                <element signature="e#2413#3056#0" expanded="false" />
+                <element signature="e#3107#4581#0" expanded="false" />
+                <element signature="e#4626#4904#0" expanded="false" />
+                <element signature="e#4950#5406#0" expanded="false" />
+                <element signature="e#5447#6244#0" expanded="false" />
+                <element signature="e#6292#6603#0" expanded="false" />
+                <element signature="e#6640#7358#0" expanded="false" />
+                <element signature="e#7403#7567#0" expanded="false" />
+                <element signature="e#7781#7883#0" expanded="false" />
+                <element signature="e#7923#10873#0" expanded="false" />
+                <element signature="e#10917#11022#0" expanded="false" />
+                <element signature="e#11064#11344#0" expanded="false" />
+                <element signature="e#11403#11585#0" expanded="false" />
+                <element signature="e#11950#12539#0" expanded="false" />
+                <element signature="e#12588#13370#0" expanded="false" />
+                <element signature="e#13425#13610#0" expanded="false" />
+                <element signature="e#13660#14038#0" expanded="false" />
+                <element signature="e#14084#14511#0" expanded="false" />
+                <element signature="e#14557#14879#0" expanded="false" />
+                <element signature="e#14944#15339#0" expanded="false" />
+                <element signature="e#15392#16079#0" expanded="false" />
+                <element signature="e#16125#16847#0" expanded="false" />
+                <element signature="e#17091#17173#0" expanded="false" />
+                <element signature="e#17220#17511#0" expanded="false" />
+                <element signature="e#17605#17707#0" expanded="false" />
+                <element signature="e#19866#20063#0" expanded="false" />
+                <element signature="e#20115#20282#0" expanded="false" />
+                <element signature="e#20332#20882#0" expanded="false" />
+                <element signature="e#20933#21054#0" expanded="false" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="PlotPulse.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/PlotPulse.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="119">
+              <caret line="8" column="66" selection-start-line="8" selection-start-column="66" selection-end-line="8" selection-end-column="66" />
+              <folding>
+                <element signature="e#0#38#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -97,22 +282,30 @@
       <list>
         <option value="$PROJECT_DIR$/DigitalPulses/digatal_schemes/digatal_schemes/main_window.py" />
         <option value="$PROJECT_DIR$/DigitalPulses/digatal_schemes/mdi_test.py" />
-        <option value="$PROJECT_DIR$/DigitalPulses/digatal_schemes/scanner.py" />
         <option value="$PROJECT_DIR$/DigitalPulses/digatal_schemes/old_pulses.py" />
-        <option value="$PROJECT_DIR$/PyDAQmx/DOAO.py" />
         <option value="$PROJECT_DIR$/DigitalPulses/digatal_schemes/main_window.py" />
         <option value="$PROJECT_DIR$/Camera/camera.py" />
         <option value="$PROJECT_DIR$/Camera/STT_CAM.py" />
-        <option value="$PROJECT_DIR$/Device controll/blue_laser_lock.py" />
-        <option value="$PROJECT_DIR$/Device controll/device_lib.py" />
         <option value="$PROJECT_DIR$/WavelengthMeter/WM_config.json" />
         <option value="$PROJECT_DIR$/WavelengthMeter/wlm.py" />
         <option value="$PROJECT_DIR$/WavelengthMeter/WMeter.py" />
         <option value="$PROJECT_DIR$/WavelengthMeter/arduinoShutters.py" />
         <option value="$PROJECT_DIR$/Device controll/WavelengthMeter/wlm.py" />
-        <option value="$PROJECT_DIR$/Device controll/WavelengthMeter/arduinoShutters.py" />
-        <option value="$PROJECT_DIR$/Camera/bgnd_runner.py" />
         <option value="$PROJECT_DIR$/Device controll/WavelengthMeter/WMeter.py" />
+        <option value="$PROJECT_DIR$/Device controll/blue_laser_lock.py" />
+        <option value="$PROJECT_DIR$/PyDAQmx/DOAO.py" />
+        <option value="$PROJECT_DIR$/Camera/bgnd_runner.py" />
+        <option value="$PROJECT_DIR$/Device controll/device_lib.py" />
+        <option value="$PROJECT_DIR$/DigitalPulses/digatal_schemes/DOAO.py" />
+        <option value="$PROJECT_DIR$/DigitalPulses/display_widget.py" />
+        <option value="$PROJECT_DIR$/DigitalPulses/digatal_schemes/PlotPulse.py" />
+        <option value="$PROJECT_DIR$/DigitalPulses/digatal_schemes/scanParameters.py" />
+        <option value="$PROJECT_DIR$/Device controll/laser_lock_v0.0.py" />
+        <option value="$PROJECT_DIR$/DigitalPulses/digatal_schemes/shutter.py" />
+        <option value="$PROJECT_DIR$/DigitalPulses/digatal_schemes/Pulses.py" />
+        <option value="$PROJECT_DIR$/DigitalPulses/digatal_schemes/scanner.py" />
+        <option value="$PROJECT_DIR$/Device controll/WavelengthMeter/arduinoShutters.py" />
+        <option value="$PROJECT_DIR$/DigitalPulses/digatal_schemes/mainWindowSlider.py" />
       </list>
     </option>
   </component>
@@ -150,17 +343,6 @@
       <pane id="Scratches">
         <subPane />
       </pane>
-      <pane id="Scope">
-        <subPane subId="Problems" />
-        <subPane subId="Project Files">
-          <PATH>
-            <PATH_ELEMENT USER_OBJECT="Root">
-              <option name="myItemId" value="" />
-              <option name="myItemType" value="" />
-            </PATH_ELEMENT>
-          </PATH>
-        </subPane>
-      </pane>
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -193,36 +375,15 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
+        </subPane>
+      </pane>
+      <pane id="Scope">
+        <subPane subId="Problems" />
+        <subPane subId="Project Files">
           <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="Thulium" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="Thulium" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="DigitalPulses" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="digatal_schemes" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="Thulium" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="Thulium" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="Device controll" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            <PATH_ELEMENT USER_OBJECT="Root">
+              <option name="myItemId" value="" />
+              <option name="myItemType" value="" />
             </PATH_ELEMENT>
           </PATH>
         </subPane>
@@ -239,75 +400,7 @@
       <recent name="D:\!Data\GIT\Devices" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.old_pulses">
-    <configuration default="false" name="WMeter (1)" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="C:\Program Files\Anaconda\python.exe" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Device controll/WavelengthMeter" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="Thulium" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Device controll/WavelengthMeter/WMeter.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <method />
-    </configuration>
-    <configuration default="false" name="digital_gui" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="C:\Program Files\Anaconda\python.exe" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/DigitalPulses" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="Thulium" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/DigitalPulses/digital_gui.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <method />
-    </configuration>
-    <configuration default="false" name="main_window" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="C:\Program Files\Anaconda\python.exe" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/DigitalPulses/digatal_schemes" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="Thulium" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/DigitalPulses/digatal_schemes/main_window.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <method />
-    </configuration>
-    <configuration default="false" name="new_pulses" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="C:\Program Files\Anaconda\python.exe" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/DigitalPulses/digatal_schemes" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <module name="Thulium" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/DigitalPulses/digatal_schemes/new_pulses.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <method />
-    </configuration>
+  <component name="RunManager" selected="Python.mainWindowSlider">
     <configuration default="false" name="old_pulses" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -321,6 +414,74 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <module name="Thulium" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/DigitalPulses/digatal_schemes/old_pulses.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="mainWindowSlider" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="C:\Program Files\Anaconda\python.exe" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/DigitalPulses/digatal_schemes" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="Thulium" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/DigitalPulses/digatal_schemes/mainWindowSlider.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="blue_laser_lock" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="C:\Program Files\Anaconda\python.exe" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Device controll" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="Thulium" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Device controll/blue_laser_lock.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="laser_lock_v0.0" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="C:\Program Files\Anaconda\python.exe" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Device controll" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="Thulium" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Device controll/laser_lock_v0.0.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <method />
+    </configuration>
+    <configuration default="false" name="arduinoShutters" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="C:\Program Files\Anaconda\python.exe" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Device controll/WavelengthMeter" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="Thulium" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Device controll/WavelengthMeter/arduinoShutters.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <method />
@@ -463,19 +624,19 @@
       <method />
     </configuration>
     <list size="5">
-      <item index="0" class="java.lang.String" itemvalue="Python.WMeter (1)" />
-      <item index="1" class="java.lang.String" itemvalue="Python.digital_gui" />
-      <item index="2" class="java.lang.String" itemvalue="Python.main_window" />
-      <item index="3" class="java.lang.String" itemvalue="Python.new_pulses" />
-      <item index="4" class="java.lang.String" itemvalue="Python.old_pulses" />
+      <item index="0" class="java.lang.String" itemvalue="Python.old_pulses" />
+      <item index="1" class="java.lang.String" itemvalue="Python.mainWindowSlider" />
+      <item index="2" class="java.lang.String" itemvalue="Python.blue_laser_lock" />
+      <item index="3" class="java.lang.String" itemvalue="Python.laser_lock_v0.0" />
+      <item index="4" class="java.lang.String" itemvalue="Python.arduinoShutters" />
     </list>
     <recent_temporary>
       <list size="5">
-        <item index="0" class="java.lang.String" itemvalue="Python.old_pulses" />
-        <item index="1" class="java.lang.String" itemvalue="Python.new_pulses" />
-        <item index="2" class="java.lang.String" itemvalue="Python.main_window" />
-        <item index="3" class="java.lang.String" itemvalue="Python.digital_gui" />
-        <item index="4" class="java.lang.String" itemvalue="Python.WMeter (1)" />
+        <item index="0" class="java.lang.String" itemvalue="Python.mainWindowSlider" />
+        <item index="1" class="java.lang.String" itemvalue="Python.laser_lock_v0.0" />
+        <item index="2" class="java.lang.String" itemvalue="Python.arduinoShutters" />
+        <item index="3" class="java.lang.String" itemvalue="Python.blue_laser_lock" />
+        <item index="4" class="java.lang.String" itemvalue="Python.old_pulses" />
       </list>
     </recent_temporary>
   </component>
@@ -508,22 +669,22 @@
     <frame x="-691" y="1072" width="1936" height="1056" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.1578125" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.15964173" sideWeight="0.8268072" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32900432" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.21320346" sideWeight="0.5021075" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32875264" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.27589852" sideWeight="0.49789253" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32827735" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.28060672" sideWeight="0.49789253" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32883817" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.397463" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.15964173" sideWeight="0.17319277" order="2" side_tool="true" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.23726977" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="SLIDING" type="SLIDING" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32991204" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32936078" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
     </layout>
   </component>
@@ -557,235 +718,17 @@
           <option name="timeStamp" value="12" />
         </line-breakpoint>
       </breakpoints>
-      <option name="time" value="18" />
+      <option name="time" value="40" />
     </breakpoint-manager>
-    <watches-manager />
+    <watches-manager>
+      <configuration name="PythonConfigurationType">
+        <watch expression="available_com_ports" />
+        <watch expression="mainWindow" language="Python" />
+      </configuration>
+    </watches-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/DigitalPulses/digital_lib.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/DigitalPulses/digital_gui.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/digatal_schemes/main_window.py" />
-    <entry file="file://$PROJECT_DIR$/PlotWidget/plot1.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="390">
-          <caret line="31" column="0" selection-start-line="31" selection-start-column="0" selection-end-line="33" selection-end-column="23" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/mdi_test.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="645">
-          <caret line="46" column="10" selection-start-line="5" selection-start-column="0" selection-end-line="46" selection-end-column="10" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/DigitalPulses/digital_lib.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/anaconda/lib/python3.5/site-packages/sympy/parsing/sympy_parser.py" />
-    <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/Scanner.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="150">
-          <caret line="14" column="88" selection-start-line="14" selection-start-column="88" selection-end-line="14" selection-end-column="124" />
-          <folding>
-            <element signature="e#35#49#0" expanded="false" />
-            <element signature="e#2491#2680#0" expanded="false" />
-            <element signature="e#2733#2928#0" expanded="false" />
-            <element signature="e#6271#7762#0" expanded="false" />
-            <element signature="e#7807#8109#0" expanded="false" />
-            <element signature="e#8145#8251#0" expanded="false" />
-            <element signature="e#8293#8967#0" expanded="false" />
-            <element signature="e#9005#9522#0" expanded="false" />
-            <element signature="e#9560#9970#0" expanded="false" />
-            <element signature="e#10021#10471#0" expanded="false" />
-            <element signature="e#10512#11308#0" expanded="false" />
-            <element signature="e#11381#11697#0" expanded="false" />
-            <element signature="e#11748#11930#0" expanded="false" />
-            <element signature="e#11974#12122#0" expanded="false" />
-            <element signature="e#12164#12354#0" expanded="false" />
-            <element signature="e#12397#12512#0" expanded="false" />
-            <element signature="e#12551#12914#0" expanded="false" />
-            <element signature="e#12954#13315#0" expanded="false" />
-            <element signature="e#13368#13477#0" expanded="false" />
-            <element signature="e#13534#13647#0" expanded="false" />
-            <element signature="e#13687#14116#0" expanded="false" />
-            <element signature="e#14156#15438#0" expanded="false" />
-            <element signature="e#15477#16826#0" expanded="false" />
-            <element signature="e#18089#18194#0" expanded="false" />
-            <element signature="e#18232#18367#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/main_window.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="285">
-          <caret line="46" column="25" selection-start-line="46" selection-start-column="25" selection-end-line="46" selection-end-column="25" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/Scanner.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="8296">
-          <caret line="492" column="25" selection-start-line="492" selection-start-column="25" selection-end-line="492" selection-end-column="25" />
-          <folding>
-            <element signature="e#35#49#0" expanded="false" />
-            <element signature="e#2491#2680#0" expanded="false" />
-            <element signature="e#2733#2928#0" expanded="false" />
-            <element signature="e#6271#7762#0" expanded="false" />
-            <element signature="e#7807#8109#0" expanded="false" />
-            <element signature="e#8145#8251#0" expanded="false" />
-            <element signature="e#8293#8967#0" expanded="false" />
-            <element signature="e#9005#9522#0" expanded="false" />
-            <element signature="e#9560#9970#0" expanded="false" />
-            <element signature="e#10021#10471#0" expanded="false" />
-            <element signature="e#10512#11308#0" expanded="false" />
-            <element signature="e#11381#11697#0" expanded="false" />
-            <element signature="e#11748#11930#0" expanded="false" />
-            <element signature="e#11974#12122#0" expanded="false" />
-            <element signature="e#12164#12354#0" expanded="false" />
-            <element signature="e#12397#12512#0" expanded="false" />
-            <element signature="e#12551#12914#0" expanded="false" />
-            <element signature="e#12954#13315#0" expanded="false" />
-            <element signature="e#13368#13477#0" expanded="false" />
-            <element signature="e#13534#13647#0" expanded="false" />
-            <element signature="e#13687#14116#0" expanded="false" />
-            <element signature="e#14156#15438#0" expanded="false" />
-            <element signature="e#15477#16826#0" expanded="false" />
-            <element signature="e#18089#18194#0" expanded="false" />
-            <element signature="e#18232#18367#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/PlotWidget/plot1.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="442">
-          <caret line="31" column="0" selection-start-line="31" selection-start-column="0" selection-end-line="33" selection-end-column="23" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/old_pulses.py" />
-    <entry file="file://$PROJECT_DIR$/Camera/STT_CAM.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/DigitalPulses/digital_lib.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/Scanner.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1513">
-          <caret line="93" column="23" selection-start-line="93" selection-start-column="23" selection-end-line="93" selection-end-column="23" />
-          <folding>
-            <element signature="e#35#49#0" expanded="false" />
-            <element signature="e#2491#2680#0" expanded="false" />
-            <element signature="e#2733#2928#0" expanded="false" />
-            <element signature="e#6271#7762#0" expanded="false" />
-            <element signature="e#7807#8109#0" expanded="false" />
-            <element signature="e#8145#8251#0" expanded="false" />
-            <element signature="e#8293#8967#0" expanded="false" />
-            <element signature="e#9005#9522#0" expanded="false" />
-            <element signature="e#9560#9970#0" expanded="false" />
-            <element signature="e#10021#10471#0" expanded="false" />
-            <element signature="e#10512#11308#0" expanded="false" />
-            <element signature="e#11381#11697#0" expanded="false" />
-            <element signature="e#11748#11930#0" expanded="false" />
-            <element signature="e#11974#12122#0" expanded="false" />
-            <element signature="e#12164#12354#0" expanded="false" />
-            <element signature="e#12397#12512#0" expanded="false" />
-            <element signature="e#12551#12914#0" expanded="false" />
-            <element signature="e#12954#13315#0" expanded="false" />
-            <element signature="e#13368#13477#0" expanded="false" />
-            <element signature="e#13534#13647#0" expanded="false" />
-            <element signature="e#13687#14116#0" expanded="false" />
-            <element signature="e#14156#15438#0" expanded="false" />
-            <element signature="e#15477#16826#0" expanded="false" />
-            <element signature="e#18089#18194#0" expanded="false" />
-            <element signature="e#18232#18367#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/PlotWidget/plot1.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="527">
-          <caret line="31" column="0" selection-start-line="31" selection-start-column="0" selection-end-line="33" selection-end-column="23" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/old_pulses.py" />
-    <entry file="file://$PROJECT_DIR$/DigitalPulses/digital_lib.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/Scanner.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="195">
-          <caret line="17" column="0" selection-start-line="12" selection-start-column="0" selection-end-line="17" selection-end-column="0" />
-          <folding>
-            <element signature="e#35#49#0" expanded="false" />
-            <element signature="e#2491#2680#0" expanded="false" />
-            <element signature="e#2733#2928#0" expanded="false" />
-            <element signature="e#6271#7762#0" expanded="false" />
-            <element signature="e#7807#8109#0" expanded="false" />
-            <element signature="e#8145#8251#0" expanded="false" />
-            <element signature="e#8293#8967#0" expanded="false" />
-            <element signature="e#9005#9522#0" expanded="false" />
-            <element signature="e#9560#9970#0" expanded="false" />
-            <element signature="e#10021#10471#0" expanded="false" />
-            <element signature="e#10512#11308#0" expanded="false" />
-            <element signature="e#11381#11697#0" expanded="false" />
-            <element signature="e#11748#11930#0" expanded="false" />
-            <element signature="e#11974#12122#0" expanded="false" />
-            <element signature="e#12164#12354#0" expanded="false" />
-            <element signature="e#12397#12512#0" expanded="false" />
-            <element signature="e#12551#12914#0" expanded="false" />
-            <element signature="e#12954#13315#0" expanded="false" />
-            <element signature="e#13368#13477#0" expanded="false" />
-            <element signature="e#13534#13647#0" expanded="false" />
-            <element signature="e#13687#14116#0" expanded="false" />
-            <element signature="e#14156#15438#0" expanded="false" />
-            <element signature="e#15477#16826#0" expanded="false" />
-            <element signature="e#18089#18194#0" expanded="false" />
-            <element signature="e#18232#18367#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/main_window.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/main_window.py" />
     <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/mdi_test.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="645">
@@ -813,13 +756,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/PyDAQmx/DAQOutput.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="403">
-          <caret line="196" column="25" selection-start-line="196" selection-start-column="25" selection-end-line="196" selection-end-column="25" />
         </state>
       </provider>
     </entry>
@@ -827,13 +763,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="862">
           <caret line="155" column="56" selection-start-line="155" selection-start-column="56" selection-end-line="155" selection-end-column="56" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/Pulses.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="862">
-          <caret line="237" column="0" selection-start-line="237" selection-start-column="0" selection-end-line="237" selection-end-column="0" />
         </state>
       </provider>
     </entry>
@@ -858,97 +787,14 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/Scanner.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1955">
-          <caret line="125" column="66" selection-start-line="125" selection-start-column="23" selection-end-line="125" selection-end-column="66" />
-          <folding>
-            <element signature="e#35#49#0" expanded="false" />
-            <element signature="e#2491#2680#0" expanded="false" />
-            <element signature="e#2733#2928#0" expanded="false" />
-            <element signature="e#6271#7762#0" expanded="false" />
-            <element signature="e#7807#8109#0" expanded="false" />
-            <element signature="e#8145#8251#0" expanded="false" />
-            <element signature="e#8293#8967#0" expanded="false" />
-            <element signature="e#9005#9522#0" expanded="false" />
-            <element signature="e#9560#9970#0" expanded="false" />
-            <element signature="e#10021#10471#0" expanded="false" />
-            <element signature="e#10512#11308#0" expanded="false" />
-            <element signature="e#11381#11697#0" expanded="false" />
-            <element signature="e#11748#11930#0" expanded="false" />
-            <element signature="e#11974#12122#0" expanded="false" />
-            <element signature="e#12164#12354#0" expanded="false" />
-            <element signature="e#12397#12512#0" expanded="false" />
-            <element signature="e#12551#12914#0" expanded="false" />
-            <element signature="e#12954#13315#0" expanded="false" />
-            <element signature="e#13368#13477#0" expanded="false" />
-            <element signature="e#13534#13647#0" expanded="false" />
-            <element signature="e#13687#14116#0" expanded="false" />
-            <element signature="e#14156#15438#0" expanded="false" />
-            <element signature="e#15477#16826#0" expanded="false" />
-            <element signature="e#18089#18194#0" expanded="false" />
-            <element signature="e#18232#18367#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Device controll/blue_laser_lock.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="17">
-          <caret line="6" column="9" selection-start-line="6" selection-start-column="9" selection-end-line="6" selection-end-column="9" />
-          <folding>
-            <element signature="e#0#25#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/WavelengthMeter/WMeter.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="272">
-          <caret line="19" column="10" selection-start-line="19" selection-start-column="10" selection-end-line="19" selection-end-column="10" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/WavelengthMeter/WM_config.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="60" selection-start-line="0" selection-start-column="60" selection-end-line="0" selection-end-column="60" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/WavelengthMeter/arduinoShutters.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="425">
-          <caret line="26" column="21" selection-start-line="26" selection-start-column="21" selection-end-line="26" selection-end-column="21" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/WavelengthMeter/wlm.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="272">
-          <caret line="49" column="77" selection-start-line="49" selection-start-column="77" selection-end-line="49" selection-end-column="77" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Device controll/device_lib.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="136">
-          <caret line="8" column="0" selection-start-line="8" selection-start-column="0" selection-end-line="8" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#25#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/WavelengthMeter/WMeter.py" />
+    <entry file="file://$PROJECT_DIR$/WavelengthMeter/WM_config.json" />
+    <entry file="file://$PROJECT_DIR$/WavelengthMeter/arduinoShutters.py" />
+    <entry file="file://$PROJECT_DIR$/WavelengthMeter/wlm.py" />
     <entry file="file://$PROJECT_DIR$/Camera/camera.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="11">
           <caret line="70" column="14" selection-start-line="70" selection-start-column="14" selection-end-line="70" selection-end-column="14" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -956,27 +802,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-204">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Camera/bgnd_runner.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="504">
-          <caret line="39" column="5" selection-start-line="39" selection-start-column="5" selection-end-line="39" selection-end-column="5" />
-          <folding>
-            <element signature="e#0#16#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Device controll/WavelengthMeter/arduinoShutters.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="634">
-          <caret line="38" column="21" selection-start-line="38" selection-start-column="21" selection-end-line="38" selection-end-column="21" />
-          <folding>
-            <element signature="e#0#42#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -984,9 +809,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="221">
           <caret line="13" column="19" selection-start-line="13" selection-start-column="19" selection-end-line="13" selection-end-column="19" />
-          <folding>
-            <element signature="e#99#114#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -994,23 +816,14 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/main_window.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="255">
-          <caret line="19" column="11" selection-start-line="19" selection-start-column="11" selection-end-line="19" selection-end-column="11" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
+    <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/main_window.py" />
     <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/new_pulses.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="102">
           <caret line="10" column="25" selection-start-line="10" selection-start-column="25" selection-end-line="10" selection-end-column="25" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1025,7 +838,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="255">
           <caret line="15" column="0" selection-start-line="15" selection-start-column="0" selection-end-line="15" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1037,13 +849,347 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://C:/Program Files/Anaconda3/Lib/site-packages/scipy/misc/pilutil.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-144">
+          <caret line="202" column="4" selection-start-line="202" selection-start-column="4" selection-end-line="202" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Device controll/WavelengthMeter/WM_config.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://C:/Program Files/Anaconda3/Lib/site-packages/serial/serialwin32.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="225">
+          <caret line="314" column="0" selection-start-line="314" selection-start-column="0" selection-end-line="314" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Device controll/blue_laser_lock.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="374">
+          <caret line="73" column="56" selection-start-line="72" selection-start-column="12" selection-end-line="73" selection-end-column="56" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://C:/Program Files/Anaconda3/Lib/site-packages/pyqtgraph/functions.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="225">
+          <caret line="181" column="0" selection-start-line="181" selection-start-column="0" selection-end-line="181" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/display_widget_config.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://C:/Program Files/Anaconda3/Lib/site-packages/pyqtgraph/graphicsItems/HistogramLUTItem.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="225">
+          <caret line="172" column="0" selection-start-line="172" selection-start-column="0" selection-end-line="172" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PyDAQmx/DAQOutput.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="442">
+          <caret line="29" column="28" selection-start-line="29" selection-start-column="23" selection-end-line="29" selection-end-column="28" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Camera/bgnd_runner.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="748">
+          <caret line="49" column="29" selection-start-line="49" selection-start-column="29" selection-end-line="49" selection-end-column="29" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PyDAQmx/DOAO.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2481">
+          <caret line="245" column="28" selection-start-line="245" selection-start-column="28" selection-end-line="245" selection-end-column="28" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/Device controll/WavelengthMeter/WMeter.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="391">
-          <caret line="23" column="0" selection-start-line="23" selection-start-column="0" selection-end-line="23" selection-end-column="0" />
+        <state relative-caret-position="0">
+          <caret line="231" column="37" selection-start-line="231" selection-start-column="37" selection-end-line="231" selection-end-column="37" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.PyCharm2016.2/system/python_stubs/-1282051629/PyQt5/QtWidgets/QWidget.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="186">
+          <caret line="881" column="8" selection-start-line="881" selection-start-column="8" selection-end-line="881" selection-end-column="21" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/_pydev_bundle/pydev_monkey_qt.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="438">
+          <caret line="70" column="0" selection-start-line="70" selection-start-column="0" selection-end-line="70" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/_pydev_imps/_pydev_execfile.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="289">
+          <caret line="17" column="0" selection-start-line="17" selection-start-column="0" selection-end-line="17" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://C:/Program Files/Anaconda3/Lib/site-packages/serial/tools/list_ports_common.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="691">
+          <caret line="85" column="0" selection-start-line="85" selection-start-column="0" selection-end-line="85" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.PyCharm2016.2/system/python_stubs/-1282051629/builtins.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="212">
+          <caret line="517" column="4" selection-start-line="517" selection-start-column="4" selection-end-line="517" selection-end-column="4" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Device controll/laser_lock_v0.0.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="493">
+          <caret line="301" column="15" selection-start-line="301" selection-start-column="15" selection-end-line="301" selection-end-column="15" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/shutter.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="476">
+          <caret line="32" column="0" selection-start-line="32" selection-start-column="0" selection-end-line="32" selection-end-column="0" />
           <folding>
-            <element signature="e#1096#4991#0" expanded="false" />
-            <element signature="e#20916#21643#0" expanded="false" />
+            <element signature="e#1418#4220#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/Pulses.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1020">
+          <caret line="64" column="65" selection-start-line="64" selection-start-column="65" selection-end-line="64" selection-end-column="65" />
+          <folding>
+            <element signature="e#35#49#0" expanded="true" />
+            <element signature="e#2911#3301#0" expanded="false" />
+            <element signature="e#3345#5450#0" expanded="false" />
+            <element signature="e#5488#6848#0" expanded="false" />
+            <element signature="e#8938#9483#0" expanded="false" />
+            <element signature="e#9523#9597#0" expanded="false" />
+            <element signature="e#9637#10314#0" expanded="false" />
+            <element signature="e#10367#10785#0" expanded="false" />
+            <element signature="e#10815#12651#0" expanded="false" />
+            <element signature="e#12702#12919#0" expanded="false" />
+            <element signature="e#12953#13207#0" expanded="false" />
+            <element signature="e#13259#13895#0" expanded="false" />
+            <element signature="e#13933#14796#0" expanded="false" />
+            <element signature="e#14840#14935#0" expanded="false" />
+            <element signature="e#14974#15056#0" expanded="false" />
+            <element signature="e#15094#15850#0" expanded="false" />
+            <element signature="e#15891#22576#0" expanded="false" />
+            <element signature="e#22617#23805#0" expanded="false" />
+            <element signature="e#23842#24638#0" expanded="false" />
+            <element signature="e#24691#25400#0" expanded="false" />
+            <element signature="e#25459#26254#0" expanded="false" />
+            <element signature="e#26295#26324#0" expanded="false" />
+            <element signature="e#26456#26885#0" expanded="false" />
+            <element signature="e#26935#27134#0" expanded="false" />
+            <element signature="e#27233#27429#0" expanded="false" />
+            <element signature="e#27469#34693#0" expanded="false" />
+            <element signature="e#34741#35015#0" expanded="false" />
+            <element signature="e#35055#35169#0" expanded="false" />
+            <element signature="e#35213#35240#0" expanded="false" />
+            <element signature="e#35282#35457#0" expanded="false" />
+            <element signature="e#35502#36090#0" expanded="false" />
+            <element signature="e#36135#36492#0" expanded="false" />
+            <element signature="e#36558#38146#0" expanded="false" />
+            <element signature="e#38196#38730#0" expanded="false" />
+            <element signature="e#38784#39117#0" expanded="false" />
+            <element signature="e#39180#39537#0" expanded="false" />
+            <element signature="e#39593#39957#0" expanded="false" />
+            <element signature="e#40015#40384#0" expanded="false" />
+            <element signature="e#40434#40968#0" expanded="false" />
+            <element signature="e#41038#41221#0" expanded="false" />
+            <element signature="e#41267#41527#0" expanded="false" />
+            <element signature="e#41853#48204#0" expanded="false" />
+            <element signature="e#48317#48668#0" expanded="false" />
+            <element signature="e#48716#49439#0" expanded="false" />
+            <element signature="e#49489#50327#0" expanded="false" />
+            <element signature="e#50379#50851#0" expanded="false" />
+            <element signature="e#51963#52119#0" expanded="false" />
+            <element signature="e#52172#52522#0" expanded="false" />
+            <element signature="e#52577#53254#0" expanded="false" />
+            <element signature="e#53308#53417#0" expanded="false" />
+            <element signature="e#53480#54037#0" expanded="false" />
+            <element signature="e#54178#54616#0" expanded="false" />
+            <element signature="e#54658#55542#0" expanded="false" />
+            <element signature="e#55691#55932#0" expanded="false" />
+            <element signature="e#56018#56229#0" expanded="false" />
+            <element signature="e#56276#58563#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/PlotPulse.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="119">
+          <caret line="8" column="66" selection-start-line="8" selection-start-column="66" selection-end-line="8" selection-end-column="66" />
+          <folding>
+            <element signature="e#0#38#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/DOAO.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1156">
+          <caret line="72" column="19" selection-start-line="72" selection-start-column="19" selection-end-line="72" selection-end-column="19" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/scanParameters.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="153">
+          <caret line="10" column="9" selection-start-line="10" selection-start-column="9" selection-end-line="10" selection-end-column="9" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+            <element signature="e#1943#1979#0" expanded="false" />
+            <element signature="e#2038#2159#0" expanded="false" />
+            <element signature="e#2208#2359#0" expanded="false" />
+            <element signature="e#2413#3056#0" expanded="false" />
+            <element signature="e#3107#4581#0" expanded="false" />
+            <element signature="e#4626#4904#0" expanded="false" />
+            <element signature="e#4950#5406#0" expanded="false" />
+            <element signature="e#5447#6244#0" expanded="false" />
+            <element signature="e#6292#6603#0" expanded="false" />
+            <element signature="e#6640#7358#0" expanded="false" />
+            <element signature="e#7403#7567#0" expanded="false" />
+            <element signature="e#7781#7883#0" expanded="false" />
+            <element signature="e#7923#10873#0" expanded="false" />
+            <element signature="e#10917#11022#0" expanded="false" />
+            <element signature="e#11064#11344#0" expanded="false" />
+            <element signature="e#11403#11585#0" expanded="false" />
+            <element signature="e#11950#12539#0" expanded="false" />
+            <element signature="e#12588#13370#0" expanded="false" />
+            <element signature="e#13425#13610#0" expanded="false" />
+            <element signature="e#13660#14038#0" expanded="false" />
+            <element signature="e#14084#14511#0" expanded="false" />
+            <element signature="e#14557#14879#0" expanded="false" />
+            <element signature="e#14944#15339#0" expanded="false" />
+            <element signature="e#15392#16079#0" expanded="false" />
+            <element signature="e#16125#16847#0" expanded="false" />
+            <element signature="e#17091#17173#0" expanded="false" />
+            <element signature="e#17220#17511#0" expanded="false" />
+            <element signature="e#17605#17707#0" expanded="false" />
+            <element signature="e#19866#20063#0" expanded="false" />
+            <element signature="e#20115#20282#0" expanded="false" />
+            <element signature="e#20332#20882#0" expanded="false" />
+            <element signature="e#20933#21054#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/scanner.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1122">
+          <caret line="294" column="0" selection-start-line="294" selection-start-column="0" selection-end-line="294" selection-end-column="0" />
+          <folding>
+            <element signature="e#1594#2779#0" expanded="false" />
+            <element signature="e#2815#3493#0" expanded="false" />
+            <element signature="e#3565#4417#0" expanded="false" />
+            <element signature="e#4449#6177#0" expanded="false" />
+            <element signature="e#6230#6339#0" expanded="false" />
+            <element signature="e#6396#6509#0" expanded="false" />
+            <element signature="e#6549#6814#0" expanded="false" />
+            <element signature="e#6854#8544#0" expanded="false" />
+            <element signature="e#8585#9399#0" expanded="false" />
+            <element signature="e#9439#9667#0" expanded="false" />
+            <element signature="e#9715#10268#0" expanded="false" />
+            <element signature="e#10307#10584#0" expanded="false" />
+            <element signature="e#10636#12192#0" expanded="false" />
+            <element signature="e#12250#13219#0" expanded="false" />
+            <element signature="e#13307#13492#0" expanded="false" />
+            <element signature="e#13534#13671#0" expanded="false" />
+            <element signature="e#13709#13846#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Device controll/WavelengthMeter/arduinoShutters.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="799">
+          <caret line="83" column="88" selection-start-line="83" selection-start-column="88" selection-end-line="83" selection-end-column="88" />
+          <folding>
+            <element signature="e#0#42#0" expanded="true" />
+            <element signature="e#1077#1139#0" expanded="false" />
+            <element signature="e#1173#1345#0" expanded="false" />
+            <element signature="e#1390#2105#0" expanded="false" />
+            <element signature="e#2749#3335#0" expanded="false" />
+            <element signature="e#3379#3565#0" expanded="false" />
+            <element signature="e#4177#5604#0" expanded="false" />
+            <element signature="e#5654#5934#0" expanded="false" />
+            <element signature="e#5984#6521#0" expanded="false" />
+            <element signature="e#6570#6708#0" expanded="false" />
+            <element signature="e#6759#7449#0" expanded="false" />
+            <element signature="e#7497#8094#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/DigitalPulses/display_widget.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="136">
+          <caret line="8" column="0" selection-start-line="8" selection-start-column="0" selection-end-line="8" selection-end-column="0" />
+          <folding>
+            <element signature="e#3173#3566#0" expanded="false" />
+            <element signature="e#4379#10383#0" expanded="false" />
+            <element signature="e#10389#10412#0" expanded="false" />
+            <element signature="e#10712#10784#0" expanded="false" />
+            <element signature="e#10825#10987#0" expanded="false" />
+            <element signature="e#11039#11458#0" expanded="false" />
+            <element signature="e#14993#15352#0" expanded="false" />
+            <element signature="e#15402#16597#0" expanded="false" />
+            <element signature="e#16645#17585#0" expanded="false" />
+            <element signature="e#17627#19408#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Device controll/device_lib.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="867">
+          <caret line="51" column="45" selection-start-line="51" selection-start-column="45" selection-end-line="51" selection-end-column="45" />
+          <folding>
+            <element signature="e#253#278#0" expanded="true" />
+            <element signature="e#2253#3670#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/DigitalPulses/digatal_schemes/mainWindowSlider.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="765">
+          <caret line="45" column="31" selection-start-line="45" selection-start-column="31" selection-end-line="45" selection-end-column="31" />
+          <folding>
+            <element signature="e#0#30#0" expanded="true" />
+            <element signature="e#4600#4604#0" expanded="false" />
+            <element signature="e#4645#5088#0" expanded="false" />
           </folding>
         </state>
       </provider>
