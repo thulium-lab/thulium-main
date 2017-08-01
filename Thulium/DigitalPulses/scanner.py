@@ -1,48 +1,22 @@
-# from PyQt5.QtCore import QObject
-import os, sys
-import pickle
-import random
-import numpy as np
-import matplotlib
-matplotlib.use('Qt5Agg',force=True)
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
-from copy import deepcopy
+import os, time, datetime, json, shutil
 
-from PyQt5.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer)
-from PyQt5.QtGui import (QBrush, QColor, QPainter)
-from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem, QMenu, QAction, QScrollArea,QFrame,
-                             QGridLayout, QVBoxLayout, QHBoxLayout, QSizePolicy,QMainWindow, QDialog,QTextEdit,
-                             QLabel, QLineEdit, QPushButton, QWidget, QComboBox,QRadioButton, QSpinBox, QCheckBox, QTabWidget, QFileDialog,QMessageBox, QDoubleSpinBox)
-# import pyqtgraph as pg
-import json
-import time
-from sympy.utilities.lambdify import lambdify
-import re
-import numpy as np
-from numpy import *
-import sympy as sp
-from sympy.parsing.sympy_parser import parse_expr
-from itertools import chain
-from scanParameters import  SingleScanParameter,AllScanParameters,MeasurementFolderClass
-import time
-import datetime
-import shutil
-import threading
+from PyQt5.QtWidgets import (QApplication, QVBoxLayout, QHBoxLayout, QTextEdit, QLabel, QPushButton, QWidget,
+                             QSpinBox, QCheckBox, QMessageBox)
+from DigitalPulses.scanParameters import SingleScanParameter, AllScanParameters, MeasurementFolderClass
 
 scanner_config_file = 'config_scanner.json'
-data_directory = '..'
+data_directory = 'DigitalPulses\digital_schemes'
 scan_params_str = 'scan_params'
 scan_folder_data_str = 'scan_folder_data'
 single_folder_suffix = 'ms'
 meas_config_file = 'meas_config.json'
 EMPTY_CONFIG_FILE = -1
 
+
 class Scanner(QWidget):
 
-    def __init__(self,globals=None,all_updates_methods=None,signals=None,parent=None,**argd):
-        super().__init__()
+    def __init__(self, globals=None, all_updates_methods=None, signals=None, parent=None, **kwargs):
+        super(Scanner, self).__init__(**kwargs)
         self.parent = parent
         self.globals = globals
         self.signals = signals
@@ -77,7 +51,7 @@ class Scanner(QWidget):
         print('loadConfigScanner')
         print(os.getcwd())
         try:
-            with open(scanner_config_file,'r') as f:
+            with open(os.path.join(data_directory, scanner_config_file), 'r') as f:
                 self.config = json.load(f)
         except json.decoder.JSONDecodeError:
             print('ERROR in reading ', scanner_config_file)
@@ -97,11 +71,11 @@ class Scanner(QWidget):
             print('Changed Value',changed_value)
             self.config[changed_key] =changed_value if changed_value!=None else self.__dict__[changed_key]
         try:
-            with open(scanner_config_file, 'r') as f:
+            with open(os.path.join(data_directory, scanner_config_file), 'r') as f:
                 old_config = json.load(f)
         except json.decoder.JSONDecodeError:
             old_config = {}
-        with open(scanner_config_file, 'w') as f:
+        with open(os.path.join(data_directory, scanner_config_file), 'w') as f:
             try:
                 json.dump(self.config,f)
             except: # find what error does it raise when cannot dump

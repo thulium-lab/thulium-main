@@ -1,9 +1,12 @@
-from PyQt5.QtCore import ( Qt, QTimer)
 import matplotlib
-matplotlib.use('Qt5Agg',force=True)
-from PyQt5.QtWidgets import (QApplication)
 import pyqtgraph as pg
 import numpy as np
+
+from PyQt5.QtCore import (Qt)
+from PyQt5.QtWidgets import (QApplication)
+
+matplotlib.use('Qt5Agg',force=True)
+
 
 class PlotPulse(pg.GraphicsWindow):
     def __init__(self,parent=None,globals={},signals=None,**argd):

@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraph
                              QGridLayout, QVBoxLayout, QHBoxLayout, QSizePolicy,
                              QLabel, QLineEdit, QPushButton, QWidget, QComboBox,QRadioButton, QSpinBox, QCheckBox, QTabWidget, QFileDialog,QMessageBox, QDoubleSpinBox)
 import pyqtgraph as pg
-digital_pulses_folder = 'digatal_schemes'
+digital_pulses_folder = 'digital_schemes'
 config_scheme_file = 'config_scheme'
 
 class digital_pulses(QWidget):

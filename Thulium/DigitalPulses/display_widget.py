@@ -1,38 +1,20 @@
-
-from sympy.parsing.sympy_parser import parse_expr
-from PyQt5.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer)
-from PyQt5.QtGui import (QBrush, QColor, QPainter, QIcon)
-from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem, QMenu, QAction, QMdiArea,QMdiSubWindow,
-                             QMenu, QAction, QScrollArea, QFrame,QDesktopWidget,QSplitter,
-                             QGridLayout, QVBoxLayout, QHBoxLayout, QSizePolicy,QMainWindow, QDialog,QTextEdit,
-                             QLabel, QLineEdit, QPushButton, QWidget, QComboBox,QRadioButton, QSpinBox, QCheckBox, QTabWidget, QFileDialog,QMessageBox, QDoubleSpinBox)
-
-import json
-import time
-import os, sys
-import datetime
-# sys.path.append(r'/Users/artemgolovizin/GitHub')
-sys.path.append(r'D:\!Data')
-from matplotlib.pyplot import imread
+import os, sys, time, datetime, json, scipy.misc, threading
 import pyqtgraph as pg
-# from pyqtgraph.Qt import QtCore, QtGui
-import pyqtgraph.console
+import pyqtgraph.dockarea as da
 import numpy as np
-# from matplotlib.image import imsave
-from scipy.misc import imsave
-import scipy.misc
 
-from pyqtgraph.dockarea import *
+from matplotlib.pyplot import imread
+from PyQt5.QtCore import (QTimer)
+from PyQt5.QtGui import (QIcon, QFont)
+from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QHBoxLayout, QLabel, QWidget, QSpinBox, QCheckBox,
+                             QMessageBox)
+
+
+sys.path.append(r'D:\!Data')
+
 import thulium_python_lib.usefull_functions as usfuncs
 import thulium_python_lib.image_processing_new as impr
 
-import threading
-#
-# import ctypes
-# myappid = u'LPI.DisplayWidget' # arbitrary string
-# ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-
-from PyQt5.QtGui import QFont
 pg.setConfigOptions(imageAxisOrder='row-major')
 
 ds_dir = r'D:\!Data\2016_04_22\01 T no_ramp a=-6 f=363.9 b=0.8'
@@ -52,13 +34,13 @@ ds_dir = r'D:\!Data\2016_04_22\01 T no_ramp a=-6 f=363.9 b=0.8'
 # win.resize(1000,500)
 # win.setWindowTitle('Dockarea')
 
-class DisplayWidget(DockArea):
-    def __init__(self,parent=None,globals=None,signals=None,**argd):
+class DisplayWidget(da.DockArea):
+    def __init__(self, parent=None, globals=None, signals=None, **kwargs):
         self.config={}
         self.globals = globals
         self.signals = signals
         self.parent = parent
-        self.config_file = 'display_widget_config.json'
+        self.config_file = os.path.join('DigitalPulses\digital_schemes','display_widget_config.json')
         self.screen_size = QDesktopWidget().screenGeometry()
         self.roi_center = [200,200]
         self.roi_size = [100,100]
@@ -129,10 +111,10 @@ class DisplayWidget(DockArea):
         self.resize(self.screen_size.width(),self.screen_size.height())
         self.setWindowTitle('Display widget')
         self.setWindowIcon(QIcon('display_image_icon.jpg'))
-        self.d1 = Dock("Image", size=(self.screen_size.width()/2, self.screen_size.height()))     ## give this dock the minimum possible size
-        self.d3 = Dock("Number of atoms", size=(self.screen_size.width()/2, self.screen_size.height()/3))
-        self.d2 = Dock("Image data", size=(self.screen_size.width()/2, self.screen_size.height()/3))
-        self.d4 = Dock("Cloud width", size=(self.screen_size.width()/2, self.screen_size.height()/3))
+        self.d1 = da.Dock("Image", size=(self.screen_size.width()/2, self.screen_size.height()))     ## give this dock the minimum possible size
+        self.d3 = da.Dock("Number of atoms", size=(self.screen_size.width()/2, self.screen_size.height()/3))
+        self.d2 = da.Dock("Image data", size=(self.screen_size.width()/2, self.screen_size.height()/3))
+        self.d4 = da.Dock("Cloud width", size=(self.screen_size.width()/2, self.screen_size.height()/3))
         self.area.addDock(self.d1, 'left')      ## place d1 at left edge of dock area (it will fill the whole space since there are no other docks yet)
         self.area.addDock(self.d2, 'right', self.d1)## place d3 at bottom edge of d1
         self.area.addDock(self.d4, 'bottom',self.d2)     ## place d4 at right edge of dock area

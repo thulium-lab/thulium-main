@@ -1,24 +1,11 @@
-# from PyQt5.QtCore import QObject
-import os, sys
-import pickle
-import random
-import numpy as np
-import matplotlib
-matplotlib.use('Qt5Agg',force=True)
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
-from copy import deepcopy
+from PyQt5.QtCore import (Qt, pyqtSignal)
+from PyQt5.QtWidgets import (QGridLayout, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QComboBox,
+                             QDoubleSpinBox, QApplication, QDialog, QDialogButtonBox, QCheckBox)
 
-from PyQt5.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer,QObject,pyqtSignal)
-from PyQt5.QtGui import (QBrush, QColor, QPainter)
 
-from PyQt5.QtWidgets import (QGridLayout, QWidget, QVBoxLayout, QHBoxLayout, QLabel,QLineEdit, QSpinBox, QComboBox,
-                             QDoubleSpinBox, QApplication, QDialog, QPushButton,QDialogButtonBox,QCheckBox)
-#class BasicShutter():
-    
 class Shutter():
     N_CHANNELS = 16
+
     def __init__(self,name=''):
         self.name = name
         self.channel = 0
@@ -28,7 +15,7 @@ class Shutter():
         self.always_on = False
         self.always_off = False
 
-    def load(self,shutter_dict=None):
+    def load(self, shutter_dict=None):
         print('shutter-load')
 
     class ShutterWidget(QDialog):

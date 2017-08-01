@@ -1,9 +1,7 @@
-import threading
-import time
+import os, time, datetime, threading
 import numpy as np
-# data = {'img':[0,0]}
-import os
-import datetime
+
+
 class Bgnd_Thread(threading.Thread):
 
     def __init__(self,image_folder,globals=None,signals=None,suffics='.tiff'):
@@ -13,10 +11,8 @@ class Bgnd_Thread(threading.Thread):
         self.signals = signals
         self.folder = image_folder
         self.suffics = suffics
-        self.daemon = True
-        self._stop = False
-
-        # thread.daemon = True                            # Daemonize thread
+        self.daemon = True # daemonize thread
+        self._stop = False # know when to stop
 
     def run(self):
         """ Method that runs forever """
