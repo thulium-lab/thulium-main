@@ -13,6 +13,9 @@ class Bgnd_Thread(threading.Thread):
         self.signals = signals
         self.folder = image_folder
         self.suffics = suffics
+        self.daemon = True
+        self._stop = False
+
         # thread.daemon = True                            # Daemonize thread
 
     def run(self):
@@ -23,7 +26,7 @@ class Bgnd_Thread(threading.Thread):
         print('look for images in ', self.folder)
         for f in os.listdir(self.folder):
             os.remove(os.path.join(self.folder,f))
-        while True:
+        while not self._stop:
             if len(os.listdir(self.folder)):
                 f = os.listdir(self.folder)[0]
                 if f.endswith(self.suffics):
@@ -48,6 +51,9 @@ class Bgnd_Thread(threading.Thread):
                             # print('w0.05',end=' ')
                     # print(f)
             time.sleep(0.001)
+
+    def stop(self):
+        self._stop = True
 
 if __name__ == '__main__':
     example = Bgnd_Thread(image_folder=r'Z:\Camera')

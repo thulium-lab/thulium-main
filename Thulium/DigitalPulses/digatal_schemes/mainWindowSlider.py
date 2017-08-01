@@ -1,4 +1,4 @@
-import sys, ctypes, matplotlib
+import sys, ctypes
 from numpy import *
 import numpy as np
 
@@ -10,12 +10,11 @@ sys.path.append(r'D:\Dropbox\Python\Thulium\Camera')
 sys.path.append(r'D:\Dropbox\Python\Thulium\DigitalPulses')
 sys.path.append(r'D:\Dropbox\Python\Thulium\Device controll')
 sys.path.append(r'D:\Dropbox\Python\Thulium\Device controll\WavelengthMeter')
-matplotlib.use('Qt5Agg',force=True)
 
 myAppID = u'LPI.MainScanWindow' # arbitrary string
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myAppID)
 
-from Pulses import PulseScheme, PulseGroup,IndividualPulse,AnalogPulse
+from Pulses import PulseScheme, PulseGroup, IndividualPulse, AnalogPulse
 from scanner import Scanner
 from PlotPulse import PlotPulse
 from bgnd_runner import Bgnd_Thread
@@ -24,12 +23,9 @@ from device_lib import connectArduino
 from arduinoShutters import Arduino
 from WMeter import WMMain,WMChannel
 # import arduinoShutters
-import threading
-import time
+
 vertical_splitting = 0.7
 horizontal_splitting = 0.6
-
-
 
 
 class OurSignals(QObject):
@@ -43,13 +39,14 @@ class MainWindow(QMainWindow):
     count = 0
     signals = OurSignals()
     globals = {}
+    widgets = {}
+    all_updates_methods = {}
     image_folder = r'Z:\Camera'
 
     def __init__(self, parent = None):
         super(MainWindow, self).__init__(parent)
         self.setWindowTitle('Scan and Pulses')
         self.setWindowIcon(QIcon('pulse.ico'))
-        self.all_updates_methods = {}
         # self.slots_to_bound={}
         self.globals['image'] = None
         self.globals['image_updated'] = False
@@ -60,12 +57,11 @@ class MainWindow(QMainWindow):
         # print('Arduino port', self.arduino.port)
         # res = self.arduino.connect()
         # print('Arduino connection',res)
-        self.bgnd_image_handler = Bgnd_Thread(globals = self.globals, signals = self.signals,
+        self.bgnd_image_handler = Bgnd_Thread(globals=self.globals, signals=self.signals,
                                               image_folder=self.image_folder)
         self.bgnd_image_handler.start()
         # self.wm = WMMain(arduino=arduinoShutters.ArduinoShutters(device=self.arduino))
         # self.wm.load()
-        self.widgets = {}
         self.default_widgets_names=['Scanner','PulseScheme']
         self.screenSize = QDesktopWidget().availableGeometry()
         self.initUI()
@@ -88,7 +84,6 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(hor_splitter)
         ver_splitter = QSplitter(Qt.Vertical)
-
 
         ver_splitter.addWidget(self.widgets['Scanner'])
         ver_splitter.addWidget(self.widgets['PulsePlot'])
@@ -125,6 +120,11 @@ class MainWindow(QMainWindow):
 
         if q.text() == "Tiled":
           self.mdi.tileSubWindows()
+
+    def closeEvent(self, *args, **kwargs):
+        self.bgnd_image_handler.stop()
+        self.widgets['CamView'].hide()
+        super(MainWindow, self).closeEvent(*args, **kwargs)
 
 def main():
     app = QApplication(sys.argv)
