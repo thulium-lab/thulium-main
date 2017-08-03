@@ -1,8 +1,8 @@
 import sys, ctypes
 
-from PyQt5.QtCore import (Qt, QObject,pyqtSignal)
+from PyQt5.QtCore import (Qt, QObject, pyqtSignal)
 from PyQt5.QtGui import (QIcon)
-from PyQt5.QtWidgets import (QApplication, QMdiSubWindow, QDesktopWidget, QSplitter, QMainWindow, QTextEdit)
+from PyQt5.QtWidgets import (QApplication, QMdiSubWindow, QDesktopWidget, QSplitter, QMainWindow, QTextEdit, QAction)
 
 from DigitalPulses.Pulses import PulseScheme, PulseGroup, IndividualPulse, AnalogPulse
 from DigitalPulses.scanner import Scanner
@@ -76,16 +76,21 @@ class MainWindow(QMainWindow):
         self.initUI()
 
     def initUI(self):
+        bar = self.menuBar()
+        openMenu = bar.addMenu('&Open')
+
         splitter = QSplitter(Qt.Vertical)
         # splitter.setSizes([50,50])
         self.setCentralWidget(splitter)
 
-        splitter.addWidget(self.widgets['Pulses'])
-        splitter.addWidget(self.widgets['PulsePlot'])
-
-        self.widgets['Scanner'].show()
-        self.widgets['Arduino'].show()
-        self.widgets['CamView'].show()
+        for widget in self.widgets:
+            if self.widgets[widget].window:
+                self.widgets[widget].show()
+                action = QAction("&" + widget, self)
+                action.triggered.connect(self.widgets[widget].show)
+                openMenu.addAction(action)
+            else:
+                splitter.addWidget(self.widgets[widget])
 
         # self.setFixedWidth(self.screenSize.width())
         # self.widgets['WavelengthMeter'].show()
