@@ -2,7 +2,8 @@ import sys, ctypes
 
 from PyQt5.QtCore import (Qt, QObject, pyqtSignal)
 from PyQt5.QtGui import (QIcon)
-from PyQt5.QtWidgets import (QApplication, QMdiSubWindow, QDesktopWidget, QSplitter, QMainWindow, QTextEdit, QAction)
+from PyQt5.QtWidgets import (QApplication, QMdiSubWindow, QDesktopWidget, QSplitter, QMainWindow, QTextEdit, QAction,
+                             QMessageBox)
 
 from DigitalPulses.Pulses import PulseScheme, PulseGroup, IndividualPulse, AnalogPulse
 from DigitalPulses.scanner import Scanner
@@ -33,7 +34,7 @@ class MainWindow(QMainWindow):
     all_updates_methods = {}
     image_folder = r'Z:\Camera' # RamDisk http://www.radeonramdisk.com/software_downloads.php
 
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
         self.setWindowTitle('Scan and Pulses')
         self.setWindowIcon(QIcon('pulse.ico'))
@@ -90,7 +91,9 @@ class MainWindow(QMainWindow):
                 action.triggered.connect(self.widgets[widget].show)
                 openMenu.addAction(action)
             else:
-                splitter.addWidget(self.widgets[widget])
+                pass # splitter.addWidget(self.widgets[widget]) # might be wrong order
+        splitter.addWidget(self.widgets['Pulses']) # explicitly state the order
+        splitter.addWidget(self.widgets['PulsePlot'])
 
         # self.setFixedWidth(self.screenSize.width())
         # self.widgets['WavelengthMeter'].show()
@@ -118,12 +121,17 @@ class MainWindow(QMainWindow):
         if q.text() == "Tiled":
           self.mdi.tileSubWindows()
 
-    def closeEvent(self, *args, **kwargs):
+    def closeEvent(self, event, *args, **kwargs):
+        message = "This action will close the entire program. Are you sure?"
+        reply = QMessageBox.question(self, 'Warning', message, QMessageBox.Yes, QMessageBox.Cancel)
+        if reply != QMessageBox.Yes:
+            return event.ignore()
         self.bgnd_image_handler.stop()
         for widget in self.widgets:
             if self.widgets[widget].window:
                 self.widgets[widget].hide()
-        super(MainWindow, self).closeEvent(*args, **kwargs)
+        event.accept() # should be same as below
+        # super(MainWindow, self).closeEvent(event, *args, **kwargs)
 
 
 if __name__ == '__main__':

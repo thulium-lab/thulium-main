@@ -1,12 +1,11 @@
 from serial import Serial, SerialException
 # import time
 import sys
-sys.path.append(r'D:\Dropbox\Python\Thulium\Device controll')
-from device_lib import COMPortDevice
+from Devices.COMPort import COMPortDevice
 from serial.tools import list_ports
 from PyQt5.QtCore import (QTimer)
 from PyQt5.QtGui import (QTextCursor)
-from PyQt5.QtWidgets import (QWidget, QComboBox,QRadioButton, QSpinBox, QCheckBox, QTabWidget, QFileDialog,QMessageBox, QDoubleSpinBox,QTextEdit)
+from PyQt5.QtWidgets import (QWidget, QComboBox, QCheckBox, QTextEdit)
 from PyQt5.QtWidgets import (QApplication, QVBoxLayout, QHBoxLayout,
                              QLabel, QLineEdit, QPushButton)
 
