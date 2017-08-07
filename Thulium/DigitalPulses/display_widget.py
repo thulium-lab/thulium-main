@@ -1,4 +1,4 @@
-import os, sys, time, datetime, json, scipy.misc, threading
+import os, sys, time, datetime, json, scipy.misc, threading, ctypes
 import pyqtgraph as pg
 import pyqtgraph.dockarea as da
 import numpy as np
@@ -14,6 +14,9 @@ sys.path.append(r'D:\!Data')
 
 import thulium_python_lib.usefull_functions as usfuncs
 import thulium_python_lib.image_processing_new as impr
+
+myAppID = u'LPI.Camera' # arbitrary string
+ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myAppID)
 
 pg.setConfigOptions(imageAxisOrder='row-major')
 
@@ -110,7 +113,7 @@ class DisplayWidget(da.DockArea):
         # self.resize(1000,500)
         self.resize(self.screen_size.width(),self.screen_size.height())
         self.setWindowTitle('Display widget')
-        self.setWindowIcon(QIcon('display_image_icon.jpg'))
+        self.setWindowIcon(QIcon('DigitalPulses\display_image_icon.jpg'))
         self.d1 = da.Dock("Image", size=(self.screen_size.width()/2, self.screen_size.height()))     ## give this dock the minimum possible size
         self.d3 = da.Dock("Number of atoms", size=(self.screen_size.width()/2, self.screen_size.height()/3))
         self.d2 = da.Dock("Image data", size=(self.screen_size.width()/2, self.screen_size.height()/3))

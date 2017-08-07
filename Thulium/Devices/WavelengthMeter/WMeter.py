@@ -1,4 +1,4 @@
-import os, time, json
+import os, json, ctypes
 import pyqtgraph as pg
 import numpy as np
 
@@ -15,6 +15,8 @@ from PyQt5.QtWidgets import (QApplication, QMenu, QColorDialog, QGridLayout, QVB
 n_air = 1.0002926
 cicle_counter = 0
 folder = 'Devices\WavelengthMeter'
+myAppID = u'LPI.WMWIndow' # arbitrary string
+ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myAppID)
 waitTime = pyqtSignal()
 
 class WMChannel:
@@ -195,7 +197,7 @@ class WMMain():
             self.data = data
             super().__init__(parent=self.parent)
             self.setWindowTitle('My WavelengthMeter')
-            self.setWindowIcon(QIcon('icon.jpg'))
+            self.setWindowIcon(QIcon('Devices\WavelengthMeter\icon.jpg'))
             self.plot_window1 = pg.PlotWidget()
             self.plot_window2 = pg.PlotWidget()
             self.read_data = []
@@ -320,7 +322,6 @@ class WMMain():
             resp = self.data.arduino.setWMShutters(arr_to_arduino)
             # check resp
             time_per_shot = self.data.wavemeter.exposure * 2
-            # time.sleep(0.1)
             # print('Time per shot ',time_per_shot)
             self.read_data = []
             read_success = False
