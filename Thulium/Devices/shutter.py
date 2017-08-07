@@ -115,6 +115,7 @@ class Shutter():
             print('shutter-stopDelayChanged')
             self.data.stop_delay = new_value
 
+
 if __name__ == '__main__':
     import sys
     # pulseGroup = PulseGroup

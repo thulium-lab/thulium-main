@@ -1,4 +1,4 @@
-import os, re, pickle, json, matplotlib
+import os, re, pickle, json, matplotlib, time
 import numpy as np
 import sympy as sp
 
@@ -72,6 +72,7 @@ class PulseScheme(QWidget):
                 if 'shutters' in pulse.__dict__:
                     # print(pulse.shutters)
                     for shutter in pulse.shutters:
+                        # print(shutter.name)
                         if shutter not in self.active_shutters:
                             self.active_shutters.append(shutter)
 
@@ -199,6 +200,7 @@ class PulseScheme(QWidget):
         print(shutter)
         if shutter:
             shutter.ShutterWidget(data=shutter,parent=self).exec_()
+            self.onAnyChange()
         # self.onAnyChange()
         # self.updateFromScanner({('1 stage cooling', 'Blue', 'length'): 10.0, ('2 stage cooling', 'Green', 'length'): 22.0, ('1 stage cooling', 'Green', 'length'): 43.0})
 
@@ -1206,9 +1208,10 @@ class PulseGroup():
                     self.accept()
                     return 345
 
+
 class IndividualPulse():
 
-    def __init__(self, group = None,name='',channel = '0', edge = 0, delay=0, length=0,is_active=False):
+    def __init__(self, group=None, name='',channel='0', edge=0, delay=0, length=0, is_active=False):
         self.name = name   # name of the pulse
         # self.group = group # group of pulses it belongs to
         self.channel = channel # physical channel of the signal (or may be name in dictionary)
@@ -1246,7 +1249,7 @@ class IndividualPulse():
         for shutter in self.shutters:
             for i,name in enumerate(shutter.linked_digital_channels):
                 if name == old_name:
-                    shutter.linked_digital_channels[i]=new_name
+                    shutter.linked_digital_channels[i] = new_name
 
 
 class AnalogPulse(IndividualPulse):

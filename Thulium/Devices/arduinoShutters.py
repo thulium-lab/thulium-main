@@ -1,6 +1,7 @@
 from serial import Serial, SerialException
 # import time
 import sys
+import threading
 from Devices.COMPort import COMPortDevice
 from serial.tools import list_ports
 from PyQt5.QtCore import (QTimer)
@@ -20,6 +21,7 @@ class Arduino(COMPortDevice):
     readings = []   # array of string where to contain readings
     available_com_ports = []
     n_chars_in_string = 400
+    lock = threading.Lock()
 
     def __init__(self):
         pass
@@ -35,13 +37,13 @@ class Arduino(COMPortDevice):
         """ function which is called to set Wavelength Meter shutters
             data is array of (channel(int), state(int)) format
             to send it to arduino it should be transferted to string 'WMShutters chan1 state1 chan2 state 2 ....' """
-        print('arduino-setWMShutters')
+        # print('arduino-setWMShutters')
         message = b'WMShutters'
         for chan, state in data:
             message += b' %i %i' % (chan, state)
         message += b'!'
         print(message)
-        status, readout = self.stream.write_read_com(message)
+        status, readout = self.write_read_com(message)
         if not status:
             return False
         print('written')
@@ -50,7 +52,7 @@ class Arduino(COMPortDevice):
         return True
 
     def read_serial(self):
-        """function to read all data avaylable in serial stream from arduino"""
+        """function to read all data available in serial stream from arduino"""
         if self.connected:
             for i in range(20):
                 try:
