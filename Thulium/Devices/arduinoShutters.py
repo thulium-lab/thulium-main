@@ -23,8 +23,9 @@ class Arduino(COMPortDevice):
     n_chars_in_string = 400
     lock = threading.Lock()
 
-    def __init__(self):
-        pass
+    def __init__(self, signals=None):
+        self.signals = signals
+        self.signals.shutterChange.connect(self.sendData)
         # self.updateCOMPortsInfo()   #not neccesery here
 
     def preCheck(self):
@@ -46,10 +47,14 @@ class Arduino(COMPortDevice):
         status, readout = self.write_read_com(message)
         if not status:
             return False
-        print('written')
+        # print('written')
         # print(self.device.readline()) # here one should add check of correct writing
         # add check of success
         return True
+
+    def sendData(self, msg):
+        status, readout = self.write_read_com(msg.encode('ascii'))
+        return status
 
     def read_serial(self):
         """function to read all data available in serial stream from arduino"""
@@ -59,6 +64,8 @@ class Arduino(COMPortDevice):
                     s = self.stream.readline().decode()
                     if s=='':
                         break
+                    if 'WS Ok' in s:
+                        self.signals.arduinoReceived.emit()
                     self.append_readings(s)
                     # print("arduino >>   ",s,end='')
                 except SerialException as e:

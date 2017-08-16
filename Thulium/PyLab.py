@@ -25,6 +25,8 @@ class OurSignals(QObject):
     anyPulseChange = pyqtSignal()  # to handle any change in pulse scheme - probably for displaying pulses
     newImageRead = pyqtSignal()     # emits when new image is read from image_folder
     scanCycleFinished = pyqtSignal(int)    # emits by DAQ whenever a cycle is finished
+    shutterChange = pyqtSignal(str)
+    arduinoReceived = pyqtSignal()
 
 
 class MainWindow(QMainWindow):
@@ -45,7 +47,7 @@ class MainWindow(QMainWindow):
         self.globals['image_stack']=[]
 
         # self.arduino = connectArduino()
-        self.arduino = Arduino()
+        self.arduino = Arduino(self.signals)
         # self.arduino.preCheck()
         # print('Arduino port', self.arduino.port)
         # res = self.arduino.connect()
@@ -53,9 +55,6 @@ class MainWindow(QMainWindow):
         self.bgnd_image_handler = Bgnd_Thread(globals=self.globals, signals=self.signals,
                                               image_folder=self.image_folder)
         self.bgnd_image_handler.start()
-
-        self.wm = WMeter.WMMain(arduino=self.arduino)
-        self.wm.load()
 
         self.default_widgets_names=['Scanner','PulseScheme']
         self.screenSize = QDesktopWidget().availableGeometry()
@@ -70,12 +69,15 @@ class MainWindow(QMainWindow):
         self.widgets['Arduino'] = self.arduino.Widget(parent=self, data=self.arduino)
         self.widgets['Arduino'].window = True
         self.widgets['Arduino'].connectBtnPressed()
-        self.widgets['WavelengthMeter'] = self.wm.WMWidget(data=self.wm)
-        self.widgets['WavelengthMeter'].window = True
         self.widgets['Pulses'] = PulseScheme(parent=self, globals=self.globals, signals=self.signals)
         self.widgets['Pulses'].window = False
         self.widgets['PulsePlot'] = PlotPulse(parent=self, globals=self.globals, signals=self.signals)
         self.widgets['PulsePlot'].window = False
+
+        self.wm = WMeter.WMMain(arduino=self.arduino)
+        self.wm.load()
+        self.widgets['WavelengthMeter'] = self.wm.WMWidget(data=self.wm, signals=self.signals)
+        self.widgets['WavelengthMeter'].window = True
         self.all_updates_methods['Pulses'] = self.widgets['Pulses'].getUpdateMethod()
 
         self.initUI()

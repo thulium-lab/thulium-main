@@ -5,7 +5,7 @@ import numpy as np
 from Devices.WavelengthMeter import wlm
 from Devices import arduinoShutters
 
-from PyQt5.QtCore import (QTimer, pyqtSignal)
+from PyQt5.QtCore import (QTimer, pyqtSignal, Qt)
 from PyQt5.QtGui import (QColor, QFont, QIcon)
 from PyQt5.QtWidgets import (QApplication, QMenu, QColorDialog, QGridLayout, QVBoxLayout, QHBoxLayout, QDialog, QLabel,
                              QLineEdit, QPushButton, QWidget, QRadioButton, QSpinBox, QCheckBox, QButtonGroup,
@@ -108,7 +108,7 @@ class WMChannel:
                 self.value.setText("%.5f THz" % self.data.frequency)
 
         def showSpectrum(self, b):
-            print('Show spectrum', b)
+            # print('Show spectrum', b)
             self.data.show_spectrum = b
             self.parent.data.save()
             # pass to parent
@@ -116,7 +116,7 @@ class WMChannel:
 
 class WMMain():
     channels = []
-    N_SHOTS_MAX = 10
+    N_SHOTS_MAX = 100
     N_SHOTS_MIN = 5
     EXCEPTABLE_WAVELENGTH_ERROR = 0.01 #nm
     current_index = 0
@@ -135,7 +135,7 @@ class WMMain():
         self.arduino = arduino
 
     def save(self):
-        print('Save')
+        # print('Save')
         data_to_save = {}
         data_to_save['n_channels'] = self.n_channels
         data_to_save['timer_interval'] = self.timer_interval
@@ -150,7 +150,7 @@ class WMMain():
                 if attr == 'color':
                     d[attr] = getattr(channel,attr).getRgb()[:3]
             data_to_save['channels'].append(d)
-        print(data_to_save)
+        # print(data_to_save)
         with open(os.path.join(folder,'WM_config.json'),'w') as f:
             json.dump(data_to_save,f)
 
@@ -162,7 +162,7 @@ class WMMain():
         if 'timer_interval' in data:
             self.timer_interval = data['timer_interval']
         for chan in data['channels']:#getattr(data,'channels',[]):
-            print(chan)
+            # print(chan)
             new_chan = WMChannel()
             for attr in chan:
                 if attr == 'color':
@@ -170,7 +170,7 @@ class WMMain():
                 else:
                     setattr(new_chan,attr,chan[attr])
             self.channels.append(new_chan)
-        print(data['channels'])
+        # print(data['channels'])
         self.active_channels_indexes = [i for i in range(len(self.channels)) if self.channels[i].is_active]
         self.current_index = self.active_channels_indexes[-1]
 
@@ -192,9 +192,11 @@ class WMMain():
 
     class WMWidget(QWidget):
         # handled = False # flag that value is written from wavemeter
-        def __init__(self, parent=None, data=None):
+        def __init__(self, parent=None, data=None, signals=None):
             self.parent = parent
             self.data = data
+            self.signals = signals
+            self.lastMessage = ''
             super().__init__(parent=self.parent)
             self.setWindowTitle('My WavelengthMeter')
             self.setWindowIcon(QIcon('Devices\WavelengthMeter\icon.jpg'))
@@ -260,13 +262,15 @@ class WMMain():
 
             main_layout.addLayout(self.channels_layout)
             self.setLayout(main_layout)
-            print('WLM_GUI created')
+            # print('WLM_GUI created')
             self.timer = QTimer(self)
             self.timer.setInterval(self.data.timer_interval)
             self.timer.timeout.connect(self.routine)
             self.timer.start()
             self.timer2 = QTimer(self)
             self.timer2.timeout.connect(self.checkWM)
+
+            self.signals.arduinoReceived.connect(self.timer2.start)
 
         def temerIntervalChanged(self, new_val):
             self.data.timer_interval = new_val
@@ -291,18 +295,23 @@ class WMMain():
             channels_menu = self.sender()
             channels_menu.clear()
             for channel in self.data.channels:
-                print(channel.name)
+                # print(channel.name)
                 act = channels_menu.addAction(channel.name)
                 act.triggered.connect(self.updateSingleIndex)
 
         def updateSingleIndex(self):
             name = self.sender().text()
-            print('single ',name)
+            # print('single ',name)
             for i, channel in enumerate(self.data.channels):
                 if channel.name == name:
                     self.data.single_index = i
                     break
-            print('single index ', self.data.single_index)
+            # print('single index ', self.data.single_index)
+
+        def keyPressEvent(self, QKeyEvent):
+            if QKeyEvent.key() == Qt.Key_F5 and self.shotN == 0:
+                self.signals.shutterChange.emit(self.lastMessage)
+            return
 
         def routine(self):
             self.timer.stop()
@@ -319,7 +328,13 @@ class WMMain():
                 self.data.current_index = self.data.single_index
             # print('current index ',self.data.current_index)
             arr_to_arduino = [(self.data.channels[i].shutter_number,int(i==self.data.current_index)) for i in range(len(self.data.channels))]
-            resp = self.data.arduino.setWMShutters(arr_to_arduino)
+            # resp = self.data.arduino.setWMShutters(arr_to_arduino)
+            message = 'WMShutters'
+            for chan, state in arr_to_arduino:
+                message += ' %i %i' % (chan, state)
+            message += '!'
+            print(message)
+            # status, readout = self.write_read_com(message)
             # check resp
             time_per_shot = self.data.wavemeter.exposure * 2
             # print('Time per shot ',time_per_shot)
@@ -327,7 +342,9 @@ class WMMain():
             read_success = False
             self.shotN = 0
             self.timer2.setInterval(time_per_shot)
-            self.timer2.start()
+            self.lastMessage = message
+            self.signals.shutterChange.emit(message)
+            # self.timer2.start()
 
         def checkWM(self):
             self.shotN += 1
@@ -336,7 +353,8 @@ class WMMain():
                 wm_data = {'wavelength': self.data.wavemeter.wavelength,
                            'frequency': self.data.wavemeter.frequency,
                            'amplitudes': self.data.wavemeter.amplitudes,
-                           'spectrum': self.data.wavemeter.spectrum
+                           'spectrum': self.data.wavemeter.spectrum,
+                           'exposure': self.data.wavemeter.exposure
                            }
             except Exception as e:
                 print(e)
@@ -346,7 +364,8 @@ class WMMain():
             # print(wm_data['wavelength'])
             if (i > self.data.N_SHOTS_MIN and
                 abs(wm_data['wavelength'] - self.read_data[-2]['wavelength']) <= self.data.EXCEPTABLE_WAVELENGTH_ERROR and
-                abs(wm_data['wavelength'] - self.read_data[-2]['wavelength']) <= self.data.EXCEPTABLE_WAVELENGTH_ERROR or
+                abs(wm_data['wavelength'] - self.read_data[-2]['wavelength']) <= self.data.EXCEPTABLE_WAVELENGTH_ERROR and
+                wm_data["exposure"] * i > 100 or
                 i > self.data.N_SHOTS_MAX):
                 self.timer2.stop()
                 # print('Steady state reached; i=', i)
@@ -400,7 +419,7 @@ class WMMain():
             channels_menu = self.sender()
             channels_menu.clear()
             for channel in self.data.channels:
-                print(channel.name)
+                # print(channel.name)
                 m = channels_menu.addMenu(channel.name)
                 text = 'hide' if channel.is_active else 'show'
                 act = m.addAction(text)
@@ -436,7 +455,7 @@ class WMMain():
                 new_shutter_channel = caller.shutter_channel.value()
                 self.data.addChannel(name=new_name, shutter_number=new_shutter_channel)
                 # self.data.channels.append(new_channel)
-                print(new_name, new_shutter_channel)
+                # print(new_name, new_shutter_channel)
                 self.drawChannels()
             del caller
             self.data.save()
@@ -512,6 +531,7 @@ if __name__ == '__main__':
     from serial import Serial
     from serial import SerialException
     import serial.tools.list_ports
+    folder = ''
     app = QApplication(sys.argv)
     device = connectArduino()
     if device != -1:

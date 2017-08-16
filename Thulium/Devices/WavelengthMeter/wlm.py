@@ -87,7 +87,7 @@ class WavelengthMeter:
             "debug": self.debug,
             "wavelength": self.GetWavelength(),
             "frequency": self.GetFrequency(),
-            "exposureMode": self.GetExposureMode()
+            "exposureMode": self.GetExposureMode(),
         }
 
     @property

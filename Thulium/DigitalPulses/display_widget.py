@@ -69,6 +69,7 @@ class DisplayWidget(da.DockArea):
 
         self.iso = pg.IsocurveItem(pen='g')
         self.iso.setZValue(1000)
+        self.iso.setParentItem(self.img)
         self.show()
         self.timer = QTimer(self)
         self.timer.setInterval(1000)
@@ -280,7 +281,6 @@ class DisplayWidget(da.DockArea):
             scipy.misc.toimage(self.new_data.image,cmin=0,cmax=1).save(im_name)
         else:
             print('Recieved image at time ',datetime.datetime.now().time())
-        self.updateIsocurve()
         # self.data_processing()
         sthrd = threading.Thread(target=self.data_processing)
         sthrd.start()
@@ -300,6 +300,7 @@ class DisplayWidget(da.DockArea):
         self.process_image(self.new_data) # pprocess image - may be this and below should be done in thread, because fits take time
         self.update_image_info(self.new_data)
         self.update_plot(self.new_data)
+        # self.updateIsocurve() # takes too much process time, 'Go To' for details
         print('Finished image data processing at ', datetime.datetime.now().time())
 
     def updateROI(self):
@@ -321,8 +322,8 @@ class DisplayWidget(da.DockArea):
         # cur_data = pg.gaussianFilter(self.imv.getImageItem().image, (4, 4))
         # self.iso.setParentItem(self.imv.getImageItem())
         cur_data = pg.gaussianFilter(self.img.image, (4, 4))
-        self.iso.setParentItem(self.img)
-        self.iso.setData(cur_data)
+        # self.iso.setParentItem(self.img)
+        self.iso.setData(cur_data) # this line takes too much process time
         self.iso.setLevel(cur_data.max()/np.e)
         self.iso.setZValue(1000)
 

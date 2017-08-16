@@ -484,10 +484,11 @@ class PulseScheme(QWidget):
                     msg += ' '
                 msg = msg[:-1] + '!'
                 print(msg)
-                status, res = self.parent.arduino.write_read_com(msg.encode('ascii'))
-                if status:
-                    self.parent.arduino.append_readings(res)
-                # # res = self.parent.arduino.readline().decode()
+                self.signals.shutterChange.emit(msg)
+                # status, res = self.parent.arduino.write_read_com(msg.encode('ascii'))
+                # if status:
+                #     self.parent.arduino.append_readings(res)
+                # # # res = self.parent.arduino.readline().decode()
                 # print(res)
 
     def updateGroupTime(self):
@@ -658,7 +659,7 @@ class PulseGroup():
 
             # add pulse_group data
             group_name = QLineEdit(self.data.name)
-            group_name.returnPressed.connect(self.groupNameChanged)
+            group_name.editingFinished.connect(self.groupNameChanged)
             self.grid_layout.addWidget(group_name, self.group_row, self.columns.index('Name'))
 
             group_edge = QComboBox()
@@ -707,7 +708,7 @@ class PulseGroup():
                 self.grid_layout.addWidget(pulse_channel, pulse_row, self.columns.index('Channel'))
 
                 pulse_name = QLineEdit(pulse.name)
-                pulse_name.returnPressed.connect(self.pulseNameChanged)
+                pulse_name.editingFinished.connect(self.pulseNameChanged)
                 self.grid_layout.addWidget(pulse_name, pulse_row, self.columns.index('Name'))
 
                 pulse_edge = QComboBox()
@@ -972,7 +973,7 @@ class PulseGroup():
                 print(variables)
                 for i,var in enumerate(variables):
                     name_line = QLineEdit(var)
-                    name_line.returnPressed.connect(self.varNameChanged)
+                    name_line.editingFinished.connect(self.varNameChanged)
                     self.grid.addWidget(name_line,i+1,0)
 
                     value = QDoubleSpinBox()
@@ -993,7 +994,7 @@ class PulseGroup():
                 main_layout.addWidget(QLabel('l - impulse length'))
 
                 formula_line = QLineEdit(self.pulse.formula)
-                formula_line.returnPressed.connect(self.formulaChanged)
+                formula_line.editingFinished.connect(self.formulaChanged)
                 main_layout.addWidget(formula_line)
 
                 hor_box3 = QHBoxLayout()
@@ -1314,6 +1315,7 @@ class AnalogPulse(IndividualPulse):
 
 if __name__ == '__main__':
     import sys
+    digital_pulses_folder = 'digital_schemes'
     # pulseGroup = PulseGroup
     app = QApplication(sys.argv)
     mainWindow = PulseScheme()

@@ -214,13 +214,13 @@ class AllScanParameters():
 
                     param_shortname = QLineEdit(param.short_name)
                     param_shortname.setMaximumWidth(50)
-                    param_shortname.returnPressed.connect(self.paramShortNameChanged)
+                    param_shortname.editingFinished.connect(self.paramShortNameChanged)
                     grid.addWidget(param_shortname, row, self.scan_grid_elems['short'])
 
                     grid.addWidget(QLabel(str(i)), row, self.scan_grid_elems['index'])
 
                     param_line = QLineEdit(' '.join([str(int(num) if (num).is_integer() else num) for num in param.param_list]))
-                    param_line.returnPressed.connect(self.paramLineChanged)
+                    param_line.editingFinished.connect(self.paramLineChanged)
                     grid.addWidget(param_line, row, self.scan_grid_elems['line'])
 
                     label = QLabel('-')
@@ -432,7 +432,7 @@ class MeasurementFolderClass():
             hor1.addWidget(QLabel('other params'))
 
             other_params_box = QLineEdit(self.data.other_params)
-            other_params_box.returnPressed.connect(self.otherParamsChanged)
+            other_params_box.editingFinished.connect(self.otherParamsChanged)
             hor1.addWidget(other_params_box)
 
             main_layout.addLayout(hor1)
@@ -443,7 +443,7 @@ class MeasurementFolderClass():
 
             self.meas_folder_box = QLineEdit(self.data.name)
             self.updateMeasFolder()
-            self.meas_folder_box.returnPressed.connect(self.measFolderChanged)
+            self.meas_folder_box.editingFinished.connect(self.measFolderChanged)
             hor2.addWidget(self.meas_folder_box)
 
             new_btn = QPushButton('New')
