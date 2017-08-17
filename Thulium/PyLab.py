@@ -1,4 +1,4 @@
-import sys, ctypes
+import sys, ctypes, time
 
 from PyQt5.QtCore import (Qt, QObject, pyqtSignal)
 from PyQt5.QtGui import (QIcon)
@@ -12,6 +12,7 @@ from Camera.bgnd_runner import Bgnd_Thread
 from DigitalPulses.display_widget import DisplayWidget
 from Devices.arduinoShutters import Arduino
 from Devices.WavelengthMeter import WMeter
+from Devices.DDS import DDSWidget
 
 vertical_splitting = 0.7
 horizontal_splitting = 0.6
@@ -61,23 +62,27 @@ class MainWindow(QMainWindow):
 
         self.widgets['Scanner'] = Scanner(parent=self, globals=self.globals,
                                           all_updates_methods=self.all_updates_methods, signals=self.signals)
-        self.widgets['Scanner'].window = True
+        self.widgets['Scanner'].windowed = 1
         # self.slots_to_bound['cycleFinished'].connect(self.widgets['Scanner'].cycleFinished)
         # self.triggerCycle.connect(self.widgets['Scanner'].cycleFinished)
+        self.widgets['DDS'] = DDSWidget(parent=self, globals=self.globals, signals=self.signals)
+        self.widgets['DDS'].windowed = 1
+
         self.widgets['CamView'] = DisplayWidget(parent=self, globals=self.globals, signals=self.signals)
-        self.widgets['CamView'].window = True
+        self.widgets['CamView'].windowed = 2
         self.widgets['Arduino'] = self.arduino.Widget(parent=self, data=self.arduino)
-        self.widgets['Arduino'].window = True
+        self.widgets['Arduino'].windowed = 1
         self.widgets['Arduino'].connectBtnPressed()
         self.widgets['Pulses'] = PulseScheme(parent=self, globals=self.globals, signals=self.signals)
-        self.widgets['Pulses'].window = False
+        self.widgets['Pulses'].windowed = 0
         self.widgets['PulsePlot'] = PlotPulse(parent=self, globals=self.globals, signals=self.signals)
-        self.widgets['PulsePlot'].window = False
+        self.widgets['PulsePlot'].windowed = 0
 
         self.wm = WMeter.WMMain(arduino=self.arduino)
         self.wm.load()
         self.widgets['WavelengthMeter'] = self.wm.WMWidget(data=self.wm, signals=self.signals)
-        self.widgets['WavelengthMeter'].window = True
+        self.widgets['WavelengthMeter'].windowed = 2
+
         self.all_updates_methods['Pulses'] = self.widgets['Pulses'].getUpdateMethod()
 
         self.initUI()
@@ -91,8 +96,9 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(splitter)
 
         for widget in self.widgets:
-            if self.widgets[widget].window:
-                self.widgets[widget].show()
+            if self.widgets[widget].windowed:
+                if self.widgets[widget].windowed > 1:
+                    self.widgets[widget].show()
                 action = QAction("&" + widget, self)
                 action.triggered.connect(self.widgets[widget].show)
                 openMenu.addAction(action)

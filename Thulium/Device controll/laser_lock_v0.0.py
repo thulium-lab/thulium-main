@@ -1,4 +1,4 @@
-import sys
+import sys, traceback
 import os
 import random
 import matplotlib
@@ -548,6 +548,7 @@ class COMPortDevice:
                     return -1
         except SerialException as e:
             print(e)
+            traceback.print_exc()
             return -2
 
 class Sacher(COMPortDevice):

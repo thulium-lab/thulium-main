@@ -15,8 +15,8 @@ EMPTY_CONFIG_FILE = -1
 
 class Scanner(QWidget):
 
-    def __init__(self, globals=None, all_updates_methods=None, signals=None, parent=None, **kwargs):
-        super(Scanner, self).__init__(**kwargs)
+    def __init__(self, globals=None, all_updates_methods=None, signals=None, parent=None):
+        super(Scanner, self).__init__()
         self.parent = parent
         self.globals = globals
         self.signals = signals

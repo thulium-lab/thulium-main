@@ -4,7 +4,7 @@ import pyqtgraph.dockarea as da
 import numpy as np
 
 from matplotlib.pyplot import imread
-from PyQt5.QtCore import (QTimer)
+from PyQt5.QtCore import (QTimer, Qt)
 from PyQt5.QtGui import (QIcon, QFont)
 from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QHBoxLayout, QLabel, QWidget, QSpinBox, QCheckBox,
                              QMessageBox)
@@ -115,6 +115,7 @@ class DisplayWidget(da.DockArea):
         self.resize(self.screen_size.width(),self.screen_size.height())
         self.setWindowTitle('Display widget')
         self.setWindowIcon(QIcon('DigitalPulses\display_image_icon.jpg'))
+        self.setWindowState(Qt.WindowMaximized)
         self.d1 = da.Dock("Image", size=(self.screen_size.width()/2, self.screen_size.height()))     ## give this dock the minimum possible size
         self.d3 = da.Dock("Number of atoms", size=(self.screen_size.width()/2, self.screen_size.height()/3))
         self.d2 = da.Dock("Image data", size=(self.screen_size.width()/2, self.screen_size.height()/3))

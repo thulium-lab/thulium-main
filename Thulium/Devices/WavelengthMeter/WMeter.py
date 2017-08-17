@@ -262,6 +262,9 @@ class WMMain():
 
             main_layout.addLayout(self.channels_layout)
             self.setLayout(main_layout)
+
+            self.window().setGeometry(1920, 1080, 1920, 1080)
+            self.setWindowState(Qt.WindowMaximized)
             # print('WLM_GUI created')
             self.timer = QTimer(self)
             self.timer.setInterval(self.data.timer_interval)
