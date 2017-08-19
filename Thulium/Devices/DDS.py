@@ -186,6 +186,7 @@ class DDSWidget(QWidget):
     def __init__(self, parent=None, globals={}, signals=None):
         super(DDSWidget, self).__init__()
         self.parent = parent
+        self.signals = signals
         self.dds = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.ip = '192.168.1.6'
         self.port = 2600
@@ -271,6 +272,7 @@ class DDSWidget(QWidget):
         self.setLayout(mainLayout)
 
     def addLine(self):
+        self.signals.wvlChanged.emit('hello there')
         self.lines.append(Line(self))
         self.layout().insertWidget(len(self.lines), self.lines[-1])
         self.save()

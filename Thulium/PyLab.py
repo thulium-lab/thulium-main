@@ -13,6 +13,7 @@ from DigitalPulses.display_widget import DisplayWidget
 from Devices.arduinoShutters import Arduino
 from Devices.WavelengthMeter import WMeter
 from Devices.DDS import DDSWidget
+from server import PyServer
 
 vertical_splitting = 0.7
 horizontal_splitting = 0.6
@@ -28,6 +29,7 @@ class OurSignals(QObject):
     scanCycleFinished = pyqtSignal(int)    # emits by DAQ whenever a cycle is finished
     shutterChange = pyqtSignal(str)
     arduinoReceived = pyqtSignal()
+    wvlChanged = pyqtSignal(str)
 
 
 class MainWindow(QMainWindow):
@@ -85,6 +87,8 @@ class MainWindow(QMainWindow):
 
         self.all_updates_methods['Pulses'] = self.widgets['Pulses'].getUpdateMethod()
 
+        self.server = PyServer(self, self.signals, self.globals)
+
         self.initUI()
 
     def initUI(self):
@@ -112,6 +116,7 @@ class MainWindow(QMainWindow):
         # self.widgets['CamView'].showFullScreen()
 
         print('self_globals',self.globals)
+        self.server.start()
 
     def addSubProgramm(self):
         pass

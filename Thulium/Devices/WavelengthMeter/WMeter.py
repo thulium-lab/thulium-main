@@ -379,6 +379,7 @@ class WMMain():
                 channel.frequency = wm_data['frequency']
                 channel.amplitudes = wm_data['amplitudes']
                 channel.spectrum = wm_data['spectrum']
+                self.signals.wvlChanged.emit(' '.join([channel.frequency for channel in self.data.channels]))
                 self.drawChannels()
                 self.drawSpecta()
                 self.timer.start()
