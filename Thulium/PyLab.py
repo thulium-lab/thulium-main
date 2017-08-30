@@ -28,8 +28,9 @@ class OurSignals(QObject):
     newImageRead = pyqtSignal()     # emits when new image is read from image_folder
     scanCycleFinished = pyqtSignal(int)    # emits by DAQ whenever a cycle is finished
     shutterChange = pyqtSignal(str)
-    arduinoReceived = pyqtSignal()
-    wvlChanged = pyqtSignal(str)
+    arduinoReceived = pyqtSignal() # WMeter can start averaging
+    wvlChanged = pyqtSignal(str) # server can update wvl
+    imageRendered = pyqtSignal() # server can update img
 
 
 class MainWindow(QMainWindow):

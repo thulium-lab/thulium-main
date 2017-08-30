@@ -1,6 +1,7 @@
 import os, sys, time, datetime, json, scipy.misc, threading, ctypes
 import pyqtgraph as pg
 import pyqtgraph.dockarea as da
+import pyqtgraph.exporters
 import numpy as np
 
 from matplotlib.pyplot import imread
@@ -271,6 +272,9 @@ class DisplayWidget(da.DockArea):
                                                             self.image_bounds[1][0]:self.image_bounds[1][1]])
         # print(new_data.image.shape)
         self.img.setImage(self.globals['image'],autoRange=False, autoLevels=False,autoHistogramRange=False)
+        exporter = pg.exporters.ImageExporter(self.img)
+        self.globals['imgExport'] = exporter.export(toBytes=True)
+        self.signals.imageRendered.emit()
         # new_data = self.process_image()
         if len(self.globals['image_stack']): # if scan is on images have to be saved
             im_name = self.globals['image_stack'].pop(0)
@@ -297,7 +301,7 @@ class DisplayWidget(da.DockArea):
         # self.imv.getHistogramWidget().setLevels(0, 0.6)
 
     def data_processing(self):
-        # there all image analisis is performed
+        # here all image analysis is performed
         self.process_image(self.new_data) # pprocess image - may be this and below should be done in thread, because fits take time
         self.update_image_info(self.new_data)
         self.update_plot(self.new_data)

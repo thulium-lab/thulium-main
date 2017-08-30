@@ -1,7 +1,8 @@
 import os, sys, json, socket, ctypes
 
-from PyQt5.QtCore import (pyqtSignal, QTimer, QRect)
-from PyQt5.QtGui import (QIcon)
+from math import log10
+from PyQt5.QtCore import (pyqtSignal, QTimer, QRect, Qt)
+from PyQt5.QtGui import (QIcon, QDoubleValidator)
 from PyQt5.QtWidgets import (QPushButton, QHBoxLayout, QVBoxLayout, QLineEdit, QComboBox, QDoubleSpinBox, QApplication,
                              QWidget, QLabel, QMenuBar, QAction, QFileDialog, QInputDialog)
 
@@ -24,6 +25,38 @@ sizes = [10, 100, 60, 60, 60, 60, 80, 100, 60, 60, 60, 60, 60, 30]
 # 0,0,0 - mirror?, invert?, skip?   ---
 # ,,1,1 - god know what             ---
 # 1 - SwitchedOn?                   ---
+
+class MyBox(QLineEdit):
+    def __init__(self, *args, **kwargs):
+        super(MyBox, self).__init__(*args, **kwargs)
+        self.setValidator(QDoubleValidator(10, 999, 3))
+
+    def keyPressEvent(self, QKeyEvent):
+        p = 0
+        if QKeyEvent.key() == Qt.Key_Up:
+            p = 1
+        if QKeyEvent.key() == Qt.Key_Down:
+            p = -1
+        if p == 0:
+            return super(MyBox, self).keyPressEvent(QKeyEvent)
+        prev = float(self.text())
+        pos = self.cursorPosition()
+        power = int(log10(prev)) - pos + 1
+        if power < 0:
+            power -= 1
+        next = prev + p * 10**power
+        self.setText(str(next))
+        pos += int(log10(next)) - int(log10(prev))
+        self.setCursorPosition(pos)
+
+    def value(self):
+        return float(self.text())
+
+
+autoSave = QTimer()
+autoSave.setInterval(5000)
+
+
 
 class Line(QWidget):
     def __init__(self, parent,
@@ -68,55 +101,41 @@ class Line(QWidget):
         self.wForm.setCurrentText(data['wForm'])
         self.wForm.currentIndexChanged.connect(self.update)
 
-        self.freq = QDoubleSpinBox()
-        self.freq.setDecimals(2)
-        self.freq.setMinimum(10)
-        self.freq.setMaximum(1000)
-        self.freq.setValue(data['freq'])
-        self.freq.valueChanged.connect(self.update)
+        self.freq = MyBox()
+        self.freq.setText(str(data['freq']))
+        self.freq.textChanged.connect(self.update)
 
-        self.freq2 = QDoubleSpinBox()
-        self.freq2.setDecimals(2)
-        self.freq2.setMinimum(10)
-        self.freq2.setMaximum(1000)
-        self.freq2.setValue(data['freq2'])
-        self.freq2.valueChanged.connect(self.update)
+        self.freq2 = MyBox()
+        self.freq2.setText(str(data['freq2']))
+        self.freq2.textChanged.connect(self.update)
 
-        self.amp = QDoubleSpinBox()
-        self.amp.setDecimals(2)
-        self.amp.setMinimum(0)
-        self.amp.setMaximum(10)
-        self.amp.setValue(data['amp'])
-        self.amp.valueChanged.connect(self.update)
+        self.amp = MyBox()
+        self.amp.setText(str(data['amp']))
+        self.amp.textChanged.connect(self.update)
 
-        self.amp2 = QDoubleSpinBox()
-        self.amp2.setDecimals(2)
-        self.amp2.setMinimum(0)
-        self.amp2.setMaximum(10)
-        self.amp2.setValue(data['amp2'])
-        self.amp2.valueChanged.connect(self.update)
+        self.amp2 = MyBox()
+        self.amp2.setText(str(data['amp2']))
+        self.amp2.textChanged.connect(self.update)
 
-        self.lower = QDoubleSpinBox()
-        self.lower.setValue(data['lower'])
-        self.lower.valueChanged.connect(self.update)
-        self.upper = QDoubleSpinBox()
-        self.upper.setValue(data['upper'])
-        self.upper.valueChanged.connect(self.update)
+        self.lower = MyBox()
+        self.lower.setText(str(data['lower']))
+        self.lower.textChanged.connect(self.update)
 
-        self.rise = QDoubleSpinBox()
-        self.rise.setMinimum(0)
-        self.rise.setValue(data['rise'])
-        self.rise.valueChanged.connect(self.update)
+        self.upper = MyBox()
+        self.upper.setText(str(data['upper']))
+        self.upper.textChanged.connect(self.update)
 
-        self.fall = QDoubleSpinBox()
-        self.fall.setMinimum(0)
-        self.fall.setValue(data['fall'])
-        self.fall.valueChanged.connect(self.update)
+        self.rise = MyBox()
+        self.rise.setText(str(data['rise']))
+        self.rise.textChanged.connect(self.update)
 
-        self.length = QDoubleSpinBox()
-        self.length.setMinimum(0)
-        self.length.setValue(data['length'])
-        self.length.valueChanged.connect(self.update)
+        self.fall = MyBox()
+        self.fall.setText(str(data['fall']))
+        self.fall.textChanged.connect(self.update)
+
+        self.length = MyBox()
+        self.length.setText(str(data['length']))
+        self.length.textChanged.connect(self.update)
 
         self.delBtn = QPushButton('del')
         self.delBtn.clicked.connect(lambda: self.parent.delete(self))
@@ -160,7 +179,10 @@ class Line(QWidget):
         self.setLayout(layout)
 
     def update(self):
+        if self.parent:
+            autoSave.start()
         if not self.parent.connected:
+            print(str(self))
             return
         try:
             self.parent.dds.send(str(self).encode())
@@ -203,11 +225,8 @@ class DDSWidget(QWidget):
         self.menuBar = QMenuBar(self)
 
         self.initUI()
-
-        self.autoSave = QTimer(self)
-        self.autoSave.setInterval(500000)
-        self.autoSave.timeout.connect(self.save)
-        self.autoSave.start()
+        autoSave.timeout.connect(self.save)
+        # self.autoSave.start()
 
 
     def initUI(self):
@@ -272,7 +291,6 @@ class DDSWidget(QWidget):
         self.setLayout(mainLayout)
 
     def addLine(self):
-        self.signals.wvlChanged.emit('hello there')
         self.lines.append(Line(self))
         self.layout().insertWidget(len(self.lines), self.lines[-1])
         self.save()
@@ -306,6 +324,8 @@ class DDSWidget(QWidget):
         fileName = QFileDialog.getOpenFileName(self, 'Load scheme', folder, filter='*.json')
         if fileName:
             self.load(fileName[0])
+        else:
+            print("can't open " + fileName)
         return
 
     def load(self, name='last.json'):
@@ -325,6 +345,8 @@ class DDSWidget(QWidget):
         return
 
     def save(self, name='last.json'):
+        print('saving')
+        autoSave.stop()
         success = False
         try:
             with open(os.path.join(folder, name), 'w') as f:
