@@ -295,7 +295,7 @@ class BlueLock():
                 print('1')
 
                 self.output_plots.sacher_piezo_curve.setData(self.data.piezo_voltage)
-                print('0')
+                print(self.data.piezo_voltage[-1])
                 self.piezo_voltage.setValue(self.data.piezo_voltage[-1])
                 print('0')
                 #create new entry in database

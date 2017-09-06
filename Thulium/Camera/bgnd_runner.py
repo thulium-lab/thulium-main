@@ -39,7 +39,7 @@ class Bgnd_Thread(threading.Thread):
                             # print(self.globals['image'][:5,:2])
                             self.globals['imaged_updated'] = True
                             os.remove(os.path.join(self.folder,f))
-                            print('Image read at ',datetime.datetime.now().time())
+                            print('Image ',f, 'read at ',datetime.datetime.now().time())
                             self.signals.newImageRead.emit()
                             break
                         except OSError:

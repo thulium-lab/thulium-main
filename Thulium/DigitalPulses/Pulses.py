@@ -1,8 +1,8 @@
 import os, re, pickle, json, matplotlib, time
 import numpy as np
 import sympy as sp
-
-from PyQt5.QtCore import (Qt, QObject, pyqtSignal)
+import datetime
+from PyQt5.QtCore import (Qt, QObject, pyqtSignal, QTimer)
 from PyQt5.QtWidgets import (QApplication, QScrollArea, QFrame, QMenu, QGridLayout, QVBoxLayout, QHBoxLayout,
                              QDialog, QLabel, QLineEdit, QPushButton, QWidget, QComboBox,QRadioButton, QCheckBox,
                              QTabWidget, QFileDialog, QMessageBox, QDoubleSpinBox)
@@ -30,6 +30,15 @@ class PulseSignals(QObject):
 class PulseScheme(QWidget):
     # can be done as QWidget
     def __init__(self,parent=None,available_channels=[],globals={},signals=None,**argd):
+
+        self.timerToStartDAQ = QTimer()
+        self.timerToStartDAQ.setInterval(1000)
+        self.timerToStartDAQ.timeout.connect(self.DAQTimerHandler)
+
+        self.cycleTimer = QTimer()
+        self.cycleTimer.timeout.connect(self.cycleTimerHandler)
+        self.cycleN = 0
+
         super().__init__(parent)
         # self.pulse_signals = PulseSignals()
         self.globals = globals
@@ -49,9 +58,11 @@ class PulseScheme(QWidget):
         self.current_scheme = None
         self.current_groups = []
         self.output = {}
-        self.dq = DAQHandler(self.signals.scanCycleFinished.emit)
+        self.dq = DAQHandler()# self.signals.scanCycleFinished.emit)
         self.globals['DAQ'] = self.dq
         self.load()
+
+
         if 'Signals' not in globals:
             globals['Signals'] ={}
         if 'Pulses' not in globals['Signals']:
@@ -62,8 +73,17 @@ class PulseScheme(QWidget):
 
         self.initUI()
         self.setMinimumWidth(750)
+
         # self.connect(self.)
         # self.pulse_signal.onAnyChangeSignal()
+    def DAQTimerHandler(self):
+        self.timerToStartDAQ.stop()
+        self.dq.write(self.output)
+        self.dq.run()
+        self.cycleTimer.setInterval(self.t_last)
+        self.cycleN = 0
+        self.cycleTimer.start()
+
 
     def updateActiveShutters(self):
         print('pulses-updateActiveShutters')
@@ -170,7 +190,7 @@ class PulseScheme(QWidget):
                 # print(group_name, pulse_name)
                 group = [group for group in self.current_groups if group.name == group_name][0]
                 pulse = [pulse for pulse in group.pulses if pulse.name == pulse_name][0]
-                print(pulse.channel)
+                # print(pulse.channel)
                 if pulse.channel == channel:
                     return shutter
         return None
@@ -529,8 +549,12 @@ class PulseScheme(QWidget):
         # print(self.output)
         self.globals['Pulses'][pulse_output_str] = deepcopy(self.output)
         # write new output to DAQ
-        self.dq.write(self.output)
-        self.dq.run()
+        self.dq.stop()
+        self.cycleTimer.stop()
+        print('DAQ stopped at',datetime.datetime.now().time())
+        self.timerToStartDAQ.start()
+        # time.sleep(1)
+        # self.dq.run()
         # self.globals['Pulses'][pulse_output_str] = self.output
         self.globals['Pulses']['t_first']=self.t_first
 
@@ -539,6 +563,11 @@ class PulseScheme(QWidget):
         # self.pulse_signals.onAnyChangeSignal.emit()
         self.signals.anyPulseChange.emit()
         # print('Globals\n',self.globals)
+
+    def cycleTimerHandler(self):
+        self.cycleN += 1
+        self.signals.scanCycleFinished.emit(self.cycleN)
+        return
 
     def updateAndSendScanParameters(self):
         print('updateAndSendScanParameters')

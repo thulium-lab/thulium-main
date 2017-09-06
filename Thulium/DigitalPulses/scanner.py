@@ -1,4 +1,4 @@
-import os, time, datetime, json, shutil
+import os, time, datetime, json, shutil, traceback
 
 from PyQt5.QtWidgets import (QApplication, QVBoxLayout, QHBoxLayout, QTextEdit, QLabel, QPushButton, QWidget,
                              QSpinBox, QCheckBox, QMessageBox)
@@ -169,7 +169,8 @@ class Scanner(QWidget):
             elif not os.path.isdir(self.globals['current_measurement_folder']):
                 os.mkdir(self.globals['current_measurement_folder'])    # create new measurement folder
             print('Data folder: ',self.globals['current_measurement_folder'])
-
+            # self.globals['DAQ'].stop()
+            # time.sleep(4)
             self.writeMeasConfig()
             self.updateParamAndSend(changed_index)
             self.updateSingleMeasFolder()
@@ -218,7 +219,7 @@ class Scanner(QWidget):
 
     def cycleFinished(self, number=None):
         """called when cycle is finished"""
-        print(number, 'cycleFinished at ',datetime.datetime.now().time())
+        print(number, 'cycleFinished at',datetime.datetime.now().time())
         if not self.on_scan:
             return
         # add image_name for saving image
@@ -258,7 +259,8 @@ class Scanner(QWidget):
         if self.all_updates_methods != None:
             for name, params in params_to_send.items():
                 res_of_update = self.all_updates_methods[name](param_dict=params)
-                if res_of_update == -1: # if smth wrong
+                if res_of_update == -1:
+                    # if smth wrong
                     QMessageBox.warning(self, 'Message', "Couldn't change %s parameters\nScan is stopped"%(name), QMessageBox.Yes)
                     self.stopScan(stop_btn_text='Continue',is_scan_interrupted=True)
                     is_Ok = False

@@ -1,34 +1,39 @@
 import os, sys, json, socket, ctypes
 from collections import OrderedDict
 
-from math import log10
 from PyQt5.QtCore import (pyqtSignal, QTimer, QRect, Qt)
 from PyQt5.QtGui import (QIcon, QDoubleValidator)
 from PyQt5.QtWidgets import (QPushButton, QHBoxLayout, QVBoxLayout, QLineEdit, QComboBox, QDoubleSpinBox, QApplication,
                              QWidget, QLabel, QMenuBar, QAction, QFileDialog, QInputDialog)
+
+# Changed the way DDS widget is constructed - now it is done based on an ordered dictionary. It is only when forming string to send to BeagleBone parameters are called by name (key).
+# To add new parameter one should add entry to the LineDict, and then add this variable in __str__ method.
+# !!! MyBox now returns value in string format
+# Did not yet added nice field names (upper line)
+
 
 folder = 'Devices\settings'
 myAppID = u'LPI.DDS' # arbitrary string
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myAppID)
 sizes = [10, 100, 60, 60, 60, 60, 80, 100, 60, 60, 60, 60, 60, 30]
 wForm_list = [None, '100pulses.awf', 'gaussian.awf', 'mod_cos_1-0.86.awf',
-                             'smoothed_linear_ramp_down.awf', 'squeeze_and_unsqueeze_0pi.awf',
-                             'squeeze_and_unsqueeze_14over7pi.awf', 'squeeze_and_unsqueeze_1over7pi.awf',
-                             'squeeze_and_unsqueeze_2over7pi.awf', 'squeeze_and_unsqueeze_3over7pi.awf',
-                             'squeeze_and_unsqueeze_4over7pi.awf', 'squeeze_and_unsqueeze_5over7pi.awf',
-                             'squeeze_and_unsqueeze_6over7pi.awf', 'squeeze_and_unsqueeze_7over7pi.awf',
-                             'squeeze_and_unsqueeze_v2_0over5.awf', 'squeeze_and_unsqueeze_v2_10over5.awf',
-                             'squeeze_and_unsqueeze_v2_1over5.awf', 'squeeze_and_unsqueeze_v2_2over5.awf',
-                             'squeeze_and_unsqueeze_v2_3over5.awf', 'squeeze_and_unsqueeze_v2_4over5.awf',
-                             'squeeze_and_unsqueeze_v2_5over5.awf', 'squeeze_and_unsqueeze_v2_6over5.awf',
-                             'squeeze_and_unsqueeze_v2_7over5.awf', 'squeeze_and_unsqueeze_v2_8over5.awf',
-                             'squeeze_and_unsqueeze_v2_9over5.awf', 'squeeze_and_unsqueeze_v3_0over5.awf',
-                             'squeeze_and_unsqueeze_v3_1.6over5.awf', 'squeeze_and_unsqueeze_v3_10over5.awf',
-                             'squeeze_and_unsqueeze_v3_3.3over5.awf', 'squeeze_and_unsqueeze_v3_5over5.awf',
-                             'squeeze_and_unsqueeze_v3_6.6over5.awf', 'squeeze_and_unsqueeze_v3_8.3over5.awf',
-                             'squeeze_and_unsqueeze_v4_0over5.awf', 'squeeze_and_unsqueeze_v4_10over5.awf',
-                             'squeeze_and_unsqueeze_v4_5over5.awf', 'squeezeing.awf', 'squeezing_85pc.awf',
-                             'squeezing_85pc_22p.awf', 'test.awf']
+              'smoothed_linear_ramp_down.awf', 'squeeze_and_unsqueeze_0pi.awf',
+              'squeeze_and_unsqueeze_14over7pi.awf', 'squeeze_and_unsqueeze_1over7pi.awf',
+              'squeeze_and_unsqueeze_2over7pi.awf', 'squeeze_and_unsqueeze_3over7pi.awf',
+              'squeeze_and_unsqueeze_4over7pi.awf', 'squeeze_and_unsqueeze_5over7pi.awf',
+              'squeeze_and_unsqueeze_6over7pi.awf', 'squeeze_and_unsqueeze_7over7pi.awf',
+              'squeeze_and_unsqueeze_v2_0over5.awf', 'squeeze_and_unsqueeze_v2_10over5.awf',
+              'squeeze_and_unsqueeze_v2_1over5.awf', 'squeeze_and_unsqueeze_v2_2over5.awf',
+              'squeeze_and_unsqueeze_v2_3over5.awf', 'squeeze_and_unsqueeze_v2_4over5.awf',
+              'squeeze_and_unsqueeze_v2_5over5.awf', 'squeeze_and_unsqueeze_v2_6over5.awf',
+              'squeeze_and_unsqueeze_v2_7over5.awf', 'squeeze_and_unsqueeze_v2_8over5.awf',
+              'squeeze_and_unsqueeze_v2_9over5.awf', 'squeeze_and_unsqueeze_v3_0over5.awf',
+              'squeeze_and_unsqueeze_v3_1.6over5.awf', 'squeeze_and_unsqueeze_v3_10over5.awf',
+              'squeeze_and_unsqueeze_v3_3.3over5.awf', 'squeeze_and_unsqueeze_v3_5over5.awf',
+              'squeeze_and_unsqueeze_v3_6.6over5.awf', 'squeeze_and_unsqueeze_v3_8.3over5.awf',
+              'squeeze_and_unsqueeze_v4_0over5.awf', 'squeeze_and_unsqueeze_v4_10over5.awf',
+              'squeeze_and_unsqueeze_v4_5over5.awf', 'squeezeing.awf', 'squeezing_85pc.awf',
+              'squeezing_85pc_22p.awf', 'test.awf']
 # LineDict form ('name of variable',[widget type, default, value,other parameters,width of the widget])
 LineDict = OrderedDict([
     ('index',['CB','15',list(map(str, range(16))),10]),
@@ -48,6 +53,8 @@ LineDict = OrderedDict([
     ('length',['MB','0',60]),
     ('wForm',['CB','',wForm_list,100])
 ])
+scan_params_str = 'scan_params'
+name_in_scan_params = 'DDS'
 
 # setChannel(2,blue probe,SingleTone,0,0,0,145.000000000000,0.000000000000,3.000000000000,2.000000000000,0.001000000000,
 #            0.002000000000,100pulses.awf,4.000000000000,146.000000000000,1.000000000000,0,0,0,,1,1,1);
@@ -94,18 +101,9 @@ class MyBox(QLineEdit):
             position += 1
         self.setText(''.join(number))
         self.setCursorPosition(position)
-        # prev = float(self.text())
-        # power = int(log10(prev)) - pos + 1
-        # if power < 0:
-        #     power += 1
-        # next = prev + p * 10**power
-        # # self.setText(str(next))
-        # self.setText('%.3f'%(next))
-        # pos += int(log10(next)) - int(log10(prev))
-        # self.setCursorPosition(pos)
 
     def value(self):
-        return self.text()
+        return float(self.text())
 
 
 autoSave = QTimer()
@@ -114,105 +112,37 @@ autoSave.setInterval(5000)
 
 
 class Line(QWidget):
-    def __init__(self, parent,data={}):#,
-#                 data={'index': '15', 'name': 'not used', 'mode': 'SingleTone', 'freq': 140, 'freq2': 100, 'amp': 0,
-#                       'amp2': 0, 'wForm': '', 'length': 0, 'lower': 0, 'upper': 0, 'rise': 0, 'fall': 0}
-#                 ):
-#         print(data)
+    def __init__(self, parent,data={}):
         super().__init__(parent)
         self.parent = parent
         layout = QHBoxLayout()
         self.data = data
+        self.autoUpdate = QTimer()
+        self.autoUpdate.setInterval(100)
+        self.autoUpdate.timeout.connect(self.update)
         self.widgets = {}
         for key,val in LineDict.items():
-            if val[0] == 'CB':# do a combo box widget
+            if val[0] == 'CB':
+                # do a combo box widget
                 w = QComboBox()
+                w.setText = w.setCurrentText
+                w.text = w.currentText
                 w.clear()
                 w.addItems(val[2])
                 w.setCurrentText(data.get(key,val[1]))
-                w.currentIndexChanged.connect(self.update)
+                w.currentIndexChanged.connect(self.autoUpdate.start)
             elif val[0] == 'LE':
                 w = QLineEdit(data.get(key,val[1]))
-                w.editingFinished.connect(self.update)
+                # w.editingFinished.connect(self.autoUpdate.start)
+                w.textChanged.connect(self.autoUpdate.start)
+                w.textEdited.connect(self.textEdited)
             elif val[0] == 'MB':
                 w = MyBox()
                 w.setText(data.get(key,val[1]))
-                w.textChanged.connect(self.update)
+                w.textChanged.connect(self.autoUpdate.start)
+                w.textEdited.connect(self.textEdited)
             self.widgets[key] = w
             layout.addWidget(w, val[-1])
-
-#         #old
-#         self.name = QLineEdit(data['name'])
-#         self.name.editingFinished.connect(self.update)
-#
-#         self.index = QComboBox()
-#         self.index.clear()
-#         self.index.addItems(map(str, range(16)))
-#         self.index.setCurrentText(str(data['index']))
-#         self.index.currentIndexChanged.connect(self.update)
-#
-#         self.mode = QComboBox()
-#         self.mode.addItems(['SingleTone', 'FrequencyRamp', 'AmplitudeRamp', 'ArbitraryWaveModus'])
-#         self.mode.setCurrentText(data['mode'])
-#         self.mode.currentIndexChanged.connect(self.update)
-#
-#         self.wForm = QComboBox()
-#         self.wForm.addItems([None, '100pulses.awf', 'gaussian.awf', 'mod_cos_1-0.86.awf',
-#                              'smoothed_linear_ramp_down.awf', 'squeeze_and_unsqueeze_0pi.awf',
-#                              'squeeze_and_unsqueeze_14over7pi.awf', 'squeeze_and_unsqueeze_1over7pi.awf',
-#                              'squeeze_and_unsqueeze_2over7pi.awf', 'squeeze_and_unsqueeze_3over7pi.awf',
-#                              'squeeze_and_unsqueeze_4over7pi.awf', 'squeeze_and_unsqueeze_5over7pi.awf',
-#                              'squeeze_and_unsqueeze_6over7pi.awf', 'squeeze_and_unsqueeze_7over7pi.awf',
-#                              'squeeze_and_unsqueeze_v2_0over5.awf', 'squeeze_and_unsqueeze_v2_10over5.awf',
-#                              'squeeze_and_unsqueeze_v2_1over5.awf', 'squeeze_and_unsqueeze_v2_2over5.awf',
-#                              'squeeze_and_unsqueeze_v2_3over5.awf', 'squeeze_and_unsqueeze_v2_4over5.awf',
-#                              'squeeze_and_unsqueeze_v2_5over5.awf', 'squeeze_and_unsqueeze_v2_6over5.awf',
-#                              'squeeze_and_unsqueeze_v2_7over5.awf', 'squeeze_and_unsqueeze_v2_8over5.awf',
-#                              'squeeze_and_unsqueeze_v2_9over5.awf', 'squeeze_and_unsqueeze_v3_0over5.awf',
-#                              'squeeze_and_unsqueeze_v3_1.6over5.awf', 'squeeze_and_unsqueeze_v3_10over5.awf',
-#                              'squeeze_and_unsqueeze_v3_3.3over5.awf', 'squeeze_and_unsqueeze_v3_5over5.awf',
-#                              'squeeze_and_unsqueeze_v3_6.6over5.awf', 'squeeze_and_unsqueeze_v3_8.3over5.awf',
-#                              'squeeze_and_unsqueeze_v4_0over5.awf', 'squeeze_and_unsqueeze_v4_10over5.awf',
-#                              'squeeze_and_unsqueeze_v4_5over5.awf', 'squeezeing.awf', 'squeezing_85pc.awf',
-#                              'squeezing_85pc_22p.awf', 'test.awf'])
-#         self.wForm.setCurrentText(data['wForm'])
-#         self.wForm.currentIndexChanged.connect(self.update)
-#
-#         self.freq = MyBox()
-#         self.freq.setText(str(data['freq']))
-#         self.freq.textChanged.connect(self.update)
-#
-#         self.freq2 = MyBox()
-#         self.freq2.setText(str(data['freq2']))
-#         self.freq2.textChanged.connect(self.update)
-#
-#         self.amp = MyBox()
-#         self.amp.setText(str(data['amp']))
-#         self.amp.textChanged.connect(self.update)
-#
-#         self.amp2 = MyBox()
-#         self.amp2.setText(str(data['amp2']))
-#         self.amp2.textChanged.connect(self.update)
-#
-#         self.lower = MyBox()
-#         self.lower.setText(str(data['lower']))
-#         self.lower.textChanged.connect(self.update)
-#
-#         self.upper = MyBox()
-#         self.upper.setText(str(data['upper']))
-#         self.upper.textChanged.connect(self.update)
-#
-#         self.rise = MyBox()
-#         self.rise.setText(str(data['rise']))
-#         self.rise.textChanged.connect(self.update)
-#
-#         self.fall = MyBox()
-#         self.fall.setText(str(data['fall']))
-#         self.fall.textChanged.connect(self.update)
-#
-#         self.length = MyBox()
-#         self.length.setText(str(data['length']))
-#         self.length.textChanged.connect(self.update)
 
         self.delBtn = QPushButton('del')
         self.delBtn.clicked.connect(lambda: self.parent.delete(self))
@@ -259,7 +189,8 @@ class Line(QWidget):
 
     def update(self):
         # print(str(self))
-        if self.parent:
+        self.autoUpdate.stop()
+        if self.parent and not self.parent.scanner:
             autoSave.start()
         if not self.parent.connected:
             print(str(self))
@@ -270,6 +201,10 @@ class Line(QWidget):
             self.parent.connected = False
             print('disconnected from ' + self.parent.ip + '\n', e)
 
+    def textEdited(self):
+        if self.parent:
+            self.parent.scanner = False
+        self.autoUpdate.start()
 
     def __call__(self):
         self.data={}
@@ -279,26 +214,24 @@ class Line(QWidget):
             elif val[0] == 'LE':
                 self.data[key] = self.widgets[key].text()
             elif val[0] == 'MB':
-                self.data[key] = self.widgets[key].value()
+                self.data[key] = self.widgets[key].text()
         return self.data
-        # return {'index':self.index.currentText(), 'name':str(self.name.text()), 'mode':self.mode.currentText(),
-        #         'freq':self.freq.value(), 'freq2':self.freq2.value(), 'amp':self.amp.value(), 'amp2':self.amp2.value(),
-        #         'wForm':self.wForm.currentText(), 'length':self.length.value(), 'lower':self.lower.value(),
-        #         'upper':self.upper.value(), 'rise':self.rise.value(), 'fall':self.fall.value()}
 
     def __str__(self):
         data = self.__call__()
-        args = [data['index'], data['name'], data['mode'], int(data['osk']), int(data['ndl']), int(data['ndh']), data['freq'], data['amp'], data['fall'],
-                data['rise'], data['lower'], data['upper'], data['wForm'], data['length'], data['freq2'], data['amp2'],
-                0, 0, 0, '', 1, 1, 1]
+        args = [data['index'], data['name'], data['mode'], int(data['osk']), int(data['ndl']), int(data['ndh']),
+                data['freq'], data['amp'], data['fall'], data['rise'], data['lower'], data['upper'], data['wForm'],
+                data['length'], data['freq2'], data['amp2'], 0, 0, 0, '', 1, 1, 1]
         return 'setChannel(' + ','.join(map(str, args)) + ');'
 
 
 class DDSWidget(QWidget):
-    def __init__(self, parent=None, globals={}, signals=None):
+    def __init__(self, parent=None, globals=None, signals=None):
         super(DDSWidget, self).__init__()
         self.parent = parent
         self.signals = signals
+        self.globals = globals
+        self.scanner = False
         self.dds = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.ip = '192.168.1.6'
         self.port = 2600
@@ -339,35 +272,10 @@ class DDSWidget(QWidget):
         mainLayout.addSpacing(20)
 
         fields = QHBoxLayout()
-        i = 0
-        fields.addWidget(QLabel('index'), sizes[i])
-        i += 1
-        fields.addWidget(QLabel('name'), sizes[i])
-        i += 1
-        fields.addWidget(QLabel('freq'), sizes[i])
-        i += 1
-        fields.addWidget(QLabel('amp'), sizes[i])
-        i += 1
-        fields.addWidget(QLabel('freq2'), sizes[i])
-        i += 1
-        fields.addWidget(QLabel('amp2'), sizes[i])
-        i += 1
-        fields.addWidget(QLabel('mode'), sizes[i])
-        i += 1
-        fields.addWidget(QLabel('wForm'), sizes[i])
-        i += 1
-        fields.addWidget(QLabel('lower'), sizes[i])
-        i += 1
-        fields.addWidget(QLabel('upper'), sizes[i])
-        i += 1
-        fields.addWidget(QLabel('rise'), sizes[i])
-        i += 1
-        fields.addWidget(QLabel('fall'), sizes[i])
-        i += 1
-        fields.addWidget(QLabel('length'), sizes[i])
-        i += 1
-        fields.addSpacing(sizes[i])
-        i += 1
+        fields.addSpacing(15)
+        for key,val in LineDict.items():
+            fields.addWidget(QLabel(key), val[-1])
+        fields.addStretch(50)
         mainLayout.addLayout(fields)
 
         for line in self.lines:
@@ -378,8 +286,9 @@ class DDSWidget(QWidget):
         mainLayout.addWidget(addLine)
 
         mainLayout.addStretch()
-
+        self.setMinimumWidth(1500)
         self.setLayout(mainLayout)
+
 
     def addLine(self):
         self.lines.append(Line(self))
@@ -440,12 +349,42 @@ class DDSWidget(QWidget):
         autoSave.stop()
         success = False
         try:
+            self.sendScanParams()
             with open(os.path.join(folder, name), 'w') as f:
                 json.dump([line() for line in self.lines], f)
             success = True
         except Exception as error:
             print(error)
         return success
+
+    def sendScanParams(self):
+        params = {}
+        for line in self.lines:
+            data = line()
+            key = data['index']
+            params[key] = list(data.keys())
+        if self.globals != None:
+            if scan_params_str not in self.globals:
+                self.globals[scan_params_str] = {}
+            self.globals[scan_params_str][name_in_scan_params] = params
+        return
+
+    def getUpdateMethod(self):
+        return self.updateFromScanner
+
+    def updateFromScanner(self, param_dict=None):
+        self.scanner = True
+        try:
+            for param,val in param_dict.items():
+                index = param[0]
+                field = param[1]
+                for line in self.lines:
+                    if line.widgets['index'].text() == index:
+                        line.widgets[field].setText(str(val))
+        except Exception as e:
+            print("can't change from scanner: ", e)
+            return -1
+        return 0
 
     def __del__(self):
         print('deleting')

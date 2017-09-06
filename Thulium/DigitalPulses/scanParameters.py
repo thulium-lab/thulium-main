@@ -273,7 +273,7 @@ class AllScanParameters():
 
         def generateParamMenu(self, parent, data):
             """generates menu for parameters, parent - PushButton to which this menu will be attached, data - dictionary
-            of avaylable parameters"""
+            of available parameters"""
             if type(data) == type([]):
                 # submenu is str
                 for submenu in data:

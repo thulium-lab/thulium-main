@@ -4,6 +4,8 @@ import ctypes
 import time
 import datetime
 
+from math import gcd
+
 class DigitalOutput(dq.Task):
     """
     Wrapper of a standard class 'Task', specifically designed
@@ -46,11 +48,16 @@ class DigitalOutput(dq.Task):
         self.stop()
         self.CfgSampClkTiming("", rate, dq.DAQmx_Val_Rising,
                               dq.DAQmx_Val_ContSamps, samples)
-        if self._EveryNSamplesEvent_already_register:
-            self.RegisterEveryNSamplesEvent(dq.DAQmx_Val_Transferred_From_Buffer,
-                                            samples, 0, ctypes.cast(None, dq.DAQmxEveryNSamplesEventCallbackPtr), None)
-        self.AutoRegisterEveryNSamplesEvent(dq.DAQmx_Val_Transferred_From_Buffer,
-                                            samples, 0)
+        # if self._EveryNSamplesEvent_already_register:
+        #     self.RegisterEveryNSamplesEvent(dq.DAQmx_Val_Transferred_From_Buffer, samples, 0,
+        #                                     ctypes.cast(None, dq.DAQmxEveryNSamplesEventCallbackPtr), None)
+        # self.AutoRegisterEveryNSamplesEvent(dq.DAQmx_Val_Transferred_From_Buffer, samples, 0)
+        if samples > 2:
+            if self._EveryNSamplesEvent_already_register:
+                self.RegisterEveryNSamplesEvent(dq.DAQmx_Val_Transferred_From_Buffer, samples, 0,
+                                                ctypes.cast(None, dq.DAQmxEveryNSamplesEventCallbackPtr), 0)
+                self._EveryNSamplesEvent_already_register = False
+            self.AutoRegisterEveryNSamplesEvent(dq.DAQmx_Val_Transferred_From_Buffer, samples, 0)
         self.wait = samples/rate
         self.WriteDigitalU32(samples, 0, 10.0,
                              dq.DAQmx_Val_GroupByChannel,
@@ -78,7 +85,7 @@ class DigitalOutput(dq.Task):
             return 0
         timeOld = self.time
         self.time = time.perf_counter()
-        if abs(self.time-timeOld-self.wait)>0.1*self.wait:
+        if abs(self.time-timeOld) < 0.001:
             return 0
         self.count += 1
         # print('DAQ count ',self.count, ' at ', datetime.datetime.now().time())
@@ -172,6 +179,8 @@ class DAQHandler:
         return self.AO.setSync(sync)
         
     def write(self, data = {}):
+        p = 10000
+        print(data)
         if (len(data) == 0):
             self.AO.write()
             return self.DO.write()
@@ -184,11 +193,11 @@ class DAQHandler:
             if (chan[0] == AOpattern):
                 AOchans[int(chan[1])] = data[chan]
                 for point in data[chan]:
-                    AOtimes.add(point[0])
+                    AOtimes.add(int(point[0]*p))
             else:
                 DOchans[int(chan)] = data[chan]
                 for point in data[chan]:
-                    DOtimes.add(point[0])
+                    DOtimes.add(int(point[0]*p))
         DOtimes = sorted(DOtimes)
         AOtimes = sorted(AOtimes)
         DOdt = DOtimes[1] - DOtimes[0]
@@ -196,16 +205,14 @@ class DAQHandler:
         if len(AOtimes) >= 2:
             AOdt = AOtimes[1] - AOtimes[0]
         for i in range(1, len(DOtimes)):
-            dt = DOtimes[i] - DOtimes[i-1]
-            if dt < DOdt:
-                DOdt = dt
+            DOdt = gcd(DOdt, DOtimes[i] - DOtimes[i-1])
         for i in range(1, len(AOtimes)):
-            dt = AOtimes[i] - AOtimes[i-1]
-            if dt < AOdt:
-                AOdt = dt
+            AOdt = gcd(AOdt, AOtimes[i] - AOtimes[i-1])
         
-        DOdt = round(DOdt/0.0001)*0.0001
-        AOdt = round(AOdt/0.0001)*0.0001
+        DOdt /= p
+        AOdt /= p
+        DOtimes = [x/p for x in DOtimes]
+        AOtimes = [x/p for x in AOtimes]
         for chan in DOchans:
             DOchans[chan][-1] = (DOchans[chan][-1][0]-DOdt, DOchans[chan][-1][1])
         for chan in AOchans:
@@ -243,6 +250,9 @@ class DAQHandler:
             for i in range(AON):
                 AOdata[i*AOsamples+sample] = last[i]
         self.AO.write(AOdata, AOrate, AOsamples)
+        print("DOsamples - ", DOsamples)
+        print("DOrate - ", DOrate)
+        # print("DOdata - ", DOdata)
         return self.DO.write(DOdata, DOrate, DOsamples)
     
     def run(self):

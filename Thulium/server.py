@@ -33,7 +33,7 @@ class PyServer(QThread):
 
     def run(self):
         self.signals.wvlChanged.connect(self.sendWvl)
-        # self.signals.imageRendered.connect(self.sendImg)
+        self.signals.imageRendered.connect(self.sendImg)
         app = web.Application([
             (r'/', IndexHandler),
             (r'/camera', WSHandler),
@@ -48,8 +48,8 @@ class PyServer(QThread):
         return
 
     def sendImg(self):
-        img = cv2.imencode('.jpg', self.globals['image'])[1].tostring()
-        # img = cv2.imencode('.png', self.globals['imgExport'])[1].tostring()
+        # img = cv2.imencode('.jpg', self.globals['image'])[1].tostring()
+        img = cv2.imencode('.jpg', self.globals['imgExport'].data)[1].tostring()
         for client in clients:
             client.write_message(img, binary=True)
         return

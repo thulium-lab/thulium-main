@@ -272,9 +272,16 @@ class DisplayWidget(da.DockArea):
                                                             self.image_bounds[1][0]:self.image_bounds[1][1]])
         # print(new_data.image.shape)
         self.img.setImage(self.globals['image'],autoRange=False, autoLevels=False,autoHistogramRange=False)
-        exporter = pg.exporters.ImageExporter(self.img)
-        self.globals['imgExport'] = exporter.export(toBytes=True)
-        self.signals.imageRendered.emit()
+        if self.img.qimage is None:
+            self.img.render()
+        if self.img.qimage:
+            try:
+                # exporter = pg.exporters.ImageExporter(self.img.qimage)
+                # self.globals['imgExport'] = exporter.export(toBytes=True)
+                self.globals['imgExport'] = self.img.qimage
+                self.signals.imageRendered.emit()
+            except Exception as e:
+                print(e)
         # new_data = self.process_image()
         if len(self.globals['image_stack']): # if scan is on images have to be saved
             im_name = self.globals['image_stack'].pop(0)

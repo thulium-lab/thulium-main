@@ -79,7 +79,7 @@ void loop() {
     edge_delay = 0; // null previous edge delay; first sequence ALWAYS should start at relative time t=0
     write_channels(); // call routine
   }
-  // if sequence is not yet finished and it is less than 2ms befor next edge shold be written
+  // if sequence is not yet finished and it is less than 2ms before next edge should be written
   if (not sequence_finished and millis()-last_time > edge_delay-1){
     while (millis()-last_time > edge_delay){ 
       // spinning here; this is done to not be desturebed by serial input
@@ -105,7 +105,7 @@ void write_channels(){
       continue;
     }
     else if (ws[i]=='_'){
-      int_arr[k] = ws.substring(j+1,i).toInt(); // save each number which is ither channel_number or state
+      int_arr[k] = ws.substring(j+1,i).toInt(); // save each number which is either channel_number or state
 //      Serial.println(int_arr[k]);
       k++;
       j=i;
@@ -172,7 +172,7 @@ void data_input_handler() {
     Serial.println("Debug state updated");
     }
     else {
-      Serial.println("uncorrect command");
+      Serial.println("incorrect command");
     }
   }
   if ( (words[0]).equals("WMShutters") ) { // set state of wavelength meter shutters
@@ -250,7 +250,9 @@ int get_string_array()
   }
 //  Serial.println(i);
   if (i==0){
-//    Serial.println("Wrong reading");
+    if (debug == 10) {
+      Serial.println(words[k]);
+    }
     return -1;
   }
   words_number = k+1;

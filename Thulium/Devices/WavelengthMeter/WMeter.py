@@ -116,8 +116,8 @@ class WMChannel:
 
 class WMMain():
     channels = []
-    N_SHOTS_MAX = 100
-    N_SHOTS_MIN = 5
+    N_SHOTS_MAX = 10
+    N_SHOTS_MIN = 3
     EXCEPTABLE_WAVELENGTH_ERROR = 0.01 #nm
     current_index = 0
     active_channels_indexes = []
@@ -347,7 +347,7 @@ class WMMain():
             self.timer2.setInterval(time_per_shot)
             self.lastMessage = message
             self.signals.shutterChange.emit(message)
-            # self.timer2.start()
+            # self.cycleTimer.start()
 
         def checkWM(self):
             self.shotN += 1

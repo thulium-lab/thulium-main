@@ -43,7 +43,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
-        self.setWindowTitle('Scan and Pulses')
+        self.setWindowTitle('Pulses')
         self.setWindowIcon(QIcon('pulse.ico'))
 
         self.globals['image'] = None
@@ -87,6 +87,7 @@ class MainWindow(QMainWindow):
         self.widgets['WavelengthMeter'].windowed = 2
 
         self.all_updates_methods['Pulses'] = self.widgets['Pulses'].getUpdateMethod()
+        self.all_updates_methods['DDS'] = self.widgets['DDS'].getUpdateMethod()
 
         self.server = PyServer(self, self.signals, self.globals)
 
