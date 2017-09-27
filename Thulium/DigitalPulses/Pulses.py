@@ -76,6 +76,7 @@ class PulseScheme(QWidget):
 
         # self.connect(self.)
         # self.pulse_signal.onAnyChangeSignal()
+
     def DAQTimerHandler(self):
         self.timerToStartDAQ.stop()
         self.dq.write(self.output)
@@ -83,7 +84,6 @@ class PulseScheme(QWidget):
         self.cycleTimer.setInterval(self.t_last)
         self.cycleN = 0
         self.cycleTimer.start()
-
 
     def updateActiveShutters(self):
         print('pulses-updateActiveShutters')
@@ -488,21 +488,23 @@ class PulseScheme(QWidget):
                     #         if point[1]:
                     #             pass
             if len(shutters_data):
-                t_points = sorted(set([int(y[0]+0.5) for x in shutters_data.values() for y in x]))
-                # print(t_points)
-                msg = 'BeamShutters '
-                for t in t_points:
-                    msg += str(t)+'_'
-                    for sh, val in shutters_data.items():
-                        msg += str(sh) + '_'
-                        for i in range(len(val)):
-                            if val[i][0] > t:
-                                msg += str(val[i-1][1]) + '_'
-                                break
-                            if i==len(val)-1:
-                                msg += str(val[i][1]) + '_'
-                    msg += ' '
-                msg = msg[:-1] + '!'
+                # t_points = sorted(set([int(y[0]+0.5) for x in shutters_data.values() for y in x]))
+                # # print(t_points)
+                # msg = 'BS '
+                # for t in t_points:
+                #     msg += str(t)+'_'
+                #     for sh, val in shutters_data.items():
+                #         msg += str(sh)# + '_'
+                #         for i in range(len(val)):
+                #             if val[i][0] > t:
+                #                 msg += str(val[i-1][1])# + '_'
+                #                 break
+                #             if i==len(val)-1:
+                #                 msg += str(val[i][1])# + '_'
+                #     msg += ' '
+                # msg = msg[:-1] + '!'
+                print('OLD MSG ', self.constructArduinoMessageOld(shutters_data))
+                msg = self.constructArduinoMessageNew(shutters_data)
                 print(msg)
                 self.signals.shutterChange.emit(msg)
                 # status, res = self.parent.arduino.write_read_com(msg.encode('ascii'))
@@ -510,6 +512,43 @@ class PulseScheme(QWidget):
                 #     self.parent.arduino.append_readings(res)
                 # # # res = self.parent.arduino.readline().decode()
                 # print(res)
+    def constructArduinoMessageOld(self,shutters_data):
+        t_points = sorted(set([int(y[0] + 0.5) for x in shutters_data.values() for y in x]))
+        # print(t_points)
+        msg = 'BS '
+        for t in t_points:
+            msg += str(t) + '_'
+            for sh, val in shutters_data.items():
+                msg += str(sh)  # + '_'
+                for i in range(len(val)):
+                    if val[i][0] > t:
+                        msg += str(val[i - 1][1])  # + '_'
+                        break
+                    if i == len(val) - 1:
+                        msg += str(val[i][1])  # + '_'
+            msg += ' '
+        msg = msg[:-1] + '!'
+        return msg
+
+    def constructArduinoMessageNew(self,shutters_data):
+        t_points = sorted(set([int(y[0] + 0.5) for x in shutters_data.values() for y in x]))
+        # print(t_points)
+        msg = 'BS ' + ''.join(str(sh) for sh in shutters_data) + ' '
+        for t in t_points:
+            msg += str(t) + '_'
+            sh_sum_state = 0
+            for j, val in enumerate(shutters_data.values()):
+                # msg += str(sh)  # + '_'
+                for i in range(len(val)):
+                    if val[i][0] > t:
+                        c_s = val[i - 1][1]  # + '_'
+                        break
+                    if i == len(val) - 1:
+                        c_s = val[i][1]  # + '_'
+                sh_sum_state += c_s * 2**(len(shutters_data)-j-1)
+            msg += str(sh_sum_state)+' '
+        msg = msg[:-1] + '!'
+        return msg
 
     def updateGroupTime(self):
         # print('updateGroupTime')
@@ -540,6 +579,8 @@ class PulseScheme(QWidget):
 
     def onAnyChange(self):
         print('onAnyChange')
+        # write new output to DAQ
+        self.dq.stop()
         if self.call_from_scanner:
             self.call_from_scanner = False
         else:
@@ -644,6 +685,7 @@ class PulseGroup():
             self.initUI()
 
         def initUI(self):
+            print('initUI-scheme')
             main_box = QVBoxLayout()
             topbox = QHBoxLayout()
             # main_box.setSpacing(2)
@@ -720,6 +762,7 @@ class PulseGroup():
             self.grid_layout.addWidget(group_is_active, self.group_row, self.columns.index('Active'),Qt.AlignCenter)
             # add individual pulse data
             for i, pulse in enumerate(self.data.pulses):
+                print(pulse)
                 # print('pulse',i)
                 pulse_row = i + 2
 
@@ -794,15 +837,18 @@ class PulseGroup():
         def getPulseNumber(self):
             print('getPulseNumber')
             index = self.grid_layout.indexOf(self.sender())
+            print(index)
             row, column, cols, rows = self.grid_layout.getItemPosition(index)
+            print(row, column, cols, rows)
             if row == self.group_row:
                 return -1
             else:
                 return row - 2
 
         def redraw(self):
-            print('redraw')
+            print('redraw-Scheme')
             QWidget().setLayout(self.layout())
+            print('after QWidget')
             self.initUI()
             # self.show()
 
@@ -824,7 +870,12 @@ class PulseGroup():
             if reply == QMessageBox.Yes:
                 print('Delete')
                 pulse_number = self.getPulseNumber()
+                print(pulse_number)
+                print(self.data.pulses[pulse_number])
                 self.data.pulses.pop(pulse_number)
+                while self.grid_layout.count():
+                    item = self.grid_layout.takeAt(0)
+                    item.widget().deleteLater()
                 self.redraw()
                 self.scheme.changeInGroup() # call for parent method
 
@@ -1272,7 +1323,10 @@ class IndividualPulse():
                 self.t_start = self.t_end + self.variables['length']
 
     def getPoints(self,idle):
-        return [(self.t_start,1),(self.t_end,0)]
+        if self.t_start == self.t_end: #i.e. pulse length is 0
+            return []
+        else:
+            return [(self.t_start,1),(self.t_end,0)]
 
     def updateConnectedShutters(self, old_name, new_name):
         print('updateConnectedShutters')

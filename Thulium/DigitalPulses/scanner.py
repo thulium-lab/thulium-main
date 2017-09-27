@@ -1,7 +1,7 @@
 import os, time, datetime, json, shutil, traceback
 
 from PyQt5.QtWidgets import (QApplication, QVBoxLayout, QHBoxLayout, QTextEdit, QLabel, QPushButton, QWidget,
-                             QSpinBox, QCheckBox, QMessageBox)
+                             QSpinBox, QCheckBox, QMessageBox, QProgressBar)
 from DigitalPulses.scanParameters import SingleScanParameter, AllScanParameters, MeasurementFolderClass
 
 scanner_config_file = 'config_scanner.json'
@@ -34,6 +34,7 @@ class Scanner(QWidget):
         self.current_shot_number = 0
         self.single_meas_folder = ''    # folder with pictures
         self.loadConfig()
+        self.progressBar = QProgressBar(self)
 
         self.initUI()
         self.setMinimumWidth(800)
@@ -125,6 +126,9 @@ class Scanner(QWidget):
         # scroll.setWidget(self.scan_box)
         self.scan_parameters.gui = self.scan_parameters.scanUI(data=self.scan_parameters,parent=self)
         main_layout.addWidget(self.scan_parameters.gui)
+
+        self.progressBar.setMinimum(0)
+        main_layout.addWidget(self.progressBar)
 
         notes_box = QTextEdit(self.notes)
         notes_box.textChanged.connect(self.notesChanged)
@@ -252,6 +256,7 @@ class Scanner(QWidget):
     def updateParamAndSend(self,changed_index):
         """Updates scanning parameter and sends it to the module from which this parameter"""
         print('updateParamAndSend')
+        self.progressBar.setValue(changed_index)
         params_to_send = self.scan_parameters.getParamsToSend()
         print('Scanning parameters: ',params_to_send)
         # update parameters by calling update methods of subprogramm
@@ -277,6 +282,10 @@ class Scanner(QWidget):
         self.scan_interrupted = is_scan_interrupted
 
     def startScan(self,**argd):
+        if self.scan_parameters.active_params_list:
+            group = self.scan_parameters.active_params_list[0]
+            if group:
+                self.progressBar.setMaximum(len(group[0].param_list)-1)
         self.scan_interrupted = False
         self.stop_btn.setText('Stop')
         self.scan_btn.setText('On scan!')

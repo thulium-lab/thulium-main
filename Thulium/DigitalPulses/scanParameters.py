@@ -2,9 +2,8 @@ import os
 import matplotlib
 matplotlib.use('Qt5Agg',force=True)
 
-from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem, QMenu, QAction, QScrollArea,QFrame,
-                             QGridLayout, QVBoxLayout, QHBoxLayout, QSizePolicy,QMainWindow, QDialog,QTextEdit,
-                             QLabel, QLineEdit, QPushButton, QWidget, QComboBox,QRadioButton, QSpinBox, QCheckBox, QTabWidget, QFileDialog,QMessageBox, QDoubleSpinBox)
+from PyQt5.QtWidgets import (QApplication, QMenu, QGridLayout, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
+                             QPushButton, QWidget, QComboBox, QCheckBox, QFileDialog, QMessageBox)
 
 import json
 #import time
@@ -314,7 +313,7 @@ class AllScanParameters():
         def paramLineChanged(self):
             print('paramLineChanged')
             s = self.sender().text()
-            arr = [float(elem) for elem in re.findall('(\d+\.?\d*)', s)]
+            arr = [float(elem) for elem in re.findall('(-?\d+\.?\d*)', s)]
             changed_parameter = self.getChangedParameter()
             changed_parameter.param_list=arr
             self.saveToConfig()

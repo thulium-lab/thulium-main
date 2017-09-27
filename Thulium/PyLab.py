@@ -1,4 +1,4 @@
-import sys, ctypes, time
+import sys, ctypes, time, functools
 
 from PyQt5.QtCore import (Qt, QObject, pyqtSignal)
 from PyQt5.QtGui import (QIcon)
@@ -13,6 +13,8 @@ from DigitalPulses.display_widget import DisplayWidget
 from Devices.arduinoShutters import Arduino
 from Devices.WavelengthMeter import WMeter
 from Devices.DDS import DDSWidget
+from Devices.SRSgeneratorSG382 import SRSGenerator
+
 from server import PyServer
 
 vertical_splitting = 0.7
@@ -80,6 +82,8 @@ class MainWindow(QMainWindow):
         self.widgets['Pulses'].windowed = 0
         self.widgets['PulsePlot'] = PlotPulse(parent=self, globals=self.globals, signals=self.signals)
         self.widgets['PulsePlot'].windowed = 0
+        self.widgets['ClockGenerator'] = SRSGenerator(parent=self,globals=self.globals)
+        self.widgets['ClockGenerator'].windowed = 1
 
         self.wm = WMeter.WMMain(arduino=self.arduino)
         self.wm.load()
@@ -88,6 +92,7 @@ class MainWindow(QMainWindow):
 
         self.all_updates_methods['Pulses'] = self.widgets['Pulses'].getUpdateMethod()
         self.all_updates_methods['DDS'] = self.widgets['DDS'].getUpdateMethod()
+        self.all_updates_methods['ClockGenerator'] = self.widgets['ClockGenerator'].getUpdateMethod()
 
         self.server = PyServer(self, self.signals, self.globals)
 
@@ -106,7 +111,7 @@ class MainWindow(QMainWindow):
                 if self.widgets[widget].windowed > 1:
                     self.widgets[widget].show()
                 action = QAction("&" + widget, self)
-                action.triggered.connect(self.widgets[widget].show)
+                action.triggered.connect(functools.partial(self.focus, widget))# self.widgets[widget].show)
                 openMenu.addAction(action)
             else:
                 pass # splitter.addWidget(self.widgets[widget]) # might be wrong order
@@ -119,6 +124,12 @@ class MainWindow(QMainWindow):
 
         print('self_globals',self.globals)
         self.server.start()
+
+    def focus(self, widget):
+        window = self.widgets[widget]
+        window.show()
+        window.setWindowState(window.windowState() & ~Qt.WindowMinimized | Qt.WindowActive)
+        window.activateWindow()
 
     def addSubProgramm(self):
         pass

@@ -3,6 +3,7 @@
 // It seams like arduino clock tikes not correctly, 12 ms in second slower than RIGOL. Introduced second_coefficient to equal them
 // Serial input should end with '!' or '?', otherwise it is treated as bad. Command can be sent again
 // Time delay of signal edge is <1ms and jitting <1ms
+// NEW WAY of writing beam shutters: 'BS ' + shutters_channels '014' + ' ' + 't_val' where val is sum of all states with proper binary shift
 
 #include "ctype.h"
 
@@ -41,6 +42,7 @@ String full, tail;
 char b;
 int first_space;
 String msg;
+String channel_string;
 void setup() {
   Serial.begin(9600); // boud rate 
   attachInterrupt(0,interrupt_handler,RISING); // connect trigger on pin 2 to interrupt with handler function interrupt_handler, edge is rising
@@ -99,28 +101,40 @@ void write_channels(){
   k=0;
   ws = edge_sequence[current_edge]; // read current state as string
 //  Serial.println(ws);
-  for (int i=0; i<ws.length();i++){
-    if (ws[i]=='_' and j==0){ // pass first digit as it is time mark
-      j=i;
-      continue;
-    }
-    else if (ws[i]=='_'){
-      int_arr[k] = ws.substring(j+1,i).toInt(); // save each number which is either channel_number or state
-//      Serial.println(int_arr[k]);
-      k++;
-      j=i;
-    }
-  }
-  int_arr_current_length = k; // save length of channel_number or state array for current sequence
+// j = ws.indexOf("_");
+// for (int i=ws.indexOf("_")+1; i<ws.length();i++){
+//   int_arr[k] = ws.substring(i,i+1).toInt();
+////   Serial.println(int_arr[k]);
+//   k++;
+// }
+ int_arr[0] = ws.substring(ws.indexOf("_")+1).toInt();
+ if (debug == 2 or debug == 10 ){
+  Serial.print("Shutters state");
+  Serial.println(int_arr[0]);
+ }
+//  for (int i=0; i<ws.length();i++){
+//    if (ws[i]=='_' and j==0){ // pass first digit as it is time mark
+//      j=i;
+//      continue;
+//    }
+//    else if (ws[i]=='_'){
+//      int_arr[k] = ws.substring(j+1,i).toInt(); // save each number which is either channel_number or state
+////      Serial.println(int_arr[k]);
+//      k++;
+//      j=i;
+//    }
+//  }
+  int_arr_current_length = channel_string.length(); // save length of channel_number or state array for current sequence
 //  Serial.print("Start writing time ");
 //  Serial.println(micros());
-  for (int i=0;i<int_arr_current_length;i+=2){
+  for (int i=0;i<int_arr_current_length;i++){
     if (debug == 2 or debug == 10 ){
-    Serial.print(int_arr[i]);
+    Serial.print(channel_string.substring(i,i+1).toInt());
     Serial.print(" state ");
-    Serial.print(int_arr[i+1]);
+    Serial.print( (int_arr[0] >> (int_arr_current_length-i-1)) %2 );
+    Serial.print(",   ");
     }
-    digitalWrite(available_ports[int_arr[i]], int_arr[i+1]); // write state to beam shutter output pin
+    digitalWrite(available_ports[channel_string.substring(i,i+1).toInt()], (int_arr[0] >> (int_arr_current_length-i-1)) %2); // write state to beam shutter output pin
   }
 //  Serial.print("End writing time ");
   // if this is the last edge of beam shutters 
@@ -195,28 +209,32 @@ void data_input_handler() {
       Serial.println("WS Ok");
     }
   }
- if ( (words[0]).equals("BeamShutters") ) { // saves all sequences to edge_sequence array of string
+ if ( (words[0]).equals("BS") ) { // saves all sequences to edge_sequence array of string
   //  test command BeamShutters 0_1_0_2_0_3_0_4_0_5_0_ 300_1_0_2_0_3_0_4_0_5_0_ 1000_1_1_2_1_3_1_4_1_5_1_
   // BeamShutters 0_1_0_2_0_3_0_4_0_5_0_ 300_1_0_2_0_3_0_4_0_5_0_ 400_1_0_2_0_3_0_4_0_5_0_ 500_1_0_2_0_3_0_4_0_5_0_ 600_1_0_2_0_3_0_4_0_5_0_ 1000_1_1_2_1_3_1_4_1_5_1_
   // BeamShutters 0_1_0_2_0_3_0_4_0_5_0_ 300_1_0_2_0_3_0_4_0_5_0_ 400_1_1_2_1_3_1_4_1_5_1_ 500_1_0_2_0_3_0_4_0_5_0_ 600_1_0_2_0_3_0_4_0_5_0_ 1000_1_1_2_1_3_1_4_1_5_1_!
+  // BS 1_3_4 0_111 1_110 100_101! 
+  // BS 1_1020!
+  // BS 123 0_1!
     for (int i = 0; i < n_words; i++) {
       edge_sequence[i] = "";
     }
-  n_sequences = words_number-1; // number of edges
-
-//  Serial.println(words_number);
-  for (int i = 1; i < words_number; i++){ // writing
+  channel_string = words[1];
+  n_sequences = words_number-2; // number of edges
+  for (int i = 2; i < words_number; i++){ // writing
 //     Serial.print(i-1);
 //     Serial.println(words[i]);
-     edge_sequence[i-1] = words[i];
+     edge_sequence[i-2] = words[i];
     }     
-   for (int i = 0; i < n_sequences; i++){  
+//   for (int i = 0; i < n_sequences; i++){  
 //    Serial.print(i);     
 //    Serial.println(edge_sequence[i]);
-    }
+//    }
     if (debug > 0 ){
       Serial.println("BS Ok");
     }
+//    current_edge=0;
+//    write_channels();
  }
 }
 

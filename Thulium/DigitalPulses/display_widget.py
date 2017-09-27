@@ -53,6 +53,7 @@ class DisplayWidget(da.DockArea):
         self.do_fit1D_x = True
         self.do_fit1D_y = True
         self.do_fit2D = False
+        self.subs_bgnd = True
         self.n_sigmas = 3
 
         self.image_data_to_display = np.array([
@@ -196,6 +197,12 @@ class DisplayWidget(da.DockArea):
         self.fit2D_chbx.stateChanged.connect(lambda state:self.chbxClicked('do_fit2D',state))
         chbx_layout.addWidget(self.fit2D_chbx)
 
+        chbx_layout.addWidget(QLabel('substract background'))
+        self.fit2D_chbx = QCheckBox()
+        self.fit2D_chbx.setChecked(self.subs_bgnd)
+        self.fit2D_chbx.stateChanged.connect(lambda state: self.chbxClicked('subs_bgnd', state))
+        chbx_layout.addWidget(self.fit2D_chbx)
+
         chbx_layout.addWidget(QLabel('N points to show'))
         self.n_points_spin_box = QSpinBox()
         self.n_points_spin_box.setRange(10,1000)
@@ -269,8 +276,9 @@ class DisplayWidget(da.DockArea):
                               self.globals['image'].shape[1] if (self.roi_center[0] + self.roi_size[0]) >self.globals['image'].shape[1] else ( self.roi_center[0] + self.roi_size[0]))
                             ]
         self.new_data = impr.Image_Basics(self.globals['image'][self.image_bounds[0][0]:self.image_bounds[0][1],
-                                                            self.image_bounds[1][0]:self.image_bounds[1][1]])
+                                                            self.image_bounds[1][0]:self.image_bounds[1][1]],subs_bgnd=self.subs_bgnd)
         # print(new_data.image.shape)
+        self.globals['image'][self.image_bounds[0][0]:self.image_bounds[0][1],self.image_bounds[1][0]:self.image_bounds[1][1]] = self.new_data.image
         self.img.setImage(self.globals['image'],autoRange=False, autoLevels=False,autoHistogramRange=False)
         if self.img.qimage is None:
             self.img.render()

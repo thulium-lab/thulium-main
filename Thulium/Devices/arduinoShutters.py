@@ -53,8 +53,9 @@ class Arduino(COMPortDevice):
         return True
 
     def sendData(self, msg):
+        self.read_serial()
         status, readout = self.write_read_com(msg.encode('ascii'))
-        return status
+        return False
 
     def read_serial(self):
         """function to read all data available in serial stream from arduino"""
@@ -62,6 +63,7 @@ class Arduino(COMPortDevice):
             for i in range(20):
                 try:
                     s = self.stream.readline().decode()
+                    # print('>>ARDUINO',repr(s))
                     if s=='':
                         break
                     if 'WS Ok' in s:

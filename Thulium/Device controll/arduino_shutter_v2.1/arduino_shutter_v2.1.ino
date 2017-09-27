@@ -99,18 +99,24 @@ void write_channels(){
   k=0;
   ws = edge_sequence[current_edge]; // read current state as string
 //  Serial.println(ws);
-  for (int i=0; i<ws.length();i++){
-    if (ws[i]=='_' and j==0){ // pass first digit as it is time mark
-      j=i;
-      continue;
-    }
-    else if (ws[i]=='_'){
-      int_arr[k] = ws.substring(j+1,i).toInt(); // save each number which is either channel_number or state
-//      Serial.println(int_arr[k]);
-      k++;
-      j=i;
-    }
-  }
+// j = ws.indexOf("_");
+ for (int i=ws.indexOf("_")+1; i<ws.length();i++){
+   int_arr[k] = ws.substring(i,i+1).toInt();
+//   Serial.println(int_arr[k]);
+   k++;
+ }
+//  for (int i=0; i<ws.length();i++){
+//    if (ws[i]=='_' and j==0){ // pass first digit as it is time mark
+//      j=i;
+//      continue;
+//    }
+//    else if (ws[i]=='_'){
+//      int_arr[k] = ws.substring(j+1,i).toInt(); // save each number which is either channel_number or state
+////      Serial.println(int_arr[k]);
+//      k++;
+//      j=i;
+//    }
+//  }
   int_arr_current_length = k; // save length of channel_number or state array for current sequence
 //  Serial.print("Start writing time ");
 //  Serial.println(micros());
@@ -119,6 +125,7 @@ void write_channels(){
     Serial.print(int_arr[i]);
     Serial.print(" state ");
     Serial.print(int_arr[i+1]);
+    Serial.print(",   ");
     }
     digitalWrite(available_ports[int_arr[i]], int_arr[i+1]); // write state to beam shutter output pin
   }
@@ -195,28 +202,30 @@ void data_input_handler() {
       Serial.println("WS Ok");
     }
   }
- if ( (words[0]).equals("BeamShutters") ) { // saves all sequences to edge_sequence array of string
+ if ( (words[0]).equals("BS") ) { // saves all sequences to edge_sequence array of string
   //  test command BeamShutters 0_1_0_2_0_3_0_4_0_5_0_ 300_1_0_2_0_3_0_4_0_5_0_ 1000_1_1_2_1_3_1_4_1_5_1_
   // BeamShutters 0_1_0_2_0_3_0_4_0_5_0_ 300_1_0_2_0_3_0_4_0_5_0_ 400_1_0_2_0_3_0_4_0_5_0_ 500_1_0_2_0_3_0_4_0_5_0_ 600_1_0_2_0_3_0_4_0_5_0_ 1000_1_1_2_1_3_1_4_1_5_1_
   // BeamShutters 0_1_0_2_0_3_0_4_0_5_0_ 300_1_0_2_0_3_0_4_0_5_0_ 400_1_1_2_1_3_1_4_1_5_1_ 500_1_0_2_0_3_0_4_0_5_0_ 600_1_0_2_0_3_0_4_0_5_0_ 1000_1_1_2_1_3_1_4_1_5_1_!
+  // BS 1_3_4 0_111 1_110 100_101! 
+  // BS 1_1020!
     for (int i = 0; i < n_words; i++) {
       edge_sequence[i] = "";
     }
   n_sequences = words_number-1; // number of edges
-
-//  Serial.println(words_number);
   for (int i = 1; i < words_number; i++){ // writing
 //     Serial.print(i-1);
 //     Serial.println(words[i]);
      edge_sequence[i-1] = words[i];
     }     
-   for (int i = 0; i < n_sequences; i++){  
+//   for (int i = 0; i < n_sequences; i++){  
 //    Serial.print(i);     
 //    Serial.println(edge_sequence[i]);
-    }
+//    }
     if (debug > 0 ){
       Serial.println("BS Ok");
     }
+//    current_edge=0;
+//    write_channels();
  }
 }
 
