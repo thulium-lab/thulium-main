@@ -232,6 +232,8 @@ class Scanner(QWidget):
 
         if self.current_shot_number < self.number_of_shots - 1: # same shots to average
             self.current_shot_number += 1
+            self.progressBar.setValue(self.scan_parameters.current_indexs[0] +
+                                      self.current_shot_number / self.number_of_shots)
             # self.globals['image_stack'].append(
             #     self.globals['current_data_folder'] + '/' + '%i_0.png' % self.current_shot_number)
             return 0
@@ -256,7 +258,11 @@ class Scanner(QWidget):
     def updateParamAndSend(self,changed_index):
         """Updates scanning parameter and sends it to the module from which this parameter"""
         print('updateParamAndSend')
-        self.progressBar.setValue(changed_index)
+        try:
+            self.progressBar.setValue(self.scan_parameters.current_indexs[0]+
+                                      self.current_shot_number/self.number_of_shots)
+        except Exception as e:
+            pass
         params_to_send = self.scan_parameters.getParamsToSend()
         print('Scanning parameters: ',params_to_send)
         # update parameters by calling update methods of subprogramm

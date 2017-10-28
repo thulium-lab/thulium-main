@@ -1,10 +1,15 @@
-import os, json, ctypes
+import os, json, ctypes, sys, inspect
 import pyqtgraph as pg
 import numpy as np
-
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(os.path.dirname(currentdir))
+sys.path.insert(0,parentdir)
+# sys.path.append('..')
 from Devices.WavelengthMeter import wlm
 from Devices import arduinoShutters
-
+# import wlm
+# import arduinoShutters
+#
 from PyQt5.QtCore import (QTimer, pyqtSignal, Qt)
 from PyQt5.QtGui import (QColor, QFont, QIcon)
 from PyQt5.QtWidgets import (QApplication, QMenu, QColorDialog, QGridLayout, QVBoxLayout, QHBoxLayout, QDialog, QLabel,
@@ -254,8 +259,17 @@ class WMMain():
 
             main_layout.addLayout(menu_layout)
 
-            main_layout.addWidget(self.plot_window1)
-            main_layout.addWidget(self.plot_window2)
+            temp_layout = QHBoxLayout()
+            self.arduinoWidget = self.data.arduino.Widget(parent=self, data=self.data.arduino)
+            self.arduinoWidget.setMaximumWidth(300)
+            temp_layout.addWidget(self.arduinoWidget)
+
+            plots_layout = QVBoxLayout()
+            plots_layout.addWidget(self.plot_window1)
+            plots_layout.addWidget(self.plot_window2)
+
+            temp_layout.addLayout(plots_layout)
+            main_layout.addLayout(temp_layout)
 
             self.channels_layout = QGridLayout()
             self.drawChannels()
@@ -272,8 +286,8 @@ class WMMain():
             self.timer.start()
             self.timer2 = QTimer(self)
             self.timer2.timeout.connect(self.checkWM)
-
-            self.signals.arduinoReceived.connect(self.timer2.start)
+            if self.signals:
+                self.signals.arduinoReceived.connect(self.timer2.start)
 
         def temerIntervalChanged(self, new_val):
             self.data.timer_interval = new_val
@@ -317,9 +331,12 @@ class WMMain():
             return
 
         def routine(self):
+            # global cicle_counter
+            # cicle_counter += 1
+            print(self.data.arduino.connected)
+            if not self.data.arduino.connected:
+                return False
             self.timer.stop()
-            global cicle_counter
-            cicle_counter += 1
             # print("Cicle #",cicle_counter)
             # print(self.data.current_index)
             # print(self.data.active_channels_indexes)
@@ -336,20 +353,22 @@ class WMMain():
             for chan, state in arr_to_arduino:
                 message += ' %i %i' % (chan, state)
             message += '!'
-            print(message)
+            # print(message)
             # status, readout = self.write_read_com(message)
             # check resp
-            time_per_shot = self.data.wavemeter.exposure * 2
+            time_per_shot = self.data.wavemeter.exposure
             # print('Time per shot ',time_per_shot)
             self.read_data = []
             read_success = False
             self.shotN = 0
             self.timer2.setInterval(time_per_shot)
             self.lastMessage = message
-            self.signals.shutterChange.emit(message)
+            self.timer2.start()
+            # self.signals.shutterChange.emit(message)
             # self.cycleTimer.start()
 
         def checkWM(self):
+            # print('checkWM')
             self.shotN += 1
             i = self.shotN
             try:
@@ -379,7 +398,7 @@ class WMMain():
                 channel.frequency = wm_data['frequency']
                 channel.amplitudes = wm_data['amplitudes']
                 channel.spectrum = wm_data['spectrum']
-                self.signals.wvlChanged.emit(' '.join([str(channel.frequency) for channel in self.data.channels]))
+                # self.signals.wvlChanged.emit(' '.join([str(channel.frequency) for channel in self.data.channels]))
                 self.drawChannels()
                 self.drawSpecta()
                 self.timer.start()
@@ -537,15 +556,17 @@ if __name__ == '__main__':
     import serial.tools.list_ports
     folder = ''
     app = QApplication(sys.argv)
-    device = connectArduino()
-    if device != -1:
+    # device = connectArduino()
+    # if device != -1:
         # device = Serial('COM4',baudrate=57600,timeout=1)
-        arduino = arduinoShutters.ArduinoShutters(device=device)
-        aw = WMMain(arduino=arduino)
-        aw.load()
-        # aw.addChannel(name='Green', shutter_number=2, color=QColor(0,255,0))
-        # aw.addChannel(name='Clock', shutter_number=1, color=QColor(255,170,0))
-        # aw.addChannel(name='red', shutter_number=3)
-        mainWindow = aw.WMWidget(data=aw)
-        mainWindow.show()
-        sys.exit(app.exec_())
+    print('Here')
+    arduino = arduinoShutters.Arduino()
+    print('Here')
+    aw = WMMain(arduino=arduino)
+    aw.load()
+    # aw.addChannel(name='Green', shutter_number=2, color=QColor(0,255,0))
+    # aw.addChannel(name='Clock', shutter_number=1, color=QColor(255,170,0))
+    # aw.addChannel(name='red', shutter_number=3)
+    mainWindow = aw.WMWidget(data=aw)
+    mainWindow.show()
+    sys.exit(app.exec_())

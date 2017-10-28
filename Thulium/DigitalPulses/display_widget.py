@@ -60,7 +60,8 @@ class DisplayWidget(da.DockArea):
             ('N',0, 0,0),
             ('Center',0 , 0,0),
             ("Width", 0, 0,0),
-            ("N_small",0,0 , 0)
+            ("N_small",0,0 , 0),
+            ('Center_full',0,0,0)
         ], dtype=[('Parameter', object), ('x', object), ('y', object), ('2D', object)])
 
         self.load()
@@ -141,7 +142,8 @@ class DisplayWidget(da.DockArea):
         self.img = pg.ImageItem()
         self.img.setZValue(1)
         p1.addItem(self.img)
-        self.img.setImage(imread(r"D:\!Data\2016_04_22\01 T no_ramp a=-6 f=363.9 b=0.8\0ms\1_1.png"))
+        self.globals['image']=imread(r"D:\!Data\2016_04_22\01 T no_ramp a=-6 f=363.9 b=0.8\0ms\1_1.png")
+        self.img.setImage(self.globals['image'])
         self.roi = pg.ROI(self.roi_center, self.roi_size,pen=pg.mkPen('g', width=1)) #, style=pg.QtCore.Qt.DotLine
         self.roi.addScaleHandle([1, 1], [0, 0])
         # self.roi.addScaleHandle([1, 0.5], [0, 1])
@@ -159,8 +161,36 @@ class DisplayWidget(da.DockArea):
         # self.hist.sigLookupTableChanged.connect(self.LUTChanged)
         self.img.setLookupTable(self.hist.getLookupTable(n=256))
         self.roi.sigRegionChangeFinished.connect(self.updateROI)
+        self.d1.addWidget(win, col=0, row=0)
 
-        self.d1.addWidget(win)
+
+        win2 = pg.GraphicsLayoutWidget()
+        p1_2 = win2.addPlot()
+        self.img2 = pg.ImageItem()
+        self.img2.setZValue(1)
+        # self.img2.setPxMode(True)
+        p1_2.addItem(self.img2)
+        self.globals['image2']=imread(r"D:\!Data\2016_04_22\01 T no_ramp a=-6 f=363.9 b=0.8\0ms\1_1.png")
+        self.img2.setImage(self.globals['image2'])
+        self.roi2 = pg.ROI(self.roi_center, self.roi_size, pen=pg.mkPen('g', width=1))  # , style=pg.QtCore.Qt.DotLine
+        self.roi2.addScaleHandle([1, 1], [0, 0])
+        # self.roi.addScaleHandle([1, 0.5], [0, 1])
+        p1_2.addItem(self.roi2)
+        self.roi2.setZValue(100)
+        self.hist2 = pg.HistogramLUTItem()
+        self.hist2.setImageItem(self.img2)
+        self.hist2.setHistogramRange(0, 0.6)
+        self.hist2.setLevels(0, 0.6)
+        self.hist2.gradient.setColorMap(pg.ColorMap(np.array([0., 0.25, 0.5, 0.75, 1.]),
+                                                   np.array([[255, 255, 255, 255], [0, 0, 255, 255],
+                                                             [0, 0, 0, 255], [255, 0, 0, 255], [255, 255, 0, 255]],
+                                                            dtype=np.uint8)))
+        win2.addItem(self.hist2)
+        # self.hist.sigLookupTableChanged.connect(self.LUTChanged)
+        self.img2.setLookupTable(self.hist2.getLookupTable(n=256))
+        self.roi2.sigRegionChangeFinished.connect(self.updateROI2)
+        self.d1.addWidget(win2,col=0,row=1)
+
 
         self.w2 = pg.PlotWidget()
         self.w2.addLegend()
@@ -270,6 +300,14 @@ class DisplayWidget(da.DockArea):
     def routine(self):
         # global current_data_index
         # current_data_index = (current_data_index + 1) % len(data)
+        print(self.roi_center,self.roi_size,self.globals['image'].shape)
+        if not (np.array(self.roi_center)+np.array(self.roi_size) < self.globals['image'].shape[::-1]).all():
+            self.roi_center=[0,0]
+            self.roi_size=self.globals['image'].shape[::-1]
+            print(self.roi_size,self.globals['image'].shape[::-1])
+            self.roi.setPos(*self.roi_center)
+            self.roi.setSize(self.roi_size)
+        print(self.roi_center,self.roi_size,self.globals['image'].shape)
         self.image_bounds = [(0 if 0>self.roi_center[1]>self.globals['image'].shape[0] else self.roi_center[1],
                             self.globals['image'].shape[0] if (self.roi_center[1] + self.roi_size[1]) > self.globals['image'].shape[0] else (self.roi_center[1] + self.roi_size[1])),
                              (0 if 0 > self.roi_center[0] > self.globals['image'].shape[1] else self.roi_center[0],
@@ -279,7 +317,12 @@ class DisplayWidget(da.DockArea):
                                                             self.image_bounds[1][0]:self.image_bounds[1][1]],subs_bgnd=self.subs_bgnd)
         # print(new_data.image.shape)
         self.globals['image'][self.image_bounds[0][0]:self.image_bounds[0][1],self.image_bounds[1][0]:self.image_bounds[1][1]] = self.new_data.image
-        self.img.setImage(self.globals['image'],autoRange=False, autoLevels=False,autoHistogramRange=False)
+        # self.win.resize(*self.globals['image'].shape)
+
+        self.img.setImage(self.globals['image'],autoRange=False, autoLevels=False,autoHistogramRange=False,autoDownsample=False)
+
+        self.img2.setImage(self.globals['image2'], autoRange=False, autoLevels=False, autoHistogramRange=False,autoDownsample=False)
+
         if self.img.qimage is None:
             self.img.render()
         if self.img.qimage:
@@ -335,7 +378,18 @@ class DisplayWidget(da.DockArea):
         self.save_config()
         # print(self.roi.pos())
         # print(self.roi.size())
-
+    def updateROI2(self):
+        print('updateRoi2')
+        self.roi2_center = [int(self.roi2.pos()[0]),int(self.roi2.pos()[1])]
+        self.roi2_size = [int(self.roi2.size()[0]),int(self.roi2.size()[1])]
+        # self.w5.cellChanged.disconnect(self.roiTableChanged)
+        # self.w5.setData(self.getROITableData())
+        # self.w5.cellChanged.connect(self.roiTableChanged)
+        # self.config['roi_center'] = self.roi_center
+        # self.config['roi_size'] = self.roi_size
+        # self.save_config()
+        # print(self.roi.pos())
+        # print(self.roi.size())
 
     def updateIsocurve(self):
         # #old
@@ -371,18 +425,18 @@ class DisplayWidget(da.DockArea):
 
     def update_image_info(self,data):
         if 'fit1D_x' in data.__dict__:
-            self.image_data_to_display['x'] = np.array([*[int(x+0.5) for x in data.fit1D_x[:3]],' '],dtype=object)
+            self.image_data_to_display['x'] = np.array([*[int(x+0.5) for x in data.fit1D_x[:3]],' ',int(data.fit1D_x[1]+0.5)+int(self.roi.pos()[0])],dtype=object)
         else:
-            self.image_data_to_display['x'] = np.array(['-']*4, dtype=object)
+            self.image_data_to_display['x'] = np.array(['-']*5, dtype=object)
         if 'fit1D_y' in data.__dict__:
-            self.image_data_to_display['y'] = np.array([*[int(x+0.5) for x in data.fit1D_y[:3]],' '],dtype=object)
+            self.image_data_to_display['y'] = np.array([*[int(x+0.5) for x in data.fit1D_y[:3]],' ',int(data.fit1D_y[1]+0.5)+int(self.roi.pos()[1])],dtype=object)
         else:
-            self.image_data_to_display['y'] = np.array(['-'] * 4, dtype=object)
+            self.image_data_to_display['y'] = np.array(['-'] * 5, dtype=object)
         if'fit2D' in data.__dict__:
             self.image_data_to_display['2D'] = np.array([data.fit2D[0],"%.0f, %.0f"%(data.fit2D[2],data.fit2D[1]),
-                                                         "%.0f, %.0f" %(data.fit2D[4],data.fit2D[3]),data.total_small],dtype=object)
+                                                         "%.0f, %.0f" %(data.fit2D[4],data.fit2D[3]),data.total_small,' '],dtype=object)
         else:
-            self.image_data_to_display['2D'] = np.array(['-'] * 4, dtype=object)
+            self.image_data_to_display['2D'] = np.array(['-'] * 5, dtype=object)
         self.w3.clear()
         self.w3.setData(self.image_data_to_display)
 

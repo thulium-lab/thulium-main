@@ -122,22 +122,22 @@ class SRSGenerator(QWidget):
         restor_btn.clicked.connect(self.restore)
         l1.addWidget(restor_btn)
 
-        l1.addWidget(QLabel('Center freq, MHz'))
-        self.f_c_line = MyBox()
+        l1.addWidget(QLabel('Center freq, kHz'))
+        self.f_c_line = MyBox(valid=(0,500000,8))
         self.f_c_line.setText(self.freq_center)
         self.f_c_line.textChanged.connect(self.changeFrequency)
         # f_c_line.textEdited.connect(self.textEdited)
         l1.addWidget(self.f_c_line)
 
-        l1.addWidget(QLabel('Offset freq, MHz'))
-        self.f_o_line = MyBox(valid=(-50,50,6))
+        l1.addWidget(QLabel('Offset freq, kHz'))
+        self.f_o_line = MyBox(valid=(-500,500,6))
         self.f_o_line.setText(self.freq_offset)
         self.f_o_line.textChanged.connect(self.changeFrequency)
         # f_c_line.textEdited.connect(self.textEdited)
         l1.addWidget(self.f_o_line)
 
         l1.addWidget(QLabel('Amp, dBm'))
-        self.amp_line = MyBox(valid=(-20,7,6))
+        self.amp_line = MyBox(valid=(-40,7,6))
         self.amp_line.setText(self.ampl)
         self.amp_line.textChanged.connect(self.changeAmplitude)
         # f_c_line.textEdited.connect(self.textEdited)
@@ -150,23 +150,27 @@ class SRSGenerator(QWidget):
 
     def changeFrequency(self):
         print('changeFrequency')
-        freq = float(self.f_o_line.text()) + float(self.f_c_line.text())
-        print(freq)
-        self.srs.setFreq(freq)
+        try:
+            freq = (float(self.f_o_line.text()) + float(self.f_c_line.text()))/1e3
+            print(freq)
+            self.srs.setFreq(freq)
+        except ValueError:
+            print('Frequency input is not a float')
 
     def changeAmplitude(self):
         print('changeAmplitude')
-        ampl = float(self.amp_line.text())
-        # if ampl > 7:# limmit max amplitude
-        #     ampl = 7.0
-        self.amp_line.setText(str(ampl))
-        print(ampl)
-        self.srs.setAmpl(ampl)
+        try:
+            ampl = float(self.amp_line.text())
+            self.amp_line.setText(str(ampl))
+            print(ampl)
+            self.srs.setAmpl(ampl)
+        except ValueError:
+            print('Amplitude input is not a float')
 
     def restore(self):
         status, freq = self.srs.getFreq()
-        freq = freq.strip().strip('0')
-        self.f_c_line.setText(freq)
+        freq = round((float(freq.strip().strip('0'))*1e3),3)
+        self.f_c_line.setText(str(freq))
         self.f_o_line.setText('0.0')
         status, ampl = self.srs.getAmpl()
         self.amp_line.setText(ampl.strip())

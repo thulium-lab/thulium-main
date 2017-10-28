@@ -15,8 +15,8 @@ class Arduino(COMPortDevice):
     """This class is based on COMPortDevice from device_lib
         Comment: arduino not always sends unswer, so checking its answer isn't the best way"""
     baudrate = 9600
-    identification_names = []#['ArduinoUnoShutters']
-    timeout = 0.01
+    identification_names = []#['WMArduinoUnoShutters']
+    timeout = .01
     n_lines = 50    # number of lines (readings from arduino) to display in QTextEdit window
     readings = []   # array of string where to contain readings
     available_com_ports = []
@@ -24,9 +24,10 @@ class Arduino(COMPortDevice):
     lock = threading.Lock()
 
     def __init__(self, signals=None):
-        self.signals = signals
-        self.signals.shutterChange.connect(self.sendData)
-        # self.updateCOMPortsInfo()   #not neccesery here
+        if signals:
+            self.signals = signals
+            self.signals.shutterChange.connect(self.sendData)
+            # self.updateCOMPortsInfo()   #not neccesery here
 
     def preCheck(self):
         """Override method of parent class"""
@@ -64,7 +65,7 @@ class Arduino(COMPortDevice):
                 try:
                     s = self.stream.readline().decode()
                     # print('>>ARDUINO',repr(s))
-                    if s=='':
+                    if s == '':
                         break
                     if 'WS Ok' in s:
                         self.signals.arduinoReceived.emit()
@@ -187,6 +188,7 @@ class Arduino(COMPortDevice):
                     print("Can't connect arduino")
                     self.connect_btn.setStyleSheet("QWidget { background-color: %s }" % 'red')
                     return
+                self.data.connected = True
                 self.connect_btn.setStyleSheet("QWidget { background-color: %s }" % 'green')
                 self.connect_btn.setText('Disconnect')
             else:   # else disconnect

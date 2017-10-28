@@ -152,6 +152,7 @@ class PulseScheme(QWidget):
         self.main_box.addLayout(self.hor_box)
         self.setLayout(self.main_box)
         # self.onAnyChange()
+        self.setMinimumHeight(450)
 
     def channelsDraw(self):
         print('channelsDraw')
@@ -512,6 +513,7 @@ class PulseScheme(QWidget):
                 #     self.parent.arduino.append_readings(res)
                 # # # res = self.parent.arduino.readline().decode()
                 # print(res)
+
     def constructArduinoMessageOld(self,shutters_data):
         t_points = sorted(set([int(y[0] + 0.5) for x in shutters_data.values() for y in x]))
         # print(t_points)

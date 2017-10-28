@@ -2,10 +2,6 @@ import PyDAQmx as dq
 import numpy as np
 import ctypes
 import time
-import datetime
-
-from math import gcd
-
 
 class DigitalOutput(dq.Task):
     """
@@ -49,16 +45,11 @@ class DigitalOutput(dq.Task):
         self.stop()
         self.CfgSampClkTiming("", rate, dq.DAQmx_Val_Rising,
                               dq.DAQmx_Val_ContSamps, samples)
-        # if self._EveryNSamplesEvent_already_register:
-        #     self.RegisterEveryNSamplesEvent(dq.DAQmx_Val_Transferred_From_Buffer, samples, 0,
-        #                                     ctypes.cast(None, dq.DAQmxEveryNSamplesEventCallbackPtr), None)
-        # self.AutoRegisterEveryNSamplesEvent(dq.DAQmx_Val_Transferred_From_Buffer, samples, 0)
-        if samples > 2:
-            if self._EveryNSamplesEvent_already_register:
-                self.RegisterEveryNSamplesEvent(dq.DAQmx_Val_Transferred_From_Buffer, samples, 0,
-                                                ctypes.cast(None, dq.DAQmxEveryNSamplesEventCallbackPtr), 0)
-                self._EveryNSamplesEvent_already_register = False
-            self.AutoRegisterEveryNSamplesEvent(dq.DAQmx_Val_Transferred_From_Buffer, samples, 0)
+        if self._EveryNSamplesEvent_already_register:
+            self.RegisterEveryNSamplesEvent(dq.DAQmx_Val_Transferred_From_Buffer,
+                                            samples, 0, ctypes.cast(None, dq.DAQmxEveryNSamplesEventCallbackPtr), None)
+        self.AutoRegisterEveryNSamplesEvent(dq.DAQmx_Val_Transferred_From_Buffer,
+                                            samples, 0)
         self.wait = samples/rate
         self.WriteDigitalU32(samples, 0, 10.0,
                              dq.DAQmx_Val_GroupByChannel,
@@ -66,13 +57,14 @@ class DigitalOutput(dq.Task):
         return
     
     def run(self):
-        # print('DAQ started at',datetime.datetime.now().time())
+        print('DAQ start')
         self.count = 0
         self.time = time.perf_counter()
         self.running = True
         return self.StartTask()
     
     def stop(self):
+        print('DAQ stop')
         if not self.running:
             return 0
         self.running = False
@@ -86,10 +78,10 @@ class DigitalOutput(dq.Task):
             return 0
         timeOld = self.time
         self.time = time.perf_counter()
-        if abs(self.time-timeOld) < 0.001:
+        if abs(self.time-timeOld-self.wait)>0.1*self.wait:
             return 0
         self.count += 1
-        # print('DAQ count ',self.count, ' at ', datetime.datetime.now().time())
+        # print(self.count)
         if self.func:
             self.func(self.count)
         return 0
@@ -102,8 +94,6 @@ class DigitalOutput(dq.Task):
         self.ClearTask()
     
 AON = 4
-
-
 class AnalogOutput(dq.Task):
     """
     Wrapper of a standard class 'Task', specifically designed
@@ -159,8 +149,7 @@ class AnalogOutput(dq.Task):
         self.run()
         self.stop()
         self.ClearTask()
-
-
+    
 class DAQHandler:
     """
     Handles DO and AO channels
@@ -183,9 +172,6 @@ class DAQHandler:
         return self.AO.setSync(sync)
         
     def write(self, data = {}):
-        print('writing to DAQ')
-        p = 10000
-        print(data)
         if (len(data) == 0):
             self.AO.write()
             return self.DO.write()
@@ -198,36 +184,36 @@ class DAQHandler:
             if (chan[0] == AOpattern):
                 AOchans[int(chan[1])] = data[chan]
                 for point in data[chan]:
-                    AOtimes.add(int(point[0]*p+0.5))
+                    AOtimes.add(point[0])
             else:
                 DOchans[int(chan)] = data[chan]
                 for point in data[chan]:
-                    DOtimes.add(int(point[0]*p+0.5))
+                    DOtimes.add(point[0])
         DOtimes = sorted(DOtimes)
         AOtimes = sorted(AOtimes)
         DOdt = DOtimes[1] - DOtimes[0]
-        AOdt = DOdt
-        if len(AOtimes) >= 2:
-            AOdt = AOtimes[1] - AOtimes[0]
+        AOdt = AOtimes[1] - AOtimes[0]
         for i in range(1, len(DOtimes)):
-            DOdt = gcd(DOdt, DOtimes[i] - DOtimes[i-1])
-            print(DOdt, DOtimes[i], DOtimes[i-1])
+            dt = DOtimes[i] - DOtimes[i-1]
+            if dt < DOdt:
+                DOdt = dt
         for i in range(1, len(AOtimes)):
-            AOdt = gcd(AOdt, AOtimes[i] - AOtimes[i-1])
-        DOdt /= p
-        AOdt /= p
-        DOtimes = [x/p for x in DOtimes]
-        AOtimes = [x/p for x in AOtimes]
+            dt = AOtimes[i] - AOtimes[i-1]
+            if dt < AOdt:
+                AOdt = dt
+        
+        DOdt = round(DOdt/0.0001)*0.0001
+        AOdt = round(AOdt/0.0001)*0.0001
         for chan in DOchans:
             DOchans[chan][-1] = (DOchans[chan][-1][0]-DOdt, DOchans[chan][-1][1])
         for chan in AOchans:
             AOchans[chan][-1] = (AOchans[chan][-1][0]-AOdt, AOchans[chan][-1][1])
+        
         trigger = 31
         DOchans[trigger] = [(0,1),(np.ceil(1./DOdt)*DOdt,0),(DOtimes[-1],0)]
+        
         DOsamples = round((DOtimes[-1] - DOtimes[0])/DOdt)
-        AOsamples = DOsamples
-        if len(AOtimes) >= 2:
-            AOsamples = round((AOtimes[-1] - AOtimes[0])/AOdt).astype(int)
+        AOsamples = round((AOtimes[-1] - AOtimes[0])/AOdt)
         DOrate = 1000./DOdt
         AOrate = 1000./AOdt
         DOdata = np.array([0 for x in range(DOsamples)], dtype=np.uint32)
@@ -239,7 +225,7 @@ class DAQHandler:
             for chan in DOchans:
                 if abs(DOchans[chan][0][0]-t)<err:
                     V = DOchans[chan].pop(0)[1]
-                    if not V:
+                    if V:
                         last = last | (1 << chan)
                     else:
                         last = last & ~(1 << chan)
@@ -252,9 +238,6 @@ class DAQHandler:
                     last[chan] = AOchans[chan].pop(0)[1]
             for i in range(AON):
                 AOdata[i*AOsamples+sample] = last[i]
-        print("DOsamples - ", DOsamples)
-        print("DOrate - ", DOrate)
-        # print("DOdata - ", DOdata)
         self.AO.write(AOdata, AOrate, AOsamples)
         return self.DO.write(DOdata, DOrate, DOsamples)
     
@@ -269,39 +252,3 @@ class DAQHandler:
     def __del__(self):
         del self.AO
         del self.DO
-
-
-class AnalogInput(dq.Task):
-    """
-    TODO
-    """
-    def __init__(self, channels, rate, samples, trigger=None, edge=1):
-        dq.Task.__init__(self)
-        self.running = False
-        for channel in channels:
-            self.CreateAIVoltageChan('Dev1/ai'+str(channel), "", dq.DAQmx_Val_Cfg_Default,
-                                     -10.0, 10.0, dq.DAQmx_Val_Volts, None)
-        self.channels = channels
-        self.edge = dq.DAQmx_Val_Rising
-
-    def config(self, rate, samples, trigger=None, edge=1):
-        self.CfgSampClkTiming("", rate, dq.DAQmx_Val_Rising, dq.DAQmx_Val_FiniteSamps, samples)
-        if edge:
-            self.edge = dq.DAQmx_Val_Rising
-        else:
-            self.edge = dq.DAQmx_Val_Falling
-        if trigger:
-            self.CfgDigEdgeStartTrigger(trigger, self.edge)
-
-    def start(self):
-        self.start()
-
-    def stop(self):
-        if not self.running:
-            return 0
-        self.running = False
-        return self.StopTask()
-
-    def __del__(self):
-        self.stop()
-        self.ClearTask()

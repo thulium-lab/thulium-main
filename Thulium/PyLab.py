@@ -14,6 +14,7 @@ from Devices.arduinoShutters import Arduino
 from Devices.WavelengthMeter import WMeter
 from Devices.DDS import DDSWidget
 from Devices.SRSgeneratorSG382 import SRSGenerator
+from Devices.GWInstek import GPDwidget
 
 from server import PyServer
 
@@ -28,6 +29,7 @@ class OurSignals(QObject):
     # here all possible signals which can be used in our program
     anyPulseChange = pyqtSignal()  # to handle any change in pulse scheme - probably for displaying pulses
     newImageRead = pyqtSignal()     # emits when new image is read from image_folder
+    newImage2Read = pyqtSignal()
     scanCycleFinished = pyqtSignal(int)    # emits by DAQ whenever a cycle is finished
     shutterChange = pyqtSignal(str)
     arduinoReceived = pyqtSignal() # WMeter can start averaging
@@ -42,7 +44,6 @@ class MainWindow(QMainWindow):
     widgets = {}
     all_updates_methods = {}
     image_folder = r'Z:\Camera' # RamDisk http://www.radeonramdisk.com/software_downloads.php
-
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
         self.setWindowTitle('Pulses')
@@ -82,17 +83,24 @@ class MainWindow(QMainWindow):
         self.widgets['Pulses'].windowed = 0
         self.widgets['PulsePlot'] = PlotPulse(parent=self, globals=self.globals, signals=self.signals)
         self.widgets['PulsePlot'].windowed = 0
-        self.widgets['ClockGenerator'] = SRSGenerator(parent=self,globals=self.globals)
-        self.widgets['ClockGenerator'].windowed = 1
+        #self.widgets['ClockGenerator'] = SRSGenerator(parent=self,globals=self.globals)
+        #self.widgets['ClockGenerator'].windowed = 1
 
-        self.wm = WMeter.WMMain(arduino=self.arduino)
-        self.wm.load()
-        self.widgets['WavelengthMeter'] = self.wm.WMWidget(data=self.wm, signals=self.signals)
-        self.widgets['WavelengthMeter'].windowed = 2
+        # comment these if you get problems
+        self.widgets['GPD 3303'] = GPDwidget(parent=self, globals=self.globals)
+        self.widgets['GPD 3303'].windowed = 1
+
+        # self.wm = WMeter.WMMain(arduino=self.arduino)
+        # self.wm.load()
+        # self.widgets['WavelengthMeter'] = self.wm.WMWidget(data=self.wm, signals=self.signals)
+        # self.widgets['WavelengthMeter'].windowed = 2
 
         self.all_updates_methods['Pulses'] = self.widgets['Pulses'].getUpdateMethod()
         self.all_updates_methods['DDS'] = self.widgets['DDS'].getUpdateMethod()
-        self.all_updates_methods['ClockGenerator'] = self.widgets['ClockGenerator'].getUpdateMethod()
+        #self.all_updates_methods['ClockGenerator'] = self.widgets['ClockGenerator'].getUpdateMethod()
+
+        # and this
+        self.all_updates_methods['GPD 3303'] = self.widgets['GPD 3303'].getUpdateMethod()
 
         self.server = PyServer(self, self.signals, self.globals)
 

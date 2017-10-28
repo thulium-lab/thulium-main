@@ -17,6 +17,7 @@ class PlotPulse(pg.GraphicsWindow):
         # self.resize(600, 600)
         self.signals.anyPulseChange.connect(self.updatePlot)
         self.updatePlot()
+        self.setMinimumHeight(450)
 
     def updatePlot(self):
         """used as a slot called by Pulses class to redraw pulses

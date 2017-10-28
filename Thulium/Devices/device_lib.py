@@ -70,6 +70,7 @@ class COMPortDevice:
                 for i in range(len(self.identification_names)): # checks every name
                     if s[i] != self.identification_names[i]:
                         status = False
+                        print(s[i], self.identification_names[i])
                         break
                 if status: # if there no mistakes while name comparison
                     print('\n' + 'Divese ' + str(self.identification_names) + ' connected on port ' + self.port + '\n')
