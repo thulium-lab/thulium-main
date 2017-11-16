@@ -85,3 +85,11 @@ class COMPortDevice:
             print(e)
             self.stream = None
             return -2
+
+# class COMPortDeviceE(COMPortDevice):
+#     """Extended version of com-port device 1) default port 2) GUI"""
+#     def __init__(self,default_port=None):
+#         super().__init__(self)
+#         if default_port:
+#             self.port = default_port
+

@@ -2,7 +2,11 @@ from serial import Serial, SerialException
 # import time
 import sys
 import threading
-from Devices.COMPort import COMPortDevice
+# from Devices.COMPort import COMPortDevice
+try:
+    from .device_lib import COMPortDevice
+except:
+    from device_lib import COMPortDevice
 from serial.tools import list_ports
 from PyQt5.QtCore import (QTimer)
 from PyQt5.QtGui import (QTextCursor)
@@ -20,20 +24,23 @@ class Arduino(COMPortDevice):
     n_lines = 50    # number of lines (readings from arduino) to display in QTextEdit window
     readings = []   # array of string where to contain readings
     available_com_ports = []
+    check_answer = 'wch.cn'
     n_chars_in_string = 400
     lock = threading.Lock()
 
-    def __init__(self, signals=None):
+    def __init__(self, signals=None,port=None):
+        super().__init__(default_port=port)
+        self.signals = signals
+
         if signals:
-            self.signals = signals
             self.signals.shutterChange.connect(self.sendData)
             # self.updateCOMPortsInfo()   #not neccesery here
 
-    def preCheck(self):
-        """Override method of parent class"""
-        for port in list(list_ports.comports()):
-            if port.manufacturer == 'wch.cn':
-                self.port = port.device
+    # def preCheck(self):
+    #     """Override method of parent class"""
+    #     for port in list(list_ports.comports()):
+    #         if port.manufacturer == 'wch.cn':
+    #             self.port = port.device
 
     def setWMShutters(self, data):
         """ function which is called to set Wavelength Meter shutters
@@ -67,7 +74,7 @@ class Arduino(COMPortDevice):
                     # print('>>ARDUINO',repr(s))
                     if s == '':
                         break
-                    if 'WS Ok' in s:
+                    if 'WS Ok' in s and self.signals:
                         self.signals.arduinoReceived.emit()
                     self.append_readings(s)
                     # print("arduino >>   ",s,end='')
@@ -102,99 +109,106 @@ class Arduino(COMPortDevice):
             super().__init__()
             self.initUI()
             # self.setWindowTitle('Arduino') # Doesn't work
-            self.updateBtnPressed() # to get preChecked port from start
+            # self.updateBtnPressed() # to get preChecked port from start
             self.timer = QTimer() # timer is needed for readings from serial port
             self.timer.setInterval(500)
             self.timer.timeout.connect(self.updateReadings)
             self.timer.start()
-
+        def save(self,dict_to_save):
+            if self.parent and 'save' in dir(self.parent):
+                # print('yeee')
+                # print(self.parent)
+                self.parent.save({'port': self.data.port})
         def initUI(self):
             main_layout = QVBoxLayout()
 
-            port_layout = QHBoxLayout()
-            port_layout.addWidget(QLabel('Port'))
+            # port_layout = QHBoxLayout()
+            # port_layout.addWidget(QLabel('Port'))
+            #
+            # self.port_menu = QComboBox()
+            # self.port_menu.currentTextChanged[str].connect(self.portChanged)
+            # port_layout.addWidget(self.port_menu)
+            #
+            # info_btn = QPushButton('Update')
+            # info_btn.clicked.connect(self.updateBtnPressed)
+            # port_layout.addWidget(info_btn)
+            #
+            # self.description = QLabel()
+            # port_layout.addWidget(self.description)
+            #
+            # # port_layout.addStretch(1)
+            #
+            # self.connect_btn = QPushButton('Connect')
+            # self.connect_btn.clicked.connect(self.connectBtnPressed)
+            # port_layout.addWidget(self.connect_btn)
+            #
+            # main_layout.addLayout(port_layout)
+            #
+            # write_layout = QHBoxLayout()
+            #
+            # self.line_to_send = QLineEdit()
+            # write_layout.addWidget(self.line_to_send)
+            #
+            # send_btn = QPushButton('Send')
+            # send_btn.clicked.connect(self.sendBtnPressed)
+            # write_layout.addWidget(send_btn)
+            #
 
-            self.port_menu = QComboBox()
-            self.port_menu.currentTextChanged[str].connect(self.portChanged)
-            port_layout.addWidget(self.port_menu)
-
-            info_btn = QPushButton('Update')
-            info_btn.clicked.connect(self.updateBtnPressed)
-            port_layout.addWidget(info_btn)
-
-            self.description = QLabel()
-            port_layout.addWidget(self.description)
-
-            # port_layout.addStretch(1)
-
-            self.connect_btn = QPushButton('Connect')
-            self.connect_btn.clicked.connect(self.connectBtnPressed)
-            port_layout.addWidget(self.connect_btn)
-
-            main_layout.addLayout(port_layout)
-
-            write_layout = QHBoxLayout()
-
-            self.line_to_send = QLineEdit()
-            write_layout.addWidget(self.line_to_send)
-
-            send_btn = QPushButton('Send')
-            send_btn.clicked.connect(self.sendBtnPressed)
-            write_layout.addWidget(send_btn)
+            #
+            # main_layout.addLayout(write_layout)
+            main_layout.addWidget(self.data.BasicWidget(data=self.data, parent=self, connect=True))
 
             self.do_update = QCheckBox('Update readings')
             self.do_update.setChecked(True)
-            write_layout.addWidget(self.do_update)
-
-            main_layout.addLayout(write_layout)
+            main_layout.addWidget(self.do_update)
 
             self.readings_text = QTextEdit()
             main_layout.addWidget(self.readings_text)
 
             self.setLayout(main_layout)
 
-        def portChanged(self,name):
-            self.data.port = name
-            for port in list_ports.comports():
-                if port.__dict__['device'] == self.data.port:
-                    self.description.setText(port.__dict__['description'])
-                    # self.description.repaint()
-                    break
+        # def portChanged(self,name):
+        #     self.data.port = name
+        #     for port in list_ports.comports():
+        #         if port.__dict__['device'] == self.data.port:
+        #             self.description.setText(port.__dict__['description'])
+        #             # self.description.repaint()
+        #             break
 
-        def updateBtnPressed(self):
-            """updates info about com ports"""
-            self.data.updateCOMPortsInfo()
-            self.port_menu.clear()
-            self.port_menu.addItems(['-'] + self.data.available_com_ports)
-            self.data.preCheck()
-            self.port_menu.setCurrentText(self.data.port)
-            for port in list_ports.comports():
-                if port.__dict__['device'] == self.data.port:
-                    self.description.setText(port.__dict__['description'])
-                    # self.description.repaint()
-                    break
+        # def updateBtnPressed(self):
+        #     """updates info about com ports"""
+        #     self.data.updateCOMPortsInfo()
+        #     self.port_menu.clear()
+        #     self.port_menu.addItems(['-'] + self.data.available_com_ports)
+        #     self.data.preCheck()
+        #     self.port_menu.setCurrentText(self.data.port)
+        #     for port in list_ports.comports():
+        #         if port.__dict__['device'] == self.data.port:
+        #             self.description.setText(port.__dict__['description'])
+        #             # self.description.repaint()
+        #             # break
 
-        def disconnectPorts(self):
-            print('disconnectPorts')
-            try:
-                self.data.close()
-            except:
-                print("Can't close ports")
+        # def disconnectPorts(self):
+        #     print('disconnectPorts')
+        #     try:
+        #         self.data.close()
+        #     except:
+        #         print("Can't close ports")
 
-        def connectBtnPressed(self):
-            if not self.data.connected: # if not yet connected - connect
-                res = self.data.connect()
-                if res < 0:
-                    print("Can't connect arduino")
-                    self.connect_btn.setStyleSheet("QWidget { background-color: %s }" % 'red')
-                    return
-                self.data.connected = True
-                self.connect_btn.setStyleSheet("QWidget { background-color: %s }" % 'green')
-                self.connect_btn.setText('Disconnect')
-            else:   # else disconnect
-                self.disconnectPorts()  # disconnect them
-                self.connect_btn.setText('Connect')
-                self.connect_btn.setStyleSheet("QWidget { background-color: %s }" % 'red')
+        # def connectBtnPressed(self):
+        #     if not self.data.connected: # if not yet connected - connect
+        #         res = self.data.connect()
+        #         if res < 0:
+        #             print("Can't connect arduino")
+        #             self.connect_btn.setStyleSheet("QWidget { background-color: %s }" % 'red')
+        #             return
+        #         self.data.connected = True
+        #         self.connect_btn.setStyleSheet("QWidget { background-color: %s }" % 'green')
+        #         self.connect_btn.setText('Disconnect')
+        #     else:   # else disconnect
+        #         self.disconnectPorts()  # disconnect them
+        #         self.connect_btn.setText('Connect')
+        #         self.connect_btn.setStyleSheet("QWidget { background-color: %s }" % 'red')
 
         def sendBtnPressed(self):
             """In order to send some command to arduino. For example

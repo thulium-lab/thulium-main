@@ -19,20 +19,24 @@ from matplotlib.figure import Figure
 from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraphicsItem,
                              QGridLayout, QVBoxLayout, QHBoxLayout, QSizePolicy,
                              QLabel, QLineEdit, QPushButton)
-
+import json
 scan_params_str = 'scan_params'
 name_in_scan_params = 'ClockGenerator'
 
 class SRS(COMPortDevice):
     identification_names = ['Stanford Research Systems', 'SG382','s/n001915']
     timeout = 0.1
-    def preCheck(self,port=None):
-        if port:
-            return (port.manufacturer == 'Prolific')
-        else:
-            for port in list(list_ports.comports()):
-                if port.manufacturer == 'Prolific':
-                    self.port = port.device
+    check_answer = 'Prolific'
+    # def preCheck(self,port=None):
+    #     if port:
+    #         return (port.manufacturer == 'Prolific')
+    #     else:
+    #         if self.port != '' and self.port in [port.device for port in list_ports.comports()]:
+    #             return
+    #         for port in list(list_ports.comports()):
+    #             if port.manufacturer == 'Prolific':
+    #                 self.port = port.device
+    #                 return
 
     def setFreq(self,freq):
         status,readout = self.write_read_com(b'FREQ %f MHz\r' %(freq))
@@ -103,7 +107,8 @@ class MyBox(QLineEdit):
 class SRSGenerator(QWidget):
     def __init__(self,parent=None,globals=None):
         self.globals = globals
-        self.srs = SRS()
+        self.load()
+        self.srs = SRS(self.config.get('port',''))
         self.freq_center = '417.2'
         self.freq_offset = '0.0'
         self.ampl = '0.0'
@@ -112,6 +117,19 @@ class SRSGenerator(QWidget):
         self.setWindowTitle('SRS SG382')
         self.initUI()
         self.sendScanParams()
+        print(self)
+
+    def load(self):
+
+        with open('SRSgeneratorSG382-config.json','r') as f:
+            self.config = json.load(f)
+
+    def save(self,dict_to_save):
+        print("reee")
+        self.config.update(dict_to_save)
+        print('new_config', self.config)
+        with open('SRSgeneratorSG382-config.json','w') as f:
+             json.dump(self.config,f)
 
     def initUI(self):
         layout = QHBoxLayout()
@@ -144,7 +162,7 @@ class SRSGenerator(QWidget):
         l1.addWidget(self.amp_line)
         layout.addLayout(l1)
 
-        layout.addWidget(self.srs.BasicWidget(data=self.srs, parent=self))
+        layout.addWidget(self.srs.BasicWidget(data=self.srs, parent=self,connect=True))
 
         self.setLayout(layout)
 

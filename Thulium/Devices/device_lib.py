@@ -1,37 +1,8 @@
-# from serial import Serial
-# from serial.tools import list_ports
-# from time import sleep
-# from serial.serialutil import SerialException
-# from numpy import sign
-#
-# for port in [port.device for port in list(list_ports.comports())]:
-#     print(port)
+
 from serial import Serial
 from serial import SerialException
-import serial.tools.list_ports
-from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout,QComboBox
+from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout,QComboBox, QHBoxLayout,QLineEdit
 from serial.tools import list_ports
-def connectArduino(response=''):
-    from PyQt5.QtWidgets import QErrorMessage
-    from serial import Serial
-    from serial import SerialException
-    import serial.tools.list_ports
-    # ports = list(serial.tools.list_ports.comports())
-    for port in serial.tools.list_ports.comports():
-        if port.description.startswith("USB-SERIAL CH340"):
-            try:
-                arduino = Serial(port.device, baudrate=57600, timeout=.01)
-            except SerialException as e:
-                error = QErrorMessage()
-                error.showMessage("Can't open port %s !" % port.device + e.__str__())
-                error.exec_()
-                return -1
-            # here one can add checking response on command arduino.write(b'*IDN?'), know is somewhy doesn't work
-            return arduino
-    error = QErrorMessage()
-    error.showMessage("Arduino is not connected!")
-    error.exec_()
-    return -1
 
 class COMPortDevice:
     """General class for com ports. """
@@ -40,11 +11,25 @@ class COMPortDevice:
     baudrate = 9600
     timeout = 1
     identification_names = [] # first few words that should be in the output to *IDN? command splited bu ',' to check
+    check_parameter = 'manufacturer' # parameter on which preCheck is check
+    check_answer = 'wch.cn' # check answer (for arduino), must be specified in child
 
+    def __init__(self,default_port=None):
+        if default_port:
+            self.port = default_port
     # function to check based on port info if the port is correct, if port is transfered then checks if
-    # port pass check. In the last version only with port it is used
+    # port pass check.
     def preCheck(self,port=None):
-        return True
+        if port:
+            return (getattr(port,self.check_parameter,None) == self.check_answer)
+        else:
+            if (self.port != '' and self.port in [port.device for port in list_ports.comports()] and
+                getattr([port for port in list_ports.comports() if port.device == self.port][0],self.check_parameter)==self.check_answer):
+                return
+            for port in list(list_ports.comports()):
+                if getattr(port,self.check_parameter)== self.check_answer:
+                    self.port = port.device
+                    return
 
     def close(self): # closes port
         self.stream.close()
@@ -94,52 +79,75 @@ class COMPortDevice:
         try:
             self.stream.write(command)
             readout = self.stream.readline().decode()
+
         except SerialException as e:
             status = False
             print(e)
         return (status,readout) # return statuus of reading and readout
 
     class BasicWidget(QWidget):
+        """Basic widget for comport. Contains ports list. update and connect button, and possibility to send connands
+        to the device"""
         def __init__(self,data=None, parent=None,connect=True):
             self.data=data
             self.parent = parent
             super().__init__()
 
             layout = QVBoxLayout()
+            connect_layout = QHBoxLayout()
             self.port_menu = QComboBox()
             self.port_menu.currentTextChanged[str].connect(self.portChanged)
-            layout.addWidget(self.port_menu)
+            connect_layout.addWidget(self.port_menu)
 
             info_btn = QPushButton('Update')
             info_btn.clicked.connect(self.updateBtnPressed)
-            layout.addWidget(info_btn)
+            connect_layout.addWidget(info_btn)
 
             self.connect_btn = QPushButton('Connect')
             self.connect_btn.clicked.connect(self.connectBtnPressed)
-            layout.addWidget(self.connect_btn)
+            connect_layout.addWidget(self.connect_btn)
 
+            layout.addLayout(connect_layout)
+
+            write_layout = QHBoxLayout()
+
+            self.line_to_send = QLineEdit()
+            write_layout.addWidget(self.line_to_send)
+
+            send_btn = QPushButton('Send')
+            send_btn.clicked.connect(self.sendBtnPressed)
+            write_layout.addWidget(send_btn)
+
+            layout.addLayout(write_layout)
             self.setLayout(layout)
             self.updateBtnPressed() #to update com ports
 
             if connect:
                 self.connectBtnPressed()
 
-        def portChanged(self,name):
+        def portChanged(self,name): # sets chosen com port for furhter connection
             self.data.port = name.strip('+')
 
         def updateBtnPressed(self):
             """updates com ports list and runs preCheck to choose suitable ports"""
             available_com_ports = [port.device for port in list(list_ports.comports())]
-            last_port=''
+            good_ports = [] # ports which pass preCheck
             for i,port in enumerate(list(list_ports.comports())):
                 if self.data.preCheck(port):
                     available_com_ports[i] +='+'
-                    last_port = port.device # the last preChecked port will be set to default
+                    good_ports.append(port.device)
+
+            print(good_ports)
+
+            old_port = self.data.port # this should be done to not loose port name while updating port_menu
             self.port_menu.clear()
-            print(last_port)
             self.port_menu.addItems(available_com_ports)
-            print(last_port)
-            if last_port:
+            self.data.port = old_port
+
+            if self.data.port in good_ports: # if defalt port is good - do nothing
+                self.port_menu.setCurrentText(self.data.port + '+')
+            elif len(good_ports): # else choose last good port
+                last_port = good_ports[-1]
                 self.port_menu.setCurrentText(last_port+'+')# show default port
                 self.data.port = last_port
 
@@ -152,7 +160,32 @@ class COMPortDevice:
                     return
                 self.connect_btn.setStyleSheet("QWidget { background-color: %s }" % 'green')
                 self.connect_btn.setText('Disconnect')
+                if self.parent and 'save' in dir(self.parent): # save connected port to reconnect to it after relaunch
+                    print('send save command to parent',self.parent)
+                    self.parent.save({'port':self.data.port})
             else:   # else disconnect
                 self.data.close()  # disconnect them
                 self.connect_btn.setText('Connect')
                 self.connect_btn.setStyleSheet("QWidget { background-color: %s }" % 'yellow')
+
+        def sendBtnPressed(self):
+            """Sends message to device. Can be reimplemented (as in ArduinoShutters"""
+            msg = self.line_to_send.text()+'\r'
+            self.line_to_send.setText('')
+            print('message = ', msg)
+            status, res = self.data.write_read_com(msg.encode('ascii'))
+
+            if not status:
+                print('problems with sending msg: ', msg)
+            else:
+                print(res)
+
+if __name__ == '__main__':
+    import sys
+    from PyQt5.QtWidgets import QApplication
+    app = QApplication(sys.argv)
+    device = COMPortDevice(default_port='COM15')
+    print(device.port)
+    mainWindow = device.BasicWidget(data=device,connect=False)
+    mainWindow.show()
+    sys.exit(app.exec_())

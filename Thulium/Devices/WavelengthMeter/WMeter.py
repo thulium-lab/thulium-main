@@ -15,7 +15,7 @@ from PyQt5.QtGui import (QColor, QFont, QIcon)
 from PyQt5.QtWidgets import (QApplication, QMenu, QColorDialog, QGridLayout, QVBoxLayout, QHBoxLayout, QDialog, QLabel,
                              QLineEdit, QPushButton, QWidget, QRadioButton, QSpinBox, QCheckBox, QButtonGroup,
                              QErrorMessage)
-
+import time
 
 n_air = 1.0002926
 cicle_counter = 0
@@ -133,12 +133,12 @@ class WMMain():
 
     def __init__(self, arduino=None):
         self.wavemeter = wlm.WavelengthMeter()
-
-        if arduino == None:
-            # try to connect to arduino
-            pass
-        self.arduino = arduino
-
+        self.load()
+        self.arduino = arduinoShutters.Arduino(port=self.config.get('port',''))
+        # if arduino == None:
+        #     # try to connect to arduino
+        #     pass
+        # self.arduino = arduino
     def save(self):
         # print('Save')
         data_to_save = {}
@@ -164,6 +164,7 @@ class WMMain():
         with open(file_name,'r') as f:
             data = json.load(f)
         self.n_channels = data['n_channels']
+        self.config = data
         if 'timer_interval' in data:
             self.timer_interval = data['timer_interval']
         for chan in data['channels']:#getattr(data,'channels',[]):
@@ -204,7 +205,7 @@ class WMMain():
             self.lastMessage = ''
             super().__init__(parent=self.parent)
             self.setWindowTitle('My WavelengthMeter')
-            self.setWindowIcon(QIcon('Devices\WavelengthMeter\icon.jpg'))
+            self.setWindowIcon(QIcon('icon.jpg'))
             self.plot_window1 = pg.PlotWidget()
             self.plot_window2 = pg.PlotWidget()
             self.read_data = []
@@ -289,6 +290,15 @@ class WMMain():
             if self.signals:
                 self.signals.arduinoReceived.connect(self.timer2.start)
 
+        def save(self,dict_to_save):
+            file_name = 'WM_config.json'
+            file_name = os.path.join(folder, file_name)
+            with open(file_name, 'r') as f:
+                self.config = json.load(f)
+            self.config.update(dict_to_save)
+            print('new_config', self.config)
+            with open(os.path.join(folder,'WM_config.json'), 'w') as f:
+                json.dump(self.config, f)
         def temerIntervalChanged(self, new_val):
             self.data.timer_interval = new_val
             self.data.save()
@@ -326,14 +336,15 @@ class WMMain():
             # print('single index ', self.data.single_index)
 
         def keyPressEvent(self, QKeyEvent):
-            if QKeyEvent.key() == Qt.Key_F5 and self.shotN == 0:
+            if QKeyEvent.key() == Qt.Key_F5 and self.shotN == 0 and self.signals:
                 self.signals.shutterChange.emit(self.lastMessage)
             return
 
         def routine(self):
+            # print('here')
             # global cicle_counter
             # cicle_counter += 1
-            print(self.data.arduino.connected)
+            # print(self.data.arduino.connected)
             if not self.data.arduino.connected:
                 return False
             self.timer.stop()
@@ -354,7 +365,11 @@ class WMMain():
                 message += ' %i %i' % (chan, state)
             message += '!'
             # print(message)
-            # status, readout = self.write_read_com(message)
+            try:
+                status, readout = self.data.arduino.write_read_com(message.encode())
+            except Exception as e:
+                print(e)
+            # print(message, status, readout)
             # check resp
             time_per_shot = self.data.wavemeter.exposure
             # print('Time per shot ',time_per_shot)
@@ -402,7 +417,6 @@ class WMMain():
                 self.drawChannels()
                 self.drawSpecta()
                 self.timer.start()
-
 
         def drawSpecta(self):
             self.plot_window1.clear()
@@ -560,10 +574,10 @@ if __name__ == '__main__':
     # if device != -1:
         # device = Serial('COM4',baudrate=57600,timeout=1)
     print('Here')
-    arduino = arduinoShutters.Arduino()
+    # arduino = arduinoShutters.Arduino()
     print('Here')
-    aw = WMMain(arduino=arduino)
-    aw.load()
+    aw = WMMain()
+    # aw.load()
     # aw.addChannel(name='Green', shutter_number=2, color=QColor(0,255,0))
     # aw.addChannel(name='Clock', shutter_number=1, color=QColor(255,170,0))
     # aw.addChannel(name='red', shutter_number=3)
