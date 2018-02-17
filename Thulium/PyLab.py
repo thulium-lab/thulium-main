@@ -78,13 +78,13 @@ class MainWindow(QMainWindow):
         self.widgets['CamView'].windowed = 2
         self.widgets['Arduino'] = self.arduino.Widget(parent=self, data=self.arduino)
         self.widgets['Arduino'].windowed = 1
-        self.widgets['Arduino'].connectBtnPressed()
+        # self.widgets['Arduino'].connectBtnPressed()
         self.widgets['Pulses'] = PulseScheme(parent=self, globals=self.globals, signals=self.signals)
         self.widgets['Pulses'].windowed = 0
         self.widgets['PulsePlot'] = PlotPulse(parent=self, globals=self.globals, signals=self.signals)
         self.widgets['PulsePlot'].windowed = 0
-        #self.widgets['ClockGenerator'] = SRSGenerator(parent=self,globals=self.globals)
-        #self.widgets['ClockGenerator'].windowed = 1
+        self.widgets['ClockGenerator'] = SRSGenerator(parent=self,globals=self.globals)
+        self.widgets['ClockGenerator'].windowed = 1
 
         # comment these if you get problems
         self.widgets['GPD 3303'] = GPDwidget(parent=self, globals=self.globals)
@@ -97,7 +97,7 @@ class MainWindow(QMainWindow):
 
         self.all_updates_methods['Pulses'] = self.widgets['Pulses'].getUpdateMethod()
         self.all_updates_methods['DDS'] = self.widgets['DDS'].getUpdateMethod()
-        #self.all_updates_methods['ClockGenerator'] = self.widgets['ClockGenerator'].getUpdateMethod()
+        self.all_updates_methods['ClockGenerator'] = self.widgets['ClockGenerator'].getUpdateMethod()
 
         # and this
         self.all_updates_methods['GPD 3303'] = self.widgets['GPD 3303'].getUpdateMethod()

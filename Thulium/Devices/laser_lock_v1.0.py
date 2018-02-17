@@ -29,7 +29,7 @@ class BlueLock():
     maximum_srs_error = 0.03 # reaching this value srs will unlock
     # Flags
     # srs_lock = False
-    # piezo_lock = False
+    piezo_lock = False
     # output arrays
     srs_output  = None
     piezo_voltage = None

@@ -5,8 +5,8 @@ import pyqtgraph.exporters
 import numpy as np
 
 from matplotlib.pyplot import imread
-from PyQt5.QtCore import (QTimer, Qt)
-from PyQt5.QtGui import (QIcon, QFont)
+from PyQt5.QtCore import (QTimer, Qt,QRect)
+from PyQt5.QtGui import (QIcon, QFont,QTransform)
 from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QHBoxLayout, QLabel, QWidget, QSpinBox, QCheckBox,
                              QMessageBox)
 
@@ -138,11 +138,12 @@ class DisplayWidget(da.DockArea):
 
         # new version with ROI
         win = pg.GraphicsLayoutWidget()
+        self.win = win
         p1 = win.addPlot()
         self.img = pg.ImageItem()
         self.img.setZValue(1)
         p1.addItem(self.img)
-        self.globals['image']=imread(r"D:\!Data\2016_04_22\01 T no_ramp a=-6 f=363.9 b=0.8\0ms\1_1.png")
+        self.globals['image']=imread(r"DigitalPulses\default_camera.tiff").T
         self.img.setImage(self.globals['image'])
         self.roi = pg.ROI(self.roi_center, self.roi_size,pen=pg.mkPen('g', width=1)) #, style=pg.QtCore.Qt.DotLine
         self.roi.addScaleHandle([1, 1], [0, 0])
@@ -170,7 +171,7 @@ class DisplayWidget(da.DockArea):
         self.img2.setZValue(1)
         # self.img2.setPxMode(True)
         p1_2.addItem(self.img2)
-        self.globals['image2']=imread(r"D:\!Data\2016_04_22\01 T no_ramp a=-6 f=363.9 b=0.8\0ms\1_1.png")
+        self.globals['image2']=imread(r"DigitalPulses\default_camera2.tiff").T
         self.img2.setImage(self.globals['image2'])
         self.roi2 = pg.ROI(self.roi_center, self.roi_size, pen=pg.mkPen('g', width=1))  # , style=pg.QtCore.Qt.DotLine
         self.roi2.addScaleHandle([1, 1], [0, 0])
@@ -264,6 +265,7 @@ class DisplayWidget(da.DockArea):
 
         self.d4.addWidget(self.w4)
         self.signals.newImageRead.connect(self.routine)
+        self.signals.newImage2Read.connect(self.routine2)
 
     # def LUTChanged(self):
     #     print('LUTChanged')
@@ -300,14 +302,14 @@ class DisplayWidget(da.DockArea):
     def routine(self):
         # global current_data_index
         # current_data_index = (current_data_index + 1) % len(data)
-        print(self.roi_center,self.roi_size,self.globals['image'].shape)
-        if not (np.array(self.roi_center)+np.array(self.roi_size) < self.globals['image'].shape[::-1]).all():
+        # print(self.roi_center,self.roi_size,self.globals['image'].shape)
+        if (np.array(self.roi_center) < 0).any() or not (np.array(self.roi_center)+np.array(self.roi_size) < self.globals['image'].shape[::-1]).all():
             self.roi_center=[0,0]
             self.roi_size=self.globals['image'].shape[::-1]
-            print(self.roi_size,self.globals['image'].shape[::-1])
+            # print(self.roi_size,self.globals['image'].shape[::-1])
             self.roi.setPos(*self.roi_center)
             self.roi.setSize(self.roi_size)
-        print(self.roi_center,self.roi_size,self.globals['image'].shape)
+        # print(self.roi_center,self.roi_size,self.globals['image'].shape)
         self.image_bounds = [(0 if 0>self.roi_center[1]>self.globals['image'].shape[0] else self.roi_center[1],
                             self.globals['image'].shape[0] if (self.roi_center[1] + self.roi_size[1]) > self.globals['image'].shape[0] else (self.roi_center[1] + self.roi_size[1])),
                              (0 if 0 > self.roi_center[0] > self.globals['image'].shape[1] else self.roi_center[0],
@@ -319,8 +321,14 @@ class DisplayWidget(da.DockArea):
         self.globals['image'][self.image_bounds[0][0]:self.image_bounds[0][1],self.image_bounds[1][0]:self.image_bounds[1][1]] = self.new_data.image
         # self.win.resize(*self.globals['image'].shape)
 
-        self.img.setImage(self.globals['image'],autoRange=False, autoLevels=False,autoHistogramRange=False,autoDownsample=False)
-
+        self.img.setImage(self.globals['image'],autoRange=True, autoLevels=False,autoHistogramRange=False,autoDownsample=True)
+        # wx, wy = self.img.pixelSize()
+        # if wx != wy:
+        #     # self.win.scaleToImage(self.img)
+        #     print(wx,wy)
+        #     # self.img.setRect(QRect(0,0,self.img.width(), self.img.height()*wx/wy))
+        #     self.img.setTransform(QTransform().fromScale(1,wy/wx))
+        #     print(self.img.pixelSize())
         self.img2.setImage(self.globals['image2'], autoRange=False, autoLevels=False, autoHistogramRange=False,autoDownsample=False)
 
         if self.img.qimage is None:
@@ -357,7 +365,8 @@ class DisplayWidget(da.DockArea):
         # self.imv.setImage(self.globals['image'],autoRange=False, autoLevels=False,autoHistogramRange=False)#, autoLevels=False, autoHistogramRange=False, autoRange=False)
         # self.imv.getHistogramWidget().setHistogramRange(0,0.6)
         # self.imv.getHistogramWidget().setLevels(0, 0.6)
-
+    def routine2(self):
+        print('routine2')
     def data_processing(self):
         # here all image analysis is performed
         self.process_image(self.new_data) # pprocess image - may be this and below should be done in thread, because fits take time
@@ -380,8 +389,17 @@ class DisplayWidget(da.DockArea):
         # print(self.roi.size())
     def updateROI2(self):
         print('updateRoi2')
-        self.roi2_center = [int(self.roi2.pos()[0]),int(self.roi2.pos()[1])]
-        self.roi2_size = [int(self.roi2.size()[0]),int(self.roi2.size()[1])]
+        self.roi2_center = np.array(self.roi2.pos(),dtype=int)#[int(v[0]),int(self.roi2.pos()[1])]
+        if (self.roi2_center < 0).any():
+            self.roi2_center = np.zeros(2)
+            self.roi2.setPos(*self.roi2_center)
+        # print(self.roi2_center)
+        self.roi2_size = np.array(self.roi2.size(),dtype=int)#[int(self.roi2.size()[0]),int(self.roi2.size()[1])]
+        # print(self.roi2_center+self.roi2_size, self.globals['image2'].shape)
+        # print((self.roi2_center+self.roi2_size - np.array(self.globals['image2'].shape)[::-1]))
+        # if ((self.roi2_center+self.roi2_size - np.array(self.globals['image2'].shape)) > 0).any():
+        #     self.roi2_size = np.array(self.globals['image2'].shape)[::-1] - self.roi2_center - 1
+        #     self.roi2.setSize(self.roi2_size)
         # self.w5.cellChanged.disconnect(self.roiTableChanged)
         # self.w5.setData(self.getROITableData())
         # self.w5.cellChanged.connect(self.roiTableChanged)

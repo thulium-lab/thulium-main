@@ -49,10 +49,8 @@ class Bgnd_Thread(threading.Thread):
                             time.sleep(0.05)
                             # print('w0.05',end=' ')
             if len(os.listdir(self.folder2)):
-                print('-1-')
                 f = os.listdir(self.folder2)[0]
                 if f.endswith(self.suffics):
-                    print('-2-')
                     while (True):
                         try:
                             time.sleep(0.05)

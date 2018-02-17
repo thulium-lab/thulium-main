@@ -30,7 +30,8 @@ class PlotPulse(pg.GraphicsWindow):
         print('PlotPulses2')
         self.clear()    # clear plot
         d_plot = self.addPlot()
-        digital_hight=1.2   # place for each curve of height=1
+        d_plot.showGrid(x=True)
+        digital_hight=1.2   # place for each curve of height=1graphic
         digital_counter = 0 # number of plotted channel
         dig_list=[]     # list of active digital channels
         # for analog puslses -- not used now
@@ -72,7 +73,7 @@ class PlotPulse(pg.GraphicsWindow):
                 # QMessageBox.warning(self, 'Message', "Not equal length of params", QMessageBox.Yes)
         # set tiks names
         if 'channels_affiliation' in self.globals:
-            tiks_names = ['\n'.join([x] + list(set(self.globals['channels_affiliation'][x]))) for x in dig_list]
+            tiks_names = [' '.join([x] + list(set(self.globals['channels_affiliation'][x]))) for x in dig_list]
         else:
             tiks_names = dig_list
         d_plot.getAxis('left').setTicks([list(zip((np.arange(len(dig_list))+1/2)*digital_hight,tiks_names))])

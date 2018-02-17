@@ -3,8 +3,10 @@ import matplotlib
 matplotlib.use('Qt5Agg',force=True)
 
 from PyQt5.QtWidgets import (QApplication, QMenu, QGridLayout, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
-                             QPushButton, QWidget, QComboBox, QCheckBox, QFileDialog, QMessageBox)
-
+                             QPushButton, QWidget, QComboBox, QCheckBox, QFileDialog, QMessageBox,QTableWidget,
+                             QTableWidgetItem,QHeaderView)
+from PyQt5.QtGui import QFont
+from PyQt5.QtCore import QSize
 import json
 #import time
 import re
@@ -406,6 +408,7 @@ class MeasurementFolderClass():
             super().__init__()
             self.data=data
             self.parent=parent
+            self.N_params=10
             self.initUI()
 
         def initUI(self):
@@ -428,22 +431,41 @@ class MeasurementFolderClass():
             self.meas_type_box.currentTextChanged.connect(self.measTypeChanged)
             hor1.addWidget(self.meas_type_box)
 
-            hor1.addWidget(QLabel('other params'))
-
-            other_params_box = QLineEdit(self.data.other_params)
-            other_params_box.editingFinished.connect(self.otherParamsChanged)
-            hor1.addWidget(other_params_box)
+            # hor1.addWidget(QLabel('other params'))
+            #
+            # other_params_box = QLineEdit(self.data.other_params)
+            # other_params_box.editingFinished.connect(self.otherParamsChanged)
+            # hor1.addWidget(other_params_box)
 
             main_layout.addLayout(hor1)
 
+            self.param_table = QTableWidget(2,self.N_params)
+            self.param_table.setVerticalHeaderLabels(['param','value'])
+            self.param_table.setMaximumHeight(80)
+            for i,s in enumerate(self.data.other_params.split()):
+                if '=' not in s:
+                    self.param_table.setItem(0, i, QTableWidgetItem(s))
+                else:
+                    self.param_table.setItem(0, i, QTableWidgetItem(s.split('=')[0]))
+                    self.param_table.setItem(1, i, QTableWidgetItem(s.split('=')[1]))
+            self.param_table.horizontalHeader().hide()
+            # param_table.setItem(0,0,QTableWidgetItem('param'))
+            # param_table.setItem(1, 0, QTableWidgetItem('value'))
+
+            main_layout.addWidget(self.param_table)
+
             hor2 = QHBoxLayout()
 
-            hor2.addWidget(QLabel('folder'))
+            hor2.addWidget(QLabel('Folder'))
 
-            self.meas_folder_box = QLineEdit(self.data.name)
-            self.updateMeasFolder()
-            self.meas_folder_box.editingFinished.connect(self.measFolderChanged)
+            # self.meas_folder_box = QLineEdit(self.data.name)
+            # self.updateMeasFolder()
+            # self.meas_folder_box.editingFinished.connect(self.measFolderChanged)
+            self.meas_folder_box = QLabel(self.data.name)
+            self.meas_folder_box.setStyleSheet("QLabel { background-color : white}")
+            self.meas_folder_box.setFont(QFont("Arial",14))
             hor2.addWidget(self.meas_folder_box)
+            hor2.addStretch(1)
 
             new_btn = QPushButton('New')
             new_btn.clicked.connect(self.newBtnPressed)
@@ -473,14 +495,26 @@ class MeasurementFolderClass():
             self.saveToConfig('current_type')
             # print(self.data.current_type)
 
-        def otherParamsChanged(self):
-            print('otherParamsChanged')
-            self.data.other_params = self.sender().text()
-            self.updateMeasFolder()
-            self.saveToConfig('other_params')
+        # def otherParamsChanged(self):
+        #     print('otherParamsChanged')
+        #     self.data.other_params = self.sender().text()
+        #     self.updateMeasFolder()
+        #     self.saveToConfig('other_params')
 
         def updateMeasFolder(self):
             print('updateMeasFolder')
+            params_str = ''
+            for i in range(self.N_params):
+                p_item = self.param_table.item(0,i)
+                if p_item == None:
+                    continue
+                else:
+                    params_str += ' ' + p_item.text()
+                    v_item = self.param_table.item(1,i)
+                    if v_item != None:
+                        params_str += '=' + v_item.text()
+            print(params_str)
+            self.data.other_params = params_str.strip()
             self.data.name = "%02i %s %s" % (self.data.current_meas_number, self.data.current_type, self.data.other_params)
 
             if 'additional_scan_param_name' in self.data.globals:
@@ -500,13 +534,17 @@ class MeasurementFolderClass():
             drs = os.listdir(self.data.day_folder)
             last_index = 0
             for d in drs:
-                if d[:2].isdigit():
-                    n = int(d[:2])
+                n_folder = d.split(' ')[0]
+                # if d[:2].isdigit():
+                #     n = int(d[:2])
+                if n_folder.isdigit():
+                    n = int(n_folder)
                     print(n)
                     if n > last_index:
                         last_index = n
             self.data.current_meas_number = last_index + 1
             self.updateMeasFolder()
+            self.saveToConfig('other_params')
             # self.
 
         def openBtnPressed(self):

@@ -37,7 +37,7 @@ class Scanner(QWidget):
         self.progressBar = QProgressBar(self)
 
         self.initUI()
-        self.setMinimumWidth(800)
+        self.setMinimumWidth(1000)
 
         self.signals.scanCycleFinished.connect(self.cycleFinished)
         # add variable to global namespace
