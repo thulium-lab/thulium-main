@@ -1,7 +1,7 @@
 try:
-    from .device_lib import COMPortDevice
+    from .device_lib import COMPortDevice,LANDevice
 except:
-    from device_lib import COMPortDevice
+    from device_lib import COMPortDevice,LANDevice
 from serial import Serial
 from serial.tools import list_ports
 from time import sleep
@@ -22,8 +22,12 @@ from PyQt5.QtWidgets import (QApplication, QGraphicsView, QGraphicsScene, QGraph
 import json
 scan_params_str = 'scan_params'
 name_in_scan_params = 'ClockGenerator'
+if __name__ == '__main__':
+    configFile = 'SRSgeneratorSG382-config.json'
+else:
+    configFile = 'Devices/SRSgeneratorSG382-config.json'
 
-class SRS(COMPortDevice):
+class SRS_COM(COMPortDevice):
     identification_names = ['Stanford Research Systems', 'SG382','s/n001915']
     timeout = 0.1
     check_answer = 'Prolific'
@@ -51,6 +55,37 @@ class SRS(COMPortDevice):
 
     def getAmpl(self):
         return self.write_read_com(b'AMPR?\r')
+
+class SRS_LAN(LANDevice):
+    identification_names = ['Stanford Research Systems', 'SG382','s/n001915']
+    timeout = 1
+    ip = '192.168.1.245'
+    port = 5025
+    # check_answer = 'Prolific'
+    # def preCheck(self,port=None):
+    #     if port:
+    #         return (port.manufacturer == 'Prolific')
+    #     else:
+    #         if self.port != '' and self.port in [port.device for port in list_ports.comports()]:
+    #             return
+    #         for port in list(list_ports.comports()):
+    #             if port.manufacturer == 'Prolific':
+    #                 self.port = port.device
+    #                 return
+
+    def setFreq(self,freq):
+        status,readout = self.write(b'FREQ %f MHz\r' %(freq))
+        print(status, readout)
+
+    def setAmpl(self,ampl):
+        status,readout = self.write(b'AMPR %f\r' %(ampl))
+        print(status, readout)
+
+    def getFreq(self):
+        return self.write_read(b'FREQ? MHz\r')
+
+    def getAmpl(self):
+        return self.write_read(b'AMPR?\r')
 
 class MyBox(QLineEdit):
     def __init__(self, *args,valid = (10,999,6), **kwargs):
@@ -108,7 +143,7 @@ class SRSGenerator(QWidget):
     def __init__(self,parent=None,globals=None):
         self.globals = globals
         self.load()
-        self.srs = SRS(self.config.get('port',''))
+        self.srs = SRS_LAN() #SRS_COM(self.config.get('port',''))
         self.freq_center = '417.2'
         self.freq_offset = '0.0'
         self.ampl = '0.0'
@@ -121,14 +156,14 @@ class SRSGenerator(QWidget):
 
     def load(self):
 
-        with open('SRSgeneratorSG382-config.json','r') as f:
+        with open(configFile,'r') as f:
             self.config = json.load(f)
 
     def save(self,dict_to_save):
         print("reee")
         self.config.update(dict_to_save)
         print('new_config', self.config)
-        with open('SRSgeneratorSG382-config.json','w') as f:
+        with open(configFile,'w') as f:
              json.dump(self.config,f)
 
     def initUI(self):
@@ -171,7 +206,8 @@ class SRSGenerator(QWidget):
         try:
             freq = (float(self.f_o_line.text()) + float(self.f_c_line.text()))/1e3
             print(freq)
-            self.srs.setFreq(freq)
+            if 1<freq<500:
+                self.srs.setFreq(freq)
         except ValueError:
             print('Frequency input is not a float')
 
