@@ -86,7 +86,7 @@ class WMChannel:
             main_layout.addWidget(self.name_line)
 
             self.value = QLabel()
-            self.value.setFont(QFont("Times",65))#,QFont.Bold
+            self.value.setFont(QFont("Times",70))#,QFont.Bold
             self.setValueText()
             self.value.setStyleSheet("QWidget { color: %s }"% self.data.color.name())
             main_layout.addWidget(self.value)
@@ -107,6 +107,12 @@ class WMChannel:
             self.parent.data.save()
 
         def setValueText(self):
+            if self.data.wavelength == -3:
+                self.value.setText('LOW')
+                return
+            elif self.data.wavelength == -4:
+                self.value.setText('HIGH')
+                return
             if self.data.unit == 'nm':
                 self.value.setText("%.5f nm" % self.data.wavelength)
             else:
@@ -122,7 +128,7 @@ class WMChannel:
 class WMMain():
     channels = []
     N_SHOTS_MAX = 10
-    N_SHOTS_MIN = 3
+    N_SHOTS_MIN = 2
     EXCEPTABLE_WAVELENGTH_ERROR = 0.01 #nm
     current_index = 0
     active_channels_indexes = []
@@ -135,6 +141,8 @@ class WMMain():
         self.wavemeter = wlm.WavelengthMeter()
         self.load()
         self.arduino = arduinoShutters.Arduino(port=self.config.get('port',''))
+        self.arduino.n_lines = 1
+        self.arduino.n_chars_in_string = 1000
         # if arduino == None:
         #     # try to connect to arduino
         #     pass
@@ -179,6 +187,7 @@ class WMMain():
         # print(data['channels'])
         self.active_channels_indexes = [i for i in range(len(self.channels)) if self.channels[i].is_active]
         self.current_index = self.active_channels_indexes[-1]
+        print(self.config)
 
     def addChannel(self, name, shutter_number,color=QColor(0,0,0)):
         new_channel = WMChannel(name, shutter_number,color=color)
@@ -206,8 +215,8 @@ class WMMain():
             super().__init__(parent=self.parent)
             self.setWindowTitle('My WavelengthMeter')
             self.setWindowIcon(QIcon('icon.jpg'))
-            self.plot_window1 = pg.PlotWidget()
-            self.plot_window2 = pg.PlotWidget()
+            self.plot_window1 = pg.PlotWidget(background='w')
+            self.plot_window2 = pg.PlotWidget(background='w')
             self.read_data = []
             self.shotN = 0
             # self.plot_window.plot(range(10),range(10))
@@ -262,7 +271,7 @@ class WMMain():
 
             temp_layout = QHBoxLayout()
             self.arduinoWidget = self.data.arduino.Widget(parent=self, data=self.data.arduino)
-            self.arduinoWidget.setMaximumWidth(300)
+            self.arduinoWidget.setMaximumWidth(250)
             temp_layout.addWidget(self.arduinoWidget)
 
             plots_layout = QVBoxLayout()
@@ -427,12 +436,12 @@ class WMMain():
                 # for spectr in channel.spectrum[:1]:
                 if len(spectr):
                     # print(len(spectr))
-                    self.plot_window1.plot(np.arange(1024),spectr[:1024],pen=pg.mkPen(color=channel.color))
+                    self.plot_window1.plot(np.arange(1024),spectr[:1024],pen=pg.mkPen(color=channel.color,width=2))
                 spectr = channel.spectrum[1]
                 # for spectr in channel.spectrum[:1]:
                 if len(spectr):
                     # print(len(spectr))
-                    self.plot_window2.plot(np.arange(1024), spectr[:1024], pen=pg.mkPen(color=channel.color))
+                    self.plot_window2.plot(np.arange(1024), spectr[:1024], pen=pg.mkPen(color=channel.color,width=6))
 
         def drawChannels(self):
             # cleen up previous grid

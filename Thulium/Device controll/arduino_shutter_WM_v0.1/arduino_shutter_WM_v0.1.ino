@@ -1,5 +1,9 @@
-// NOTES:
-// Based on arduino_shutters_v2.2, all but wabvelenght measurement removed
+// Developed by Artem Golovizin, LPI (FIAN). Based on arduino_shutters_v2.2., 
+// Controlls shutters based on simple stepper motors in a logic way: 0 - only bias coil is on, 1 - both coils are on.
+// Tipical resistences are 50-200 Ohm, the larger difference between bias and TTL resistence the larger rotation, tipical 10 degrees.
+
+// Commands look like 'WMShutters c_i s_i c_j s_j!' where c_i,j - is a channel number (0 - on the main board), s_i,j - is a channel state, '!' in the end of line indicates command end.
+
 #include "ctype.h"
 
 const double second_coefficient = 1.014; // coeffitien reflects arduino time for 1s interval 0.988 - for second arduino
@@ -38,6 +42,7 @@ char b;
 int first_space;
 String msg;
 String channel_string;
+
 void setup() {
   Serial.begin(9600); // boud rate 
 //  attachInterrupt(0,interrupt_handler,RISING); // connect trigger on pin 2 to interrupt with handler function interrupt_handler, edge is rising
@@ -46,11 +51,11 @@ void setup() {
   }
 }
 
-// interrupt (trigger) handler; rises flag 'interrupted' to then stat writing to beam shutter channels
+// interrupt (trigger) handler; rises flag 'interrupted' to then stat SMTH (i.e. writing to beam shutter channels)
 //void interrupt_handler(){
 //  t = millis();
 //  msg = "interrupt t=" + String(t);
-//  if (t - last_trigger_time > 10){ // it is not a noise
+//  if (t - last_trigger_time > 10){ // it is not a noise  -- somewhy this part is needed
 //    last_time = t; // write down time when trigger arrived (sequence is started)
 //    last_trigger_time = t;
 //    current_edge = 0;
@@ -66,23 +71,12 @@ void setup() {
 //  if (debug == 1){
 //    Serial.print("i");
 //  }
-//  
 //}
+
 void loop() {
-  // if interruption occured (trigger came) this flag is rised 
-//  if (interrupted){
+//  if (interrupted){ // if interruption occured (trigger came) this flag is rised 
 //    interrupted=false; // clear flag
-//    sequence_finished = false; // clear flag
-//    edge_delay = 0; // null previous edge delay; first sequence ALWAYS should start at relative time t=0
-//    write_channels(); // call routine
-//  }
-//  // if sequence is not yet finished and it is less than 2ms before next edge should be written
-//  if (not sequence_finished and millis()-last_time > edge_delay-1){
-//    while (millis()-last_time > edge_delay){ 
-//      // spinning here; this is done to not be desturebed by serial input
-//    }
-//    // when we leave previous cicle call routine
-//    write_channels();
+//    DO SMTH
 //  }
   // chech if smth has been sent in serial port and call handler
   if (Serial.available()){
@@ -90,77 +84,8 @@ void loop() {
   }
 }
 
-// writing beam shutter states 
-void write_channels(){
-  j=0;
-  k=0;
-  ws = edge_sequence[current_edge]; // read current state as string
-//  Serial.println(ws);
-// j = ws.indexOf("_");
-// for (int i=ws.indexOf("_")+1; i<ws.length();i++){
-//   int_arr[k] = ws.substring(i,i+1).toInt();
-////   Serial.println(int_arr[k]);
-//   k++;
-// }
- int_arr[0] = ws.substring(ws.indexOf("_")+1).toInt();
- if (debug == 2 or debug == 10 ){
-  Serial.print("Shutters state");
-  Serial.println(int_arr[0]);
- }
-//  for (int i=0; i<ws.length();i++){
-//    if (ws[i]=='_' and j==0){ // pass first digit as it is time mark
-//      j=i;
-//      continue;
-//    }
-//    else if (ws[i]=='_'){
-//      int_arr[k] = ws.substring(j+1,i).toInt(); // save each number which is either channel_number or state
-////      Serial.println(int_arr[k]);
-//      k++;
-//      j=i;
-//    }
-//  }
-  int_arr_current_length = channel_string.length(); // save length of channel_number or state array for current sequence
-//  Serial.print("Start writing time ");
-//  Serial.println(micros());
-  for (int i=0;i<int_arr_current_length;i++){
-    if (debug == 2 or debug == 10 ){
-    Serial.print(channel_string.substring(i,i+1).toInt());
-    Serial.print(" state ");
-    Serial.print( (int_arr[0] >> (int_arr_current_length-i-1)) %2 );
-    Serial.print(",   ");
-    }
-    digitalWrite(available_ports[channel_string.substring(i,i+1).toInt()], (int_arr[0] >> (int_arr_current_length-i-1)) %2); // write state to beam shutter output pin
-  }
-//  Serial.print("End writing time ");
-  // if this is the last edge of beam shutters 
-  if (current_edge == n_sequences - 1){
-    sequence_finished = true; // rise this flag
- //   Serial.println("Last sequence is finished");
-  }
-  else {// if not last
-//    Serial.println(millis());
-//    Serial.println(current_edge);
-    ws = edge_sequence[current_edge+1]; //new string of beam shutters state
-//    Serial.println(ws);
-  for (int i=0; i<ws.length();i++){
-    if (ws[i]=='_'){ // find first _, thus identifying edge time, calculating delay
-//      Serial.println(
-//      edge_delay = int(ws.substring(0,i).toInt()/second_coeffitient) - edge_delay;
-//      edge_delay = ws.substring(0,i).toInt() - edge_delay;
-      last_time = last_time + int(ws.substring(0,i).toInt()/second_coefficient) - edge_delay;
-      edge_delay = int(ws.substring(0,i).toInt()/second_coefficient);
-//      Serial.print("New delay ");
-  //    Serial.println(edge_delay);
-      break;
-    }
-    }
-    current_edge = current_edge + 1; // update
-  }
-}
-
 // function that parses input commands
 void data_input_handler() {
-  //delay(1); // to all data come
   i = get_string_array(); // reads input and separates words
   if (i == -1){
     if (debug > 0 ){
@@ -169,8 +94,6 @@ void data_input_handler() {
     return;
   }
   handled = false; // dedicated
-//  Serial.println("Returned");
-//  Serial.println(words[0]);
   
   if ( (words[0]).equals("*IDN") ) { // identification
     Serial.println("WMArduinoUnoShutters");
@@ -200,47 +123,19 @@ void data_input_handler() {
       }
       digitalWrite(available_ports[words[i].toInt()], words[i+1].toInt());
     }
-    if (debug > 0 ){
+    if (debug == 2 ){
       Serial.println("WS Ok");
     }
+    if (debug == 1 ){
+      Serial.print(".");
+    }
   }
-// if ( (words[0]).equals("BS") ) { // saves all sequences to edge_sequence array of string
-//  //  test command BeamShutters 0_1_0_2_0_3_0_4_0_5_0_ 300_1_0_2_0_3_0_4_0_5_0_ 1000_1_1_2_1_3_1_4_1_5_1_
-//  // BeamShutters 0_1_0_2_0_3_0_4_0_5_0_ 300_1_0_2_0_3_0_4_0_5_0_ 400_1_0_2_0_3_0_4_0_5_0_ 500_1_0_2_0_3_0_4_0_5_0_ 600_1_0_2_0_3_0_4_0_5_0_ 1000_1_1_2_1_3_1_4_1_5_1_
-//  // BeamShutters 0_1_0_2_0_3_0_4_0_5_0_ 300_1_0_2_0_3_0_4_0_5_0_ 400_1_1_2_1_3_1_4_1_5_1_ 500_1_0_2_0_3_0_4_0_5_0_ 600_1_0_2_0_3_0_4_0_5_0_ 1000_1_1_2_1_3_1_4_1_5_1_!
-//  // BS 1_3_4 0_111 1_110 100_101! 
-//  // BS 1_1020!
-//  // BS 123 0_1!
-//    for (int i = 0; i < n_words; i++) {
-//      edge_sequence[i] = "";
-//    }
-//  channel_string = words[1];
-//  n_sequences = words_number-2; // number of edges
-//  for (int i = 2; i < words_number; i++){ // writing
-////     Serial.print(i-1);
-////     Serial.println(words[i]);
-//     edge_sequence[i-2] = words[i];
-//    }     
-////   for (int i = 0; i < n_sequences; i++){  
-////    Serial.print(i);     
-////    Serial.println(edge_sequence[i]);
-////    }
-//    if (debug > 0 ){
-//      Serial.println("BS Ok");
-//    }
-////    current_edge=0;
-////    write_channels();
-// }
 }
 
 
 int get_string_array()
 {
-  detachInterrupt(0); // it was an idea that some problems are due to the interrupt, but they are not
-
-//  Serial.println("getting string");
-//  Serial.flush();
-//  delay(1);              // Wait for getting all data
+//  detachInterrupt(0); // it was an idea that some problems are due to the interrupt, but they are not
   // it is nessesery to set strings to "", otherwise smth doesn't work
   full = "";
   for (int i = 0; i < n_words; i++) {
@@ -271,24 +166,7 @@ if (debug == 10){
       Serial.println("");
   
 }
-//  if (i==0){
-////    if (debug == 10) {
-////      Serial.println(words[k]);
-////    }
-//    attachInterrupt(0,interrupt_handler,RISING);
-//    return -1;
-//  }
   words_number = k+1;
-
-//  Serial.println("Finished reading");
-//  for(int i=0;i<words_number;i++)  {
-//    // Printing throwght Serial Monitor
-//    Serial.print(i);
-//     Serial.println(words[i]);
-//  }
 //  attachInterrupt(0,interrupt_handler,RISING);
   return 0;
-//     Serial.println(words_number);
-  //Serial.print("Input line ");
-  //Serial.println(full);
 }
