@@ -4,3 +4,21 @@
 *.pyc
 Thulium/backup/
 *.iml
+*.ini
+Thulium/DigitalPulses/digital_schemes/zeeman.pls
+Thulium/DigitalPulses/digital_schemes/stable.pls
+Thulium/DigitalPulses/digital_schemes/stern-gerlakh.pls
+Thulium/DigitalPulses/digital_schemes/on10oct.pls
+Thulium/DigitalPulses/digital_schemes/new.pls
+Thulium/DigitalPulses/digital_schemes/stable.json.pls
+Thulium/DigitalPulses/digital_schemes/new shutters.pls
+*.pls
+Thulium/DigitalPulses/digital_schemes/last_scheme.pls
+Thulium/DigitalPulses/digital_schemes/config_scheme.json
+*.tiff
+Thulium/DigitalPulses/digital_schemes/new.pls
+Thulium/DigitalPulses/digital_schemes/config_scheme.json
+Thulium/DigitalPulses/digital_schemes/config_scanner (Конфликтующая копия с компьютера Dmitry Tregubov 2017-09-27).json
+Thulium/Devices/settings/good
+Thulium/Devices/blue_lock_config.json
+Thulium/.idea/workspace.xml
