@@ -17,7 +17,7 @@ class PlotPulse(pg.GraphicsWindow):
         # self.resize(600, 600)
         self.signals.anyPulseChange.connect(self.updatePlot)
         self.updatePlot()
-        self.setMinimumHeight(450)
+        self.setMinimumHeight(350)
 
     def updatePlot(self):
         """used as a slot called by Pulses class to redraw pulses
@@ -29,7 +29,11 @@ class PlotPulse(pg.GraphicsWindow):
     def plotPulses2(self, output_data, t_first, digital_channels=None, analog_channels=None):
         print('PlotPulses2')
         self.clear()    # clear plot
+        self.setBackground('w')
+        # self.s
         d_plot = self.addPlot()
+        d_plot.getAxis('left').setPen(pg.Color('k'))
+        d_plot.getAxis('bottom').setPen(pg.Color('k'))
         d_plot.showGrid(x=True)
         digital_hight=1.2   # place for each curve of height=1graphic
         digital_counter = 0 # number of plotted channel
@@ -56,9 +60,10 @@ class PlotPulse(pg.GraphicsWindow):
                         yy.append(not point[1])
                     xx.append(point[0])
                     yy.append(point[1])
-                d_plot.plot(xx,np.array(yy)+digital_counter*digital_hight) # plot data
+                d_plot.plot(xx,np.array(yy)+digital_counter*digital_hight,
+                            pen=pg.mkPen(pg.intColor(digital_counter), width=2)) # plot data
                 d_plot.plot(xx, np.ones_like(xx)*digital_counter*digital_hight,
-                                pen=pg.mkPen('w', width=0.5, style=Qt.DashLine)) # plot zero
+                                pen=pg.mkPen(pg.intColor(digital_counter),width=0.5, style=Qt.DashLine)) # plot zero
                 digital_counter += 1
             # TODO plot analogs
             # elif name in analog_channels:

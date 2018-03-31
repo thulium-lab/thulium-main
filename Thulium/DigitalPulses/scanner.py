@@ -1,5 +1,5 @@
-import os, time, datetime, json, shutil, traceback
-
+import os, time, datetime, json, shutil, traceback, sys
+import numpy as np
 from PyQt5.QtWidgets import (QApplication, QVBoxLayout, QHBoxLayout, QTextEdit, QLabel, QPushButton, QWidget,
                              QSpinBox, QCheckBox, QMessageBox, QProgressBar)
 from DigitalPulses.scanParameters import SingleScanParameter, AllScanParameters, MeasurementFolderClass
@@ -11,7 +11,12 @@ scan_folder_data_str = 'scan_folder_data'
 single_folder_suffix = 'ms'
 meas_config_file = 'meas_config.json'
 EMPTY_CONFIG_FILE = -1
+if r'D:\!Data' not in sys.path:
+    sys.path.append(r'D:\!Data')
+import thulium_python_lib.usefull_functions as usfuncs
+import pyqtgraph.console
 
+from inspect import getsource
 
 class Scanner(QWidget):
 
@@ -49,8 +54,7 @@ class Scanner(QWidget):
         # self.timer.timeout.connect(self.cycleFinished)
 
     def loadConfig(self):
-        print('loadConfigScanner')
-        print(os.getcwd())
+        print('loadConfigScanner from ',os.path.join(data_directory, scanner_config_file))
         try:
             with open(os.path.join(data_directory, scanner_config_file), 'r') as f:
                 self.config = json.load(f)
@@ -65,11 +69,12 @@ class Scanner(QWidget):
             self.__dict__[key] = self.config[key]
         self.scan_parameters.load(self.config[scan_params_str])
         self.meas_folder1.load(self.config[scan_folder_data_str])
+        print('Done loading in scanner')
 
     def saveConfig(self,changed_key=None,changed_value=None):
-        print('saveConfig')
+        print('saveConfig scanner')
         if changed_key: # to specify what in config to update
-            print('Changed Value',changed_value)
+            # print('Changed Value',changed_value)
             self.config[changed_key] =changed_value if changed_value!=None else self.__dict__[changed_key]
         try:
             with open(os.path.join(data_directory, scanner_config_file), 'r') as f:
@@ -130,10 +135,15 @@ class Scanner(QWidget):
         self.progressBar.setMinimum(0)
         main_layout.addWidget(self.progressBar)
 
-        notes_box = QTextEdit(self.notes)
-        notes_box.textChanged.connect(self.notesChanged)
-        notes_box.setMaximumHeight(200)
-        main_layout.addWidget(notes_box)
+        console_text = '\n'.join([getsource(usfuncs.__dict__[item]).split(':')[0][4:] for item in dir(usfuncs) if item[0]!='_' and item not in ['np']])
+        self.console = pyqtgraph.console.ConsoleWidget(namespace={'np':np,'usfuncs':usfuncs}, text=console_text)
+        # self.console.ma
+        main_layout.addWidget(self.console)
+        # notes_box = QTextEdit(self.notes)
+        # notes_box.textChanged.connect(self.notesChanged)
+        # notes_box.setMaximumHeight(200)
+        # main_layout.addWidget(notes_box)
+
         self.setLayout(main_layout)
 
     def addPointsChanged(self, new_value):
@@ -144,6 +154,7 @@ class Scanner(QWidget):
     def numberOfShotsChanged(self, new_value):
         print('numberOfShotsChanged')
         self.number_of_shots = new_value
+        self.globals['number_of_shots'] = new_value
         self.saveConfig('number_of_shots')
 
     def stopBtnPressed(self):
@@ -209,6 +220,7 @@ class Scanner(QWidget):
         print('updateSingleMeasFolder')
         self.single_meas_folder = self.scan_parameters.getSingleFolderName()+single_folder_suffix
         self.globals['current_data_folder']= self.globals['current_measurement_folder'].strip() + '/' + self.single_meas_folder.strip()
+        # os.makedirs(self.globals['current_data_folder'], exist_ok=True)
         if not os.path.isdir(self.globals['current_data_folder']): # if there no such folder
             os.mkdir(self.globals['current_data_folder'])        # create new folder
         print('Current folder for images: ',self.globals['current_data_folder'])
@@ -219,6 +231,7 @@ class Scanner(QWidget):
         # self.globals['meas_folder'] = self.meas_folder
         self.globals['on_scan'] = self.on_scan
         self.globals['current_shot_number'] = self.current_shot_number
+        self.globals['number_of_shots'] = self.number_of_shots
         # print('Globals: ',self.globals)
 
     def cycleFinished(self, number=None):
@@ -229,7 +242,7 @@ class Scanner(QWidget):
         # add image_name for saving image
         self.globals['image_stack'].append(
             self.globals['current_data_folder'] + '/' + '%i_0.png' % self.current_shot_number)
-
+        # self.signals.imageProcessed.emit("%i %i" % (self.current_shot_number,self.scan_parameters.current_indexs[0]))
         if self.current_shot_number < self.number_of_shots - 1: # same shots to average
             self.current_shot_number += 1
             self.progressBar.setValue(self.scan_parameters.current_indexs[0] +
@@ -242,12 +255,18 @@ class Scanner(QWidget):
         # self.globals['image_stack'].append(
         #     self.globals['current_data_folder'] + '/' + '%i_0.png' % self.current_shot_number)
         changed_index = self.scan_parameters.updateIndexes() # for nested scans
-        if changed_index != 0:
-            # we proceed to the next outter parameter
+        # if changed_index != 0:
+        #     self.signals.singleScanFinished.emit()
+        if changed_index > 0:
+            # we proceed to the next outer parameter
+            self.signals.singleScanFinished.emit()
             self.scan_parameters.updateAdditionalName()     # update additional name
             self.meas_folder1.current_meas_number += 1      # increment meas folder number
             self.meas_folder1.gui.updateMeasFolder()
             # os.mkdir()    # create new measurement folder
+            self.globals['current_measurement_folder'] = self.meas_folder1.day_folder.strip() + '/' + self.meas_folder1.name.strip()
+            print(os.makedirs(self.globals['current_measurement_folder'], exist_ok=True))
+            self.writeMeasConfig()
 
         self.updateParamAndSend(changed_index) # update parameter on scan
 
@@ -296,6 +315,9 @@ class Scanner(QWidget):
         self.stop_btn.setText('Stop')
         self.scan_btn.setText('On scan!')
         self.on_scan = True
+        # print('scan_starteeeed')
+        print(self.globals['active_params_list'])
+        self.signals.scanStarted.emit()
 
     def notesChanged(self):
         print('notesChanged')

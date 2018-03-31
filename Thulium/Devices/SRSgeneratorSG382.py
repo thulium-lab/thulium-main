@@ -151,6 +151,7 @@ class SRSGenerator(QWidget):
         super().__init__()
         self.setWindowTitle('SRS SG382')
         self.initUI()
+        self.setMaximumWidth(500)
         self.sendScanParams()
         print(self)
 

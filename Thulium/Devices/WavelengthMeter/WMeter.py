@@ -37,6 +37,7 @@ class WMChannel:
         self.color = color
         self.show_spectrum = True
         self.frequency = 1
+        self.single = False
 
     # @property
     # def frequency(self):
@@ -58,7 +59,7 @@ class WMChannel:
             self.btn_f.setChecked(self.data.unit != 'nm')
             # self.btn_f.toggled.connect(self.unitChanged)  # (lambda: self.unitChange(self.btn_f))
             layout1.addWidget(self.btn_f)
-            self.show_sp_chbx = QCheckBox()
+            self.show_sp_chbx = QCheckBox('Show')
             self.show_sp_chbx.setChecked(self.data.show_spectrum)
             self.show_sp_chbx.toggled.connect(self.showSpectrum)
             layout1.addWidget(self.show_sp_chbx)
@@ -71,12 +72,16 @@ class WMChannel:
             self.col_btn.setStyleSheet("QWidget { background-color: %s }"% self.data.color.name())
             self.col_btn.clicked.connect(self.changeColor)
             layout1.addWidget(self.col_btn)
-            layout1.addStretch(1)
             # implemented in main window
             # self.show_box = QCheckBox('Show')
             # self.show_box.setChecked(False)
             # self.show_box.stateChanged.connect(lambda:self.showSpectrum(self.show_box.checkState()))
             # layout1.addWidget(self.show_box)
+            self.single_check_box = QCheckBox(text='Single')
+            self.single_check_box.setChecked(self.data.single)
+            self.single_check_box.toggled.connect(self.setSingle)
+            layout1.addWidget(self.single_check_box)
+            layout1.addStretch(1)
 
             main_layout.addLayout(layout1)
 
@@ -124,6 +129,10 @@ class WMChannel:
             self.parent.data.save()
             # pass to parent
 
+        def setSingle(self,b):
+            self.data.single = b
+            self.parent.updateSingleChannel(self.data.name, self.data.single)
+            # self.parent.data.save()
 
 class WMMain():
     channels = []
@@ -248,24 +257,25 @@ class WMMain():
             timer_len.valueChanged.connect(self.temerIntervalChanged)
             menu_layout.addWidget(timer_len)
 
-            mode_group = QButtonGroup()
-            self.all_btn = QRadioButton('all')
-            self.all_btn.setChecked(self.data.mode=='all')
-            self.all_btn.toggled.connect(self.modeChanged)
-            mode_group.addButton(self.all_btn)
-            menu_layout.addWidget(self.all_btn)
-
-            self.single_btn = QRadioButton('single')
-            self.single_btn.setChecked(self.data.mode != 'all')
-            self.single_btn.toggled.connect(self.modeChanged)
-            mode_group.addButton(self.single_btn)
-            menu_layout.addWidget(self.single_btn)
-
-            single_menu_btn = QPushButton('Single ch.')
-            single_menu = QMenu(single_menu_btn)
-            single_menu.aboutToShow.connect(self.updateSingleMenu)
-            single_menu_btn.setMenu(single_menu)
-            menu_layout.addWidget(single_menu_btn)
+            menu_layout.addWidget(QLabel('msec'))
+            # mode_group = QButtonGroup()
+            # self.all_btn = QRadioButton('all')
+            # self.all_btn.setChecked(self.data.mode=='all')
+            # self.all_btn.toggled.connect(self.modeChanged)
+            # mode_group.addButton(self.all_btn)
+            # menu_layout.addWidget(self.all_btn)
+            #
+            # self.single_btn = QRadioButton('single')
+            # self.single_btn.setChecked(self.data.mode != 'all')
+            # self.single_btn.toggled.connect(self.modeChanged)
+            # mode_group.addButton(self.single_btn)
+            # menu_layout.addWidget(self.single_btn)
+            #
+            # single_menu_btn = QPushButton('Single ch.')
+            # single_menu = QMenu(single_menu_btn)
+            # single_menu.aboutToShow.connect(self.updateSingleMenu)
+            # single_menu_btn.setMenu(single_menu)
+            # menu_layout.addWidget(single_menu_btn)
 
             main_layout.addLayout(menu_layout)
 
@@ -343,6 +353,18 @@ class WMMain():
                     self.data.single_index = i
                     break
             # print('single index ', self.data.single_index)
+
+        def updateSingleChannel(self,name,status):
+            if not status:
+                self.data.mode = 'all'
+            else:
+                self.data.mode = 'single'
+                for i, channel in enumerate(self.data.channels):
+                    if channel.name == name:
+                        self.data.single_index = i
+                    else:
+                        channel.single = False
+            self.data.save()
 
         def keyPressEvent(self, QKeyEvent):
             if QKeyEvent.key() == Qt.Key_F5 and self.shotN == 0 and self.signals:

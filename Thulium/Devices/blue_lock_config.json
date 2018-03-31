@@ -1,1 +1,1 @@
-{"threshold_srs_error": 0.003, "srs_port": "COM4", "sacher_port": "COM13", "correction_limit": 0.2}
+{"srs_port": "COM8", "threshold_srs_error": 0.003, "correction_limit": 0.2, "sacher_port": "COM7"}

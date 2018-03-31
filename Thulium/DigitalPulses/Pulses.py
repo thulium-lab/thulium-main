@@ -152,7 +152,7 @@ class PulseScheme(QWidget):
         self.main_box.addLayout(self.hor_box)
         self.setLayout(self.main_box)
         # self.onAnyChange()
-        self.setMinimumHeight(450)
+        self.setMinimumHeight(350)
 
     def channelsDraw(self):
         print('channelsDraw')
@@ -284,7 +284,7 @@ class PulseScheme(QWidget):
                         # print(self.congi)
                 if fname.endswith(pulse_name_suffix):
                     with open(os.path.join(digital_pulses_folder, fname), 'rb') as f:
-                        print(fname)
+                        # print(fname)
                         data_to_read = pickle.load(f)
                         self.all_schemes[fname[:fname.find(pulse_name_suffix)]] = data_to_read['current_groups']
                         self.active_channels = data_to_read['active_channels']
@@ -504,9 +504,9 @@ class PulseScheme(QWidget):
                 #                 msg += str(val[i][1])# + '_'
                 #     msg += ' '
                 # msg = msg[:-1] + '!'
-                print('OLD MSG ', self.constructArduinoMessageOld(shutters_data))
+                #print('OLD MSG ', self.constructArduinoMessageOld(shutters_data))
                 msg = self.constructArduinoMessageNew(shutters_data)
-                print(msg)
+                #print(msg)
                 self.signals.shutterChange.emit(msg)
                 # status, res = self.parent.arduino.write_read_com(msg.encode('ascii'))
                 # if status:
@@ -620,7 +620,7 @@ class PulseScheme(QWidget):
             self.scan_params[group.name]['group'] = list(group.variables.keys())
             for pulse in group.pulses:
                 self.scan_params[group.name][pulse.name] = list(pulse.variables.keys())
-        print('Scan params',self.scan_params)
+        # print('Scan params',self.scan_params)
         # send scan parameters to global
         if self.globals != None:
             if scan_params_str not in self.globals:
@@ -687,7 +687,7 @@ class PulseGroup():
             self.initUI()
 
         def initUI(self):
-            print('initUI-scheme')
+            print('initUI-scheme PulseGroup')
             main_box = QVBoxLayout()
             topbox = QHBoxLayout()
             # main_box.setSpacing(2)
@@ -696,7 +696,7 @@ class PulseGroup():
 
             self.ref_channel_combo_box = QComboBox()
             self.ref_channel_combo_box.addItem('0')
-            self.ref_channel_combo_box.addItems([group.name for group in self.scheme.current_groups])
+            self.ref_channel_combo_box.addItems([group.name for group in self.scheme.current_groups if group!=self.data])
             self.ref_channel_combo_box.setCurrentText(self.data.reference)
             self.ref_channel_combo_box.currentTextChanged.connect(self.groupReferenceChanged)
             topbox.addWidget(self.ref_channel_combo_box)
@@ -764,7 +764,7 @@ class PulseGroup():
             self.grid_layout.addWidget(group_is_active, self.group_row, self.columns.index('Active'),Qt.AlignCenter)
             # add individual pulse data
             for i, pulse in enumerate(self.data.pulses):
-                print(pulse)
+                #print(pulse)
                 # print('pulse',i)
                 pulse_row = i + 2
 
@@ -837,11 +837,11 @@ class PulseGroup():
             # QScrollArea().setWidget(self)
 
         def getPulseNumber(self):
-            print('getPulseNumber')
+            print('getPulseNumber', end='    ')
             index = self.grid_layout.indexOf(self.sender())
             print(index)
             row, column, cols, rows = self.grid_layout.getItemPosition(index)
-            print(row, column, cols, rows)
+            #print(row, column, cols, rows)
             if row == self.group_row:
                 return -1
             else:
@@ -954,7 +954,11 @@ class PulseGroup():
             pulse_number = self.getPulseNumber()
             if pulse_number == -1:
                 # group edge was changed
+                if self.data.reference == '0' and new_delay < 0: # if group referenced to 0
+                    self.sender().setValue(0)
+                    return
                 self.data.variables['delay'] = new_delay
+
             else:
                 self.data.pulses[pulse_number].variables['delay'] = new_delay
             self.scheme.changeInGroup() # call for parent method

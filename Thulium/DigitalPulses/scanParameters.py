@@ -1,4 +1,4 @@
-import os
+import os, sys
 import matplotlib
 matplotlib.use('Qt5Agg',force=True)
 
@@ -14,7 +14,10 @@ from numpy import *
 from itertools import chain
 import sympy as sp
 from sympy.parsing.sympy_parser import parse_expr
-
+if r'D:\!Data' not in sys.path:
+    sys.path.append(r'D:\!Data')
+import thulium_python_lib.usefull_functions as usfuncs
+from thulium_python_lib.usefull_functions import *
 scan_params_str = 'scan_params'
 data_directory = 'D:\!Data'
 scan_folder_data_str = 'scan_folder_data'
@@ -28,15 +31,16 @@ class SingleScanParameter():
     param_list = []
     current_index = 0
     current_value = 0
-
+    param_line = ''
     def __init__(self, param_dict=None):
         """param_dict - dictionary of params from storage, if None - default attributes"""
         if type(param_dict) == type({}):
             for key, value in param_dict.items():
-                try:
-                    setattr(self, key, value)
-                except AttributeError:
-                    print('Error while loading key',key)
+                if key not in ['length']:
+                    try:
+                        setattr(self, key, value)
+                    except AttributeError:
+                        print('Error while loading key',key)
         elif param_dict:
             QMessageBox.warning(None, 'Message', "param_dict in SingelScanParamer is not a dictionary", QMessageBox.Ok)
         else:
@@ -90,9 +94,14 @@ class AllScanParameters():
         checkLength  should be called before to construct self.active_params_list"""
         if start:
             self.current_indexs = [0] * len(self.active_params_list)
+            scan_params_list = []
             for group in self.active_params_list:
+                l = []
                 for param in group:
                     param.current_value = param.param_list[0]
+                    l.append(param.param_list.copy())
+                scan_params_list.append(l)
+            self.globals['active_params_list'] = scan_params_list
             # print(self.current_indexs)
             return len(self.current_indexs) - 1
         else:
@@ -197,7 +206,7 @@ class AllScanParameters():
             grid = QGridLayout()
             row = 1
             for i, param_level in enumerate(self.data.all_params_list):
-                print(param_level)
+                # print(param_level)
                 for j, param in enumerate(param_level):
                     param.nesting=i
                     ch_box = QCheckBox()
@@ -220,7 +229,11 @@ class AllScanParameters():
 
                     grid.addWidget(QLabel(str(i)), row, self.scan_grid_elems['index'])
 
-                    param_line = QLineEdit(' '.join([str(int(num) if (num).is_integer() else num) for num in param.param_list]))
+                    param_line = QLineEdit()
+                    if param.param_line:
+                        param_line.setText(param.param_line)
+                    else:
+                        param_line.setText(' '.join([str(num) for num in param.param_list]))
                     param_line.editingFinished.connect(self.paramLineChanged)
                     grid.addWidget(param_line, row, self.scan_grid_elems['line'])
 
@@ -314,12 +327,25 @@ class AllScanParameters():
 
         def paramLineChanged(self):
             print('paramLineChanged')
-            s = self.sender().text()
-            arr = [float(elem) for elem in re.findall('(-?\d+\.?\d*)', s)]
+            s = self.sender().text().strip()
+
+            if s[0] == '%':     # magic command
+                # s = s[1:]
+                print('COMMAND', s)
+                try:
+                    arr = [i for i in eval(s[1:])]
+                    print('RESULT ARRAY', arr)
+                except Exception as e:
+                    print(e)
+                    QMessageBox.warning(self,'ACHTUNG!!!','Bad function' + s)
+                    return
+            else:
+                arr = [float(elem) for elem in re.findall('(-?\d+\.?\d*)', s)]
+                self.sender().setText(' '.join([str(num) for num in arr]))
             changed_parameter = self.getChangedParameter()
+            changed_parameter.param_line=s
             changed_parameter.param_list=arr
             self.saveToConfig()
-            self.sender().setText(' '.join([str(int(num) if (num).is_integer() else num) for num in arr]))
 
         def delScanParam(self):
             print('delScanParam')
@@ -358,7 +384,7 @@ class AllScanParameters():
                     lbl = self.grid.itemAt(itter*len(self.scan_grid_elems) + self.scan_grid_elems['current']).widget()
                     if param.is_active:
                         num =param.current_value
-                        lbl.setText(str(int(num) if (num).is_integer() else num))
+                        lbl.setText(str(num))
                     else:
                         lbl.setText('-') # '-' - default value if parameter is not active
                     lbl.repaint()
@@ -366,7 +392,7 @@ class AllScanParameters():
 
         def saveToConfig(self):
             """simultaneousely update global parameter additional_scan_param_name"""
-            print('saveToConfig')
+            print('saveConfig scanParameters')
             res = []
             self.data.updateActiveParameters()
             self.data.updateIndexes(start=True)
@@ -388,7 +414,7 @@ class MeasurementFolderClass():
     name = ''
     current_meas_number = 0
 
-    def __init__(self, globals=globals,parent=None):
+    def __init__(self, globals=None,parent=None):
         self.globals = globals
         # self.gui = self.folderUI(data=self,parent=parent)
 
@@ -506,12 +532,12 @@ class MeasurementFolderClass():
             params_str = ''
             for i in range(self.N_params):
                 p_item = self.param_table.item(0,i)
-                if p_item == None:
+                if p_item == None or len(p_item.text()) == 0:
                     continue
                 else:
                     params_str += ' ' + p_item.text()
                     v_item = self.param_table.item(1,i)
-                    if v_item != None:
+                    if v_item != None and len(v_item.text()) > 0:
                         params_str += '=' + v_item.text()
             print(params_str)
             self.data.other_params = params_str.strip()

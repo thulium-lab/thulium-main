@@ -1,10 +1,10 @@
 import os, sys, json, socket, ctypes
 from collections import OrderedDict
 
-from PyQt5.QtCore import (pyqtSignal, QTimer, QRect, Qt)
-from PyQt5.QtGui import (QIcon, QDoubleValidator)
+from PyQt5.QtCore import (pyqtSignal, QTimer, QRect, Qt, )
+from PyQt5.QtGui import (QIcon, QDoubleValidator, )
 from PyQt5.QtWidgets import (QPushButton, QHBoxLayout, QVBoxLayout, QLineEdit, QComboBox, QDoubleSpinBox, QApplication,
-                             QWidget, QLabel, QMenuBar, QAction, QFileDialog, QInputDialog)
+                             QWidget, QLabel, QMenuBar, QAction, QFileDialog, QInputDialog,QSizePolicy,QScrollArea )
 
 # Changed the way DDS widget is constructed - now it is done based on an ordered dictionary. It is only when forming string to send to BeagleBone parameters are called by name (key).
 # To add new parameter one should add entry to the LineDict, and then add this variable in __str__ method.
@@ -112,6 +112,7 @@ autoSave.setInterval(5000)
 
 
 class Line(QWidget):
+
     def __init__(self, parent,data={}):
         super().__init__(parent)
         self.parent = parent
@@ -148,8 +149,9 @@ class Line(QWidget):
         self.delBtn.clicked.connect(lambda: self.parent.delete(self))
         self.delBtn.setFixedWidth(30)
         layout.addWidget(self.delBtn)
-
+        # layout.addStretch(1)
         self.setLayout(layout)
+        # self.setMinimumHeight(50)
         self.update()
 
         # self.initUI()
@@ -225,7 +227,7 @@ class Line(QWidget):
         return 'setChannel(' + ','.join(map(str, args)) + ');'
 
 
-class DDSWidget(QWidget):
+class DDSWidget(QScrollArea):
     def __init__(self, parent=None, globals=None, signals=None):
         super(DDSWidget, self).__init__()
         self.parent = parent
@@ -249,6 +251,7 @@ class DDSWidget(QWidget):
         self.menuBar = QMenuBar(self)
 
         self.initUI()
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Preferred,QSizePolicy.Preferred))
         autoSave.timeout.connect(self.save)
         # self.autoSave.start()
 
@@ -267,15 +270,15 @@ class DDSWidget(QWidget):
 
         self.setWindowTitle('DDS')
         self.setWindowIcon(QIcon('Devices\dds.jpg'))
-
+        main_widget = QWidget()
         mainLayout = QVBoxLayout()
-        mainLayout.addSpacing(20)
+        # mainLayout.addSpacing(10)
 
         fields = QHBoxLayout()
-        fields.addSpacing(15)
+        # fields.addSpacing(15)
         for key,val in LineDict.items():
-            fields.addWidget(QLabel(key), val[-1])
-        fields.addStretch(50)
+            fields.addWidget(QLabel(key))#, val[-1])
+        # fields.addStretch(50)
         mainLayout.addLayout(fields)
 
         for line in self.lines:
@@ -284,10 +287,14 @@ class DDSWidget(QWidget):
         addLine = QPushButton('add line')
         addLine.clicked.connect(self.addLine)
         mainLayout.addWidget(addLine)
+        main_widget.setLayout(mainLayout)
+        main_widget.setMaximumWidth(1400)
+        self.setWidget(main_widget)
+        self.setMinimumHeight(200)
+        # mainLayout.addStretch()
+        # self.setMinimumWidth(500)
 
-        mainLayout.addStretch()
-        self.setMinimumWidth(1500)
-        self.setLayout(mainLayout)
+        # self.setLayout(mainLayout)
 
 
     def addLine(self):

@@ -15,37 +15,38 @@ name_in_scan_params = 'GPD 3303'
 
 class GPD(COMPortDevice):
     identification_names = ['GW INSTEK', 'GPD-3303D', 'SN:EO894799']
-    timeout = 0.5
-    
+    timeout = 2.5
+    port = 'COM6'
+    check_answer = 'FTDI'
     def connect(self,idn_message=b'*IDN?\r'):
         return super().connect(b'REMOTE\n*IDN?\n')
     
-    def preCheck(self,port=None):
-        if port:
-            return (port.manufacturer == 'FTDI' and port.serial_number == 'AH02602GA')
-        else:
-            for port in list(list_ports.comports()):
-                if port.manufacturer == 'FTDI' and port.serial_number == 'AH02602GA':
-                    self.port = port.device
+    # def preCheck(self,port=None):
+    #     if port:
+    #         return (port.manufacturer == 'FTDI' and port.serial_number == 'AH02602GA')
+    #     else:
+    #         for port in list(list_ports.comports()):
+    #             if port.manufacturer == 'FTDI' and port.serial_number == 'AH02602GA':
+    #                 self.port = port.device
 
     def setV1(self, V1):
         s = 'VSET1:%s\n' %(V1)
-        status,readout = self.write_read_com(s.encode())
+        status,readout = self.write_com(s.encode())
         print(status, readout)
 
     def setV2(self, V2):
         s = 'VSET2:%s\n' %(V2)
-        status,readout = self.write_read_com(s.encode())
+        status,readout = self.write_com(s.encode())
         print(status, readout)
 
     def setI1(self, I1):
         s = 'ISET1:%s\n' % (I1)
-        status,readout = self.write_read_com(s.encode())
+        status,readout = self.write_com(s.encode())
         print(status, readout)
 
     def setI2(self, I2):
         s = 'ISET2:%s\n' %(I2)
-        status,readout = self.write_read_com(s.encode())
+        status,readout = self.write_com(s.encode())
         print(status, readout)
 
     def getV1(self):
@@ -77,7 +78,7 @@ class GPD(COMPortDevice):
             on = 1
         else:
             on = 0
-        status, readout = self.write_read_com(b'OUT%d\n' %(on))
+        status, readout = self.write_com(b'OUT%d\n' %(on))
         print(status, readout)
 
 class MyBox(QLineEdit):
@@ -141,6 +142,7 @@ class GPDwidget(QWidget):
         self.setWindowTitle('GPD 3303')
         self.on_btn = QPushButton('off')
         self.initUI()
+        self.setMaximumWidth(500)
         self.sendScanParams()
 
     def initUI(self):

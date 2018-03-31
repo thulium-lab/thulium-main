@@ -1,9 +1,9 @@
 import sys, ctypes, time, functools
 
-from PyQt5.QtCore import (Qt, QObject, pyqtSignal, QSettings)
-from PyQt5.QtGui import (QIcon)
+from PyQt5.QtCore import (Qt, QObject, pyqtSignal, QSettings,)
+from PyQt5.QtGui import (QIcon,)
 from PyQt5.QtWidgets import (QApplication, QMdiSubWindow, QDesktopWidget, QSplitter, QMainWindow, QTextEdit, QAction,
-                             QMessageBox)
+                             QMessageBox,QDockWidget,QScrollArea,)
 
 from DigitalPulses.Pulses import PulseScheme, PulseGroup, IndividualPulse, AnalogPulse
 from DigitalPulses.scanner import Scanner
@@ -74,6 +74,8 @@ class MainWindow(QMainWindow):
         self.widgets['Scanner'].windowed = 2
         # self.slots_to_bound['cycleFinished'].connect(self.widgets['Scanner'].cycleFinished)
         # self.triggerCycle.connect(self.widgets['Scanner'].cycleFinished)
+        w = QScrollArea()
+
         self.widgets['DDS'] = DDSWidget(parent=self, globals=self.globals, signals=self.signals)
         self.widgets['DDS'].windowed = 1
 
@@ -106,7 +108,6 @@ class MainWindow(QMainWindow):
         self.all_updates_methods['GPD 3303'] = self.widgets['GPD 3303'].getUpdateMethod()
 
         self.server = PyServer(self, self.signals, self.globals)
-
         self.initUI()
 
 
@@ -115,12 +116,39 @@ class MainWindow(QMainWindow):
     def initUI(self):
         bar = self.menuBar()
         openMenu = bar.addMenu('&Open')
-
         splitter = QSplitter(Qt.Vertical)
         # splitter.setSizes([50,50])
         self.setCentralWidget(splitter)
+        splitter.addWidget(self.widgets['Pulses'])  # explicitly state the order
+        splitter.addWidget(self.widgets['PulsePlot'])
 
+        self.setCentralWidget(splitter)
+        # dock1 = QDockWidget('plots',self)
+        # dock1.setWidget(self.widgets['PulsePlot'])
+        # self.addDockWidget(Qt.BottomDockWidgetArea, dock1)
+        dock2 = QDockWidget('scan', self)
+        dock2.setWidget(self.widgets['Scanner'])
+        self.addDockWidget(Qt.RightDockWidgetArea, dock2)
+        # w = QScrollArea()
+        # w.setWidget(self.widgets['DDS'])
+        # w.setMinimumHeight(200)
+        dock3 = QDockWidget('dds', self)
+        dock3.setWidget(self.widgets['DDS'])
+        self.addDockWidget(Qt.BottomDockWidgetArea, dock3)
+        dock4 = QDockWidget('ClockGenerator', self)
+        dock4.setWidget(self.widgets['ClockGenerator'])
+        self.addDockWidget(Qt.BottomDockWidgetArea, dock4)
+
+        dock5 = QDockWidget('GWInstek', self)
+        dock5.setWidget(self.widgets['GPD 3303'])
+        self.addDockWidget(Qt.BottomDockWidgetArea, dock5)
+
+        self.tabifyDockWidget(dock5,dock4)
+        self.setWindowState(Qt.WindowMaximized)
+        # self.setWindowState(Qt.WindowFullScreen)
         for widget in self.widgets:
+            if widget in ['Pulses','PulsePlot','Scanner','DDS','ClockGenerator','GPD 3303']:
+                continue
             if self.widgets[widget].windowed:
                 if self.widgets[widget].windowed > 1:
                     self.widgets[widget].show()
@@ -129,8 +157,8 @@ class MainWindow(QMainWindow):
                 openMenu.addAction(action)
             else:
                 pass # splitter.addWidget(self.widgets[widget]) # might be wrong order
-        splitter.addWidget(self.widgets['Pulses']) # explicitly state the order
-        splitter.addWidget(self.widgets['PulsePlot'])
+        # splitter.addWidget(self.widgets['Pulses']) # explicitly state the order
+        # splitter.addWidget(self.widgets['PulsePlot'])
 
         # self.setFixedWidth(self.screenSize.width())
         # self.widgets['WavelengthMeter'].show()
