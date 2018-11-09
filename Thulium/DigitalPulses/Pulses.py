@@ -5,7 +5,7 @@ import datetime
 from PyQt5.QtCore import (Qt, QObject, pyqtSignal, QTimer)
 from PyQt5.QtWidgets import (QApplication, QScrollArea, QFrame, QMenu, QGridLayout, QVBoxLayout, QHBoxLayout,
                              QDialog, QLabel, QLineEdit, QPushButton, QWidget, QComboBox,QRadioButton, QCheckBox,
-                             QTabWidget, QFileDialog, QMessageBox, QDoubleSpinBox)
+                             QTabWidget, QFileDialog, QMessageBox, QDoubleSpinBox, QSpinBox)
 from copy import deepcopy
 from sympy.utilities.lambdify import lambdify
 from sympy.parsing.sympy_parser import parse_expr
@@ -264,7 +264,10 @@ class PulseScheme(QWidget):
         self.tabbox.clear()
         # print('Current scheme: ', self.current_scheme)
         for group in self.current_groups:
-            tab = group.PulseGroupQt(scheme=self, data=group)
+            tab = QScrollArea()
+            tab.setWidget(group.PulseGroupQt(scheme=self, data=group))
+            tab.setFrameShape(QFrame.NoFrame)
+            tab.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
             self.tabbox.addTab(tab, group.name)
         self.tabbox.setCurrentIndex(tab_index)
         self.updateChannels()
@@ -377,6 +380,7 @@ class PulseScheme(QWidget):
                     print('smth rong with config file')
                     config = {}
         config['current_scheme'] = self.current_scheme
+        print('CONFIG',config)
         with open(os.path.join(digital_pulses_folder, config_scheme_file)+'.json', 'w') as f:
             config['digital_channels']=[str(i) for i in range(8,31)]
             json.dump(config, f)
@@ -716,7 +720,7 @@ class PulseGroup():
             topbox.addStretch(1)
             main_box.addLayout(topbox)
 
-            self.columns = ['Del','Channel','Name','Edge','Delay','Length','Active','Special']
+            self.columns = ['Del','Channel','Name','Edge','Delay','Length','N','Active','Special']
             self.edges = ['Begin', 'End']
             self.label_row = 1
             self.group_row = 0
@@ -767,7 +771,8 @@ class PulseGroup():
                 #print(pulse)
                 # print('pulse',i)
                 pulse_row = i + 2
-
+                if 'N' not in pulse.__dict__:
+                    pulse.N = 1
                 del_button = QPushButton('Del')
                 del_button.setMaximumWidth(40)
                 del_button.clicked.connect(self.deletePulse)
@@ -807,6 +812,13 @@ class PulseGroup():
                 pulse_length.setValue(pulse.variables['length'])
                 pulse_length.valueChanged.connect(self.lengthChanged)
                 self.grid_layout.addWidget(pulse_length, pulse_row, self.columns.index('Length'))
+
+                pulse_N = QSpinBox()
+                pulse_N.setMinimum(1)
+                pulse_N.setMaximum(999)
+                pulse_N.setValue(pulse.N)
+                pulse_N.valueChanged.connect(self.nChanged)
+                self.grid_layout.addWidget(pulse_N, pulse_row, self.columns.index('N'))
 
                 pulse_is_active = QCheckBox()
                 pulse_is_active.setChecked(pulse.is_active)
@@ -972,6 +984,17 @@ class PulseGroup():
             else:
                 self.data.pulses[pulse_number].variables['length'] = new_length
             self.scheme.changeInGroup() # call for parent method
+
+        def nChanged(self,new_N):
+            print('lengthChanged')
+            pulse_number = self.getPulseNumber()
+            if pulse_number == -1:
+                # group edge was changed
+                self.data.variables['length'] = new_N
+            else:
+                self.data.pulses[pulse_number].N = new_N
+            self.scheme.changeInGroup() # call for parent method
+
 
         def groupNameChanged(self):
             print('groupNameChanged')
@@ -1298,7 +1321,7 @@ class PulseGroup():
 
 class IndividualPulse():
 
-    def __init__(self, group=None, name='',channel='0', edge=0, delay=0, length=0, is_active=False):
+    def __init__(self, group=None, name='',channel='0', edge=0, delay=0, length=0, is_active=False, N=1):
         self.name = name   # name of the pulse
         # self.group = group # group of pulses it belongs to
         self.channel = channel # physical channel of the signal (or may be name in dictionary)
@@ -1307,6 +1330,7 @@ class IndividualPulse():
                           'length':length}  # for easy scanning
         self.is_active = is_active
         self.shutters = []
+        self.N = N
 
     def updateTime(self,group):
         if not self.edge:
@@ -1329,10 +1353,25 @@ class IndividualPulse():
                 self.t_start = self.t_end + self.variables['length']
 
     def getPoints(self,idle):
-        if self.t_start == self.t_end: #i.e. pulse length is 0
-            return []
-        else:
-            return [(self.t_start,1),(self.t_end,0)]
+        if 'N' not in self.__dict__:
+            self.N = 1
+        if self.N == 1:
+            if self.t_start == self.t_end: #i.e. pulse length is 0
+                return []
+            else:
+                return [(self.t_start,1),(self.t_end,0)]
+        elif self.N > 1:
+            t_d = self.variables['delay']
+            t_l = self.variables['length']
+            if t_d <=0 or t_l <= 0:
+                return []
+            t0 = self.t_start - t_d
+            res = []
+            for i in range(self.N):
+                res.extend([(t0+i*(t_d+t_l),1),(t0+t_l+i*(t_d+t_l),0)])
+            #[(t0+i*(t_d+t_l),1),(t0+t_l+i*(t_d+t_l)) for i in range(self.N)]
+            print(res)
+            return res
 
     def updateConnectedShutters(self, old_name, new_name):
         print('updateConnectedShutters')

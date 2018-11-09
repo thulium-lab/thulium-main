@@ -462,10 +462,16 @@ class MeasurementFolderClass():
             # other_params_box = QLineEdit(self.data.other_params)
             # other_params_box.editingFinished.connect(self.otherParamsChanged)
             # hor1.addWidget(other_params_box)
+            addPparam_btn = QPushButton('Add param')
+            addPparam_btn.clicked.connect(self.addParamClicked)
+            hor1.addWidget(addPparam_btn)
 
             main_layout.addLayout(hor1)
 
+            self.N_params = len(self.data.other_params.split())
             self.param_table = QTableWidget(2,self.N_params)
+            self.param_table.horizontalHeader().setResizeMode(QHeaderView.ResizeToContents)
+            self.param_table.horizontalHeader().setMinimumSectionSize(60)
             self.param_table.setVerticalHeaderLabels(['param','value'])
             self.param_table.setMaximumHeight(80)
             for i,s in enumerate(self.data.other_params.split()):
@@ -504,6 +510,14 @@ class MeasurementFolderClass():
             main_layout.addLayout(hor2)
 
             self.setLayout(main_layout)
+
+        def addParamClicked(self):
+            n_col = self.param_table.columnCount()
+            self.param_table.insertColumn(n_col)
+            self.param_table.setItem(0,n_col,QTableWidgetItem('new'))
+            self.N_params = n_col+1
+            # self.param_table.viewport().update()
+            # print(self.param_table.columnCount())
 
         def dayBtnPressed(self):
             print("dayBtnPressed")

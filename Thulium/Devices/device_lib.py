@@ -2,8 +2,10 @@
 from serial import Serial#
 import socket
 from serial import SerialException
-from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout,QComboBox, QHBoxLayout,QLineEdit, QLabel
+from PyQt5.QtWidgets import (QWidget, QPushButton, QVBoxLayout,QComboBox, QHBoxLayout,QLineEdit, QLabel)
 from serial.tools import list_ports
+from PyQt5.QtCore import (QLineF, QPointF, QRectF, Qt, QTimer)
+from PyQt5.QtGui import (QBrush, QColor, QPainter,QIcon, QDoubleValidator)
 
 class COMPortDevice:
     """General class for com ports. """
@@ -70,6 +72,7 @@ class COMPortDevice:
             print(e)
             self.stream = None
             return -2
+
     def write_com(self,command):
         status = True
         readout = ''
@@ -133,6 +136,7 @@ class COMPortDevice:
             write_layout.addWidget(send_btn)
 
             layout.addLayout(write_layout)
+            layout.addStretch(1)
             self.setLayout(layout)
             self.updateBtnPressed() #to update com ports
 
@@ -376,3 +380,56 @@ if __name__ == '__main__':
     mainWindow = device.BasicWidget(data=device,connect=False)
     mainWindow.show()
     sys.exit(app.exec_())
+
+class MyBox(QLineEdit):
+    def __init__(self, *args,valid = (10,999,6),value=0, **kwargs):
+        self.valid = valid
+        super(MyBox, self).__init__(*args, **kwargs)
+        self.setValidator(QDoubleValidator(*valid))
+        self.setText(str(value))
+
+    def setValue(self,new_val):
+        self.setText(str(new_val))
+    def keyPressEvent(self, QKeyEvent):
+        print(self.hasAcceptableInput())
+        if not self.hasAcceptableInput():
+            print('Out of range se')
+            return
+        p = 0
+        if QKeyEvent.key() == Qt.Key_Up:
+            p = 1
+        if QKeyEvent.key() == Qt.Key_Down:
+            p = -1
+        if p == 0:
+            return super(MyBox, self).keyPressEvent(QKeyEvent)
+        number = [x for x in self.text()]
+        val = float(self.text())
+        position = self.cursorPosition()
+        decimal_position = self.text().find('.') if self.text().find('.') != -1 else len(self.text())
+        # print(position,decimal_position)
+        if position <= decimal_position:
+            factor = decimal_position - position
+        else:
+            factor = decimal_position -position + 1
+        # print('factor',factor)
+        new_val = val + p*10**factor
+        if new_val >= self.valid[0] and new_val<= self.valid[1]:
+            self.setText('%.5f'%(new_val))
+        # pos = position - 1
+        # while p and pos >= 0:
+        #     if ('0' < number[pos] < '9') or (number[pos] == '9' and p < 0) or (number[pos] == '0' and p > 0):
+        #         number[pos] = chr(ord(number[pos]) + p)
+        #         p = 0
+        #     elif number[pos] == '9':
+        #         number[pos] = '0'
+        #     elif number[pos] == '0':
+        #         number[pos] = '9'
+        #     pos -= 1
+        # if p == 1:
+        #     number = '1' + ''.join(number)
+        #     position += 1
+        # self.setText(''.join(number))
+        self.setCursorPosition(position)
+
+    def value(self):
+        return float(self.text())

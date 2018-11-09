@@ -14,13 +14,13 @@ from matplotlib.pyplot import imread
 from PyQt5.QtCore import (QTimer, Qt,QRect)
 from PyQt5.QtGui import (QIcon, QFont,QTransform)
 from PyQt5.QtWidgets import (QApplication, QDesktopWidget, QHBoxLayout, QLabel, QWidget, QSpinBox, QCheckBox,
-                             QMessageBox,QVBoxLayout,QHeaderView)
+                             QMessageBox,QVBoxLayout,QHeaderView, QPushButton,QComboBox, QLineEdit)
 
 sys.path.append(r'D:\!Data')
 
 import thulium_python_lib.usefull_functions as usfuncs
 import thulium_python_lib.image_processing_new as impr
-
+import  thulium_python_lib.fit_func_lib as fit_func_lib
 myAppID = u'LPI.Camera' # arbitrary string
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myAppID)
 
@@ -28,7 +28,13 @@ pg.setConfigOptions(imageAxisOrder='row-major')
 
 ds_dir = r'D:\!Data\2016_04_22\01 T no_ramp a=-6 f=363.9 b=0.8'
 
+import socket
+HOST, PORT = "192.168.1.59", 9999
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.settimeout(0.01)
+
 class CameraWidget(QWidget):
+
     def __init__(self,parent=None,
                  config_file='cam_config.json',
                  image_name='image',
@@ -276,12 +282,14 @@ class CameraWidget(QWidget):
         # show image
         self.img.setImage(self.parent.globals[self.image_name],autoRange=True, autoLevels=False,autoHistogramRange=False,autoDownsample=True)
         # handle image saving
+        saved = False
         if self.parent.globals.get(self.image_stack_name):
             # print(self.parent.globals.get(self.image_stack_name))
             self.new_data.image_url = self.parent.globals.get(self.image_stack_name)[0]
-            self.save_image()
+            saved = self.save_image()
         else:
             print('Recieved image at time ', datetime.datetime.now().time())
+            saved = True
             pass
         # smth needed for browser version
         if self.img.qimage is None:
@@ -298,15 +306,22 @@ class CameraWidget(QWidget):
         # fully process image and show fit data
         self.data_processing()
         self.parent.globals[self.image_name + '_new_data'] = self.new_data  # update image data in global for futher access
-        self.parent.signals.imageProcessed.emit(self.image_name + '_new_data') # emit signal for data handler
+        if saved:
+            self.parent.signals.imageProcessed.emit(self.image_name + '_new_data') # emit signal for data handler
         # this may be implemented in thread
         # sthrd = threading.Thread(target=self.data_processing))
         # sthrd.start()
 
     def save_image(self):
         im_name = self.parent.globals[self.image_stack_name].pop(0)
+        try:
+            if im_name.split('/')[-1][0] == '-':
+                return False
+        except Exception as err:
+            print(err)
         print('Save image ', im_name, 'at time ', datetime.datetime.now().time())
         scipy.misc.toimage(self.new_data.image, cmin=0, cmax=1).save(im_name)
+        return True
 
 class DisplayWidget(da.DockArea):
     def __init__(self, parent=None, globals=None, signals=None, **kwargs):
@@ -377,6 +392,7 @@ class DisplayWidget(da.DockArea):
         self.cam1 = CameraWidget(parent=self,
                                  config_file='cam1_config.json',
                                  image_name='image',
+                                 default_image=r"D:\Dropbox\Python\Thulium\DigitalPulses\default_camera2.tiff",
                                  image_stack_name='image_stack')
         self.d1.addWidget(self.cam1)
         self.cam2 = CameraWidget(parent=self,
@@ -403,7 +419,9 @@ class DisplayWidget(da.DockArea):
         plot_config_widget=QWidget()
         plot_config_layout = QHBoxLayout()
         plot_config_layout.addWidget(QLabel('N point to show'))
+
         n_points_spin = QSpinBox()
+        n_points_spin.setMaximum(10000)
         n_points_spin.setValue(self.N_point_to_plot)
         n_points_spin.valueChanged.connect(self.nPointsChanged)
         plot_config_layout.addWidget(n_points_spin)
@@ -421,13 +439,19 @@ class DisplayWidget(da.DockArea):
         # plot_config_layout.addWidget(self.w_max_spin)
 
         plot_config_layout.addStretch(1)
+
+
+        self.measurement = MeasurementClass(parent=self,signals=self.signals,globals=self.globals)
+        self.d5.addWidget(self.measurement)
+
+        deleteButton = QPushButton('delete from DB')
+        deleteButton.clicked.connect(self.measurement.deleteLast)
+        plot_config_layout.addWidget(deleteButton)
+
         plot_config_widget.setLayout(plot_config_layout)
         self.d3.addWidget(plot_config_widget)
         self.signals.newImageRead.connect(self.routine)
         self.signals.newImage2Read.connect(self.routine2)
-
-        self.measurement = MeasurementClass(parent=self,signals=self.signals,globals=self.globals)
-        self.d5.addWidget(self.measurement)
 
     def nPointsChanged(self,new_val):
         self.N_point_to_plot = new_val
@@ -472,6 +496,20 @@ class DisplayWidget(da.DockArea):
             self.curve11.setData(xx,dataN[:,0])
             self.curve12.setData(xx, dataN[:, 1])
 
+            # # ATTENTION ---------------------------------------
+            # msg = 'LOCK_BY_WM %s\n' % ('Ti:Sa')
+            # sock.sendto(bytes(msg, "utf-8"), (HOST, PORT))
+            # received = str(sock.recv(1024), "utf-8")
+            # # print("Received: {}".format(received))
+            # received = received.strip().split()
+            # if len(received) != 2:
+            #     self.unlock('No channel')
+            #     return
+            # meas_time = float(received[0])
+            # frequency = float(received[1])
+            # with open(r"D:\!Data\2018_10_08\TiSa.csv", "a") as f:
+            #     f.write(str(meas_time)+','+str(frequency)+','+str(data.fit1D_x[0])+','+str(data.fit1D_y[0])+'\n')
+
             dataW = np.array(self.all_plot_data['width'])
             # if self.w_max_spin:
             #     y_max = self.w_max_spin.value()
@@ -486,10 +524,12 @@ class MeasurementClass(QWidget):
 
     def __init__(self,parent=None,signals=None,globals=None):
         super().__init__()
+        self.dataD = {}
         self.fits_list = []
-        self.mdb_client = MongoClient('mongodb://localhost:27017/')  # or IP of MongoDB server
+        self.mdb_client = MongoClient('mongodb://192.168.1.59:27017/')  # or IP of MongoDB server
         self.meas_database = self.mdb_client.measData.meas_data
-
+        self.cb_axis_items=['fit1D_x','fit1D_y','fit2D']
+        self.cb_index_items = ['0','1','2','3','4']
         self.parent = parent
         self.signals = signals
         self.globals = globals
@@ -499,9 +539,47 @@ class MeasurementClass(QWidget):
 
         self.min_n_to_avr = 3   # minimal number of good images to start everaging
 
-        main_layout = QVBoxLayout()
+        main_layout = QHBoxLayout()
 
+        info_layout = QVBoxLayout()
+        info_layout.addWidget(QLabel('Fit'))
+        self.axis_box = QComboBox()
+        self.axis_box.addItems(self.cb_axis_items)
+        self.axis_box.setCurrentIndex(1)
+        self.axis_box.currentIndexChanged.connect(self.onFitParamChanged)
+        info_layout.addWidget(self.axis_box)
+
+        info_layout.addWidget(QLabel('Index'))
+        self.index_box = QComboBox()
+        self.index_box.addItems(self.cb_index_items)
+        self.index_box.setCurrentIndex(0)
+        self.index_box.currentIndexChanged.connect(self.onFitParamChanged)
+        info_layout.addWidget(self.index_box)
+
+        info_layout.addWidget(QLabel('Fit_func'))
+        self.fit_func_box = QComboBox()
+        self.fit_func_box.addItems([s for s in dir(fit_func_lib) if s[0]!='_'])
+        self.fit_func_box.setCurrentText('gaussian2')
+        self.fit_func_box.currentIndexChanged.connect(self.onFitParamChanged)
+        info_layout.addWidget(self.fit_func_box)
+
+        info_layout.addWidget(QLabel('p0'))
+        self.p0_line = QLineEdit()
+        self.p0_line.setMaximumWidth(200)
+        self.p0_line.editingFinished.connect(self.p0Edited)
+        info_layout.addWidget(self.p0_line)
+
+        info_layout.addWidget(QLabel('drop points (by #)'))
+        self.drop_points_line = QLineEdit()
+        self.drop_points_line.setMaximumWidth(200)
+        self.drop_points_line.editingFinished.connect(self.dropPointsEdited)
+        info_layout.addWidget(self.drop_points_line)
+
+        info_layout.addStretch(1)
+
+        main_layout.addLayout(info_layout)
         self.single_meas_plot = pg.PlotWidget(background='w',pen=pg.Color('k'))
+        # self.single_meas_plot.setMaximumWidth(400)
         # self.single_meas_plot.showGrid(x=True, y=True,alpha=0.5)
         self.single_meas_plot.getAxis('left').setPen(pg.Color('k'))
         self.single_meas_plot.getAxis('bottom').setPen(pg.Color('k'))
@@ -513,9 +591,33 @@ class MeasurementClass(QWidget):
                                                  symbolPen=None,symbolBrush=pg.Color('b'),symbolSize=15)
         self.curve4 = self.single_meas_plot.plot(np.array([]), pen=(0,0,255))
         self.plot_info = pg.TextItem(' ', anchor=(0,1),color=pg.Color('k'))
-
         main_layout.addWidget(self.single_meas_plot)
+
+        # self.single_meas_plot2 = pg.PlotWidget(background='w',pen=pg.Color('k'))
+        # self.single_meas_plot2.setMaximumWidth(400)
+        # # self.single_meas_plot.showGrid(x=True, y=True,alpha=0.5)
+        # self.single_meas_plot2.getAxis('left').setPen(pg.Color('k'))
+        # self.single_meas_plot2.getAxis('bottom').setPen(pg.Color('k'))
+        # self.curve21 = self.single_meas_plot2.plot(np.array([]), pen=None,symbol='o',
+        #                                          symbolPen=None,symbolBrush=(0,255,0),symbolSize=7)
+        # self.curve22 = self.single_meas_plot2.plot(np.array([]), pen=None,symbol='o',
+        #                                          symbolPen=None,symbolBrush=(255,0,0),symbolSize=7)
+        # self.curve23 = self.single_meas_plot2.plot(np.array([]), pen=None, symbol='+',
+        #                                          symbolPen=None,symbolBrush=pg.Color('b'),symbolSize=15)
+        # self.curve24 = self.single_meas_plot2.plot(np.array([]), pen=(0,0,255))
+        # self.plot_info = pg.TextItem(' ', anchor=(0,1),color=pg.Color('k'))
+
+        # main_layout.addWidget(self.single_meas_plot2)
         self.setLayout(main_layout)
+
+    def dropPointsEdited(self):
+        self.doFitMeasurement()
+
+    def p0Edited(self):
+        p0 = [float(s.strip()) for s in self.p0_line.text().split(',')]
+        if len(p0) == len(self.p0):
+            self.p0 = p0
+            self.doFitMeasurement()
 
     def onSingleScanFinished(self):
         # called when intermidiate measurement  in a series is finished
@@ -526,24 +628,27 @@ class MeasurementClass(QWidget):
         self.dataD = {}
         self.folder = self.globals['current_measurement_folder']
         self.meas_type, self.conf_params, self.x_lbl, self.y_lbl, self.xaxis_calib = impr.get_x_calibration(self.folder, [])
-        if self.meas_type =='T':
-            self.fit_data_index=2
-        else:
-            self.fit_data_index=0
+        # if self.meas_type =='T':
+        #     self.fit_data_index=2
+        # else:
+        #     self.fit_data_index=0
+        self.fit_data_index = int(self.index_box.currentText())
+
         self.single_meas_plot.setLabel('left', text=self.y_lbl)
         self.single_meas_plot.setLabel('bottom', text=self.x_lbl)
-        self.single_meas_plot.setTitle(self.folder,color=pg.Color('k'))
+        self.single_meas_plot.setTitle(self.folder.split('/')[-1],color=pg.Color('k'))
         self.curve1.setData([],[])
         self.curve2.setData([], [])
         self.curve3.setData([],[])
         self.curve4.setData([],[])
         self.single_meas_plot.removeItem(self.plot_info)
-        self.single_meas_plot.setXRange(min(self.globals['active_params_list'][0][0]),
-                                        max(self.globals['active_params_list'][0][0]))
+        self.single_meas_plot.setXRange(self.xaxis_calib(min(self.globals['active_params_list'][0][0])),
+                                        self.xaxis_calib(max(self.globals['active_params_list'][0][0])))
 
     def newDataArrived(self,image_data_name):
         # print('Image_data_name',image_data_name)
         new_image_data = self.parent.globals[image_data_name]
+        print('qwerty')
         if new_image_data.image_url == 'not_defined': # if scan is off
             return
         if not new_image_data.isgood: # for now, may be should be handled saparately
@@ -559,7 +664,7 @@ class MeasurementClass(QWidget):
             for d in current_data['ind']:
                 d.isgood = abs(d.fit1D_x[1] - m_c_x) < new_image_data.image.shape[0]/10
 
-            if  len([d.image for d in current_data['ind'] if d.isgood]) >= self.min_n_to_avr:
+            if len([d.image for d in current_data['ind'] if d.isgood]) >= self.min_n_to_avr:
                 avr_data = impr.Image_Basics(np.mean([d.image for d in current_data['ind'] if d.isgood],0),
                                              subs_bgnd=False)
                 try:
@@ -584,38 +689,78 @@ class MeasurementClass(QWidget):
         bad_points = []
         avr_points = []
         for key, item in self.dataD.items():
-            good_points.extend([(key,d.fit1D_x[self.fit_data_index]) for d in item['ind'] if d.isgood])
-            bad_points.extend([(key, d.fit1D_x[self.fit_data_index]) for d in item['ind'] if not d.isgood])
+            good_points.extend([(key,d.__dict__.get(self.axis_box.currentText())[self.fit_data_index]) for d in item['ind'] if d.isgood])
+            bad_points.extend([(key, d.__dict__.get(self.axis_box.currentText())[self.fit_data_index]) for d in item['ind'] if not d.isgood])
             if item['avr'] != None:
-                avr_points.append((key,item['avr'].fit1D_x[self.fit_data_index],item['std_avr']))
+                avr_points.append((key,item['avr'].__dict__.get(self.axis_box.currentText())[self.fit_data_index],item['std_avr']))
         if good_points:
-            good_points = np.array(good_points)
+            good_points = self.xaxis_calib(np.array(good_points))
             self.curve1.setData(good_points[:,0], good_points[:,1])
             self.single_meas_plot.setYRange(0,1.1*max(good_points[:,1]))
         if bad_points:
-            bad_points = np.array(bad_points)
+            bad_points =  self.xaxis_calib(np.array(bad_points))
             self.curve2.setData(bad_points[:, 0], bad_points[:, 1])
         if avr_points:
-            avr_points = np.array(avr_points)
+            avr_points =  self.xaxis_calib(np.array(avr_points))
             self.curve3.setData(x=avr_points[:, 0], y=avr_points[:, 1],top=avr_points[:,2])
         if (len(self.dataD) == len(self.globals['active_params_list'][0][0])) and int(nbrs) == (self.globals['number_of_shots']-1):
             print('Measurement finished. Process is on...')
             if len(avr_points) > 0:
+                self.avr_points = np.array(list(zip(*sorted(list(zip(avr_points[0,:],avr_points[1,:]))))))
+                self.fit_lbl_pos = (min(good_points[:, 0]), 0)
                 self.fitMeasurement(avr_points,fit_lbl_pos=(min(good_points[:, 0]), 0))
             self.saveFigandData()
             if self.new_scan_started: # if there is new started scan
                 self.scanStarted()
 
+    def onFitParamChanged(self):
+        # points to be plotted
+        print('ON FIT PARAMS CHANGED')
+        if not self.dataD:
+            return
+        self.fit_data_index = int(self.index_box.currentText())
+        good_points = []
+        bad_points = []
+        avr_points = []
+        for key, item in self.dataD.items():
+            good_points.extend(
+                [(key, d.__dict__.get(self.axis_box.currentText())[self.fit_data_index]) for d in item['ind'] if
+                 d.isgood])
+            bad_points.extend(
+                [(key, d.__dict__.get(self.axis_box.currentText())[self.fit_data_index]) for d in item['ind'] if
+                 not d.isgood])
+            if item['avr'] != None:
+                avr_points.append(
+                    (key, item['avr'].__dict__.get(self.axis_box.currentText())[self.fit_data_index], item['std_avr']))
+        if good_points:
+            good_points = self.xaxis_calib(np.array(good_points))
+            self.curve1.setData(good_points[:, 0], good_points[:, 1])
+            self.single_meas_plot.setYRange(0, 1.1 * max(good_points[:, 1]))
+        if bad_points:
+            bad_points = self.xaxis_calib(np.array(bad_points))
+            self.curve2.setData(bad_points[:, 0], bad_points[:, 1])
+        if avr_points:
+            avr_points = self.xaxis_calib(np.array(avr_points))
+            self.curve3.setData(x=avr_points[:, 0], y=avr_points[:, 1], top=avr_points[:, 2])
+        if len(avr_points) > 0:
+            self.avr_points = avr_points[avr_points[:,0].argsort()]
+            self.p0 = fit_func_lib._p0_dict[self.fit_func_box.currentText()](avr_points[:,0],avr_points[:,1])
+            self.doFitMeasurement()
+
     def fitMeasurement(self,avr_points,fit_lbl_pos=(0,0)):
-        fit_func = impr.gaussian
-        start = 0
-        end = None
-        xs = avr_points[:, 0][start:end]
-        ys = avr_points[:, 1][start:end]
-        p0 = (-max(ys) / 20 * (max(xs) - min(xs)), xs[np.argmin(ys)], (max(xs) - min(xs)) / 10, max(ys))
+        fit_func = fit_func_lib.__dict__[self.fit_func_box.currentText()]
+        # print('AVR_POINTS',avr_points)
+        xs = np.copy(avr_points[:, 0])
+        ys = np.copy(avr_points[:, 1])
+        ys_err = np.copy(avr_points[:, 2])
+
+        p0 = fit_func_lib._p0_dict[self.fit_func_box.currentText()](xs,ys)
+        self.p0 = p0
+        # p0 = (-max(ys) / 20 * (max(xs) - min(xs)), xs[np.argmin(ys)], (max(xs) - min(xs)) / 10, max(ys))
         print(p0)
+        self.p0_line.setText(','.join(['%.1e'%x for x in p0]))
         try:
-            popt_T, pcov_T = curve_fit(fit_func, xs, ys, p0=p0)
+            popt_T, pcov_T = curve_fit(fit_func, xs, ys, sigma=ys_err,p0=p0)
         except RuntimeError as e:
             print(e)
             popt_T = p0
@@ -626,8 +771,8 @@ class MeasurementClass(QWidget):
             pcov_T = np.zeros((len(popt_T), len(popt_T)))
 
         perr_T = np.sqrt(np.diag(pcov_T))
-        self.curve4.setData(np.linspace(min(avr_points[:, 0]), max(avr_points[:, 0]), 100),
-                            fit_func(np.linspace(min(avr_points[:, 0]), max(avr_points[:, 0]), 100), *popt_T))
+        self.curve4.setData(np.linspace(min(xs), max(xs), 100),
+                            fit_func(np.linspace(min(xs), max(xs), 100), *popt_T))
 
         s = fit_func.__name__ + ' fit:\n' + usfuncs.construct_fit_description(fit_func,
                                                                               list(zip(popt_T, perr_T)), sep='+-')
@@ -635,6 +780,51 @@ class MeasurementClass(QWidget):
         self.single_meas_plot.addItem(self.plot_info)
         self.plot_info.setPos(*fit_lbl_pos)
         self.fits_list = [[fit_func.__name__,list(popt_T), list(perr_T)]]
+
+    def doFitMeasurement(self):
+        fit_func = fit_func_lib.__dict__[self.fit_func_box.currentText()]
+        p0 = self.p0
+        # print('PO',p0)
+        avr_points = self.avr_points
+        # print('AVR_POINTS',avr_points)
+        xs = np.copy(avr_points[:, 0])
+        # print('XS0', xs)
+        ys = np.copy(avr_points[:, 1])
+        ys_top = np.copy(avr_points[:, 2])
+        try:
+
+            bad_points = [int(s.strip()) for s in self.drop_points_line.text().split(',') if s.strip().isdigit()]
+            # print('BAD POINTS',bad_points)
+            xs = np.array([xs[i] for i in range(len(xs)) if i not in bad_points])
+            ys = np.array([ys[i] for i in range(len(ys)) if i not in bad_points])
+            ys_top = np.array([ys_top[i] for i in range(len(ys_top)) if i not in bad_points])
+            self.curve3.setData(x=xs, y=ys, top=ys_top)
+        except ValueError as e:
+            print('ERRORR')
+            print(e)
+        # print('XS', xs)
+        # print(xs,ys)
+        try:
+            popt_T, pcov_T = curve_fit(fit_func, xs, ys, sigma=ys_top, p0=p0)
+        except RuntimeError as e:
+            print(e)
+            popt_T = p0
+            pcov_T = np.zeros((len(popt_T), len(popt_T)))
+        except Exception as e: # just in case (if not enough points, ...)
+            print(e)
+            popt_T = p0
+            pcov_T = np.zeros((len(popt_T), len(popt_T)))
+        # print(np.linspace(min(xs), max(xs), 100), *popt_T)
+        perr_T = np.sqrt(np.diag(pcov_T))
+        self.curve4.setData(np.linspace(min(xs), max(xs), 100),
+                            fit_func(np.linspace(min(xs), max(xs), 100), *popt_T))
+        s = fit_func.__name__ + ' fit:\n' + usfuncs.construct_fit_description(fit_func,
+                                                                              list(zip(popt_T, perr_T)), sep='+-')
+        self.plot_info.setText(s)
+        self.single_meas_plot.addItem(self.plot_info)
+        self.plot_info.setPos(*self.fit_lbl_pos)
+        self.fits_list = [[fit_func.__name__, list(popt_T), list(perr_T)]]
+        self.saveFigandData()
 
     def saveFigandData(self):
         dr, fr = os.path.split(self.folder)
@@ -673,6 +863,13 @@ class MeasurementClass(QWidget):
         else:
             print('Entery for folder "%s" created' % self.folder)
             self.meas_database.insert_one(data_to_db)
+
+    def deleteLast(self):
+        try:
+            self.meas_database.delete_one({'folder': self.folder})
+        except Exception as e:
+            print(e)
+        return
 
 
 ## Start Qt event loop unless running in interactive mode or using pyside.

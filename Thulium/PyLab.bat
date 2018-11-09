@@ -1,2 +1,2 @@
-python PyLab.py
+python PyLabDock.py
 ::pause

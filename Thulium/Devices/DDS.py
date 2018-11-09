@@ -123,6 +123,7 @@ class Line(QWidget):
         self.autoUpdate.timeout.connect(self.update)
         self.widgets = {}
         for key,val in LineDict.items():
+            print(key,val)
             if val[0] == 'CB':
                 # do a combo box widget
                 w = QComboBox()
@@ -139,7 +140,9 @@ class Line(QWidget):
                 w.textEdited.connect(self.textEdited)
             elif val[0] == 'MB':
                 w = MyBox()
-                w.setText(data.get(key,val[1]))
+
+                w.setText(str(data.get(key,val[1])))
+                print(val)
                 w.textChanged.connect(self.autoUpdate.start)
                 w.textEdited.connect(self.textEdited)
             self.widgets[key] = w
@@ -203,6 +206,12 @@ class Line(QWidget):
             self.parent.connected = False
             print('disconnected from ' + self.parent.ip + '\n', e)
 
+        try:
+            received = str(self.parent.dds.recv(1024), "utf-8")
+            print(received)
+        except Exception as e:
+            print('DDS ' + e)
+
     def textEdited(self):
         if self.parent:
             self.parent.scanner = False
@@ -235,7 +244,7 @@ class DDSWidget(QScrollArea):
         self.globals = globals
         self.scanner = False
         self.dds = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.ip = '192.168.1.6'
+        self.ip = '192.168.1.5'
         self.port = 2600
         self.connected = False
         try:
@@ -246,7 +255,7 @@ class DDSWidget(QScrollArea):
 
         self.lines = []
         self.load()
-        # print(self.lines)
+        print('qwerty',self.lines)
 
         self.menuBar = QMenuBar(self)
 
@@ -319,6 +328,7 @@ class DDSWidget(QScrollArea):
             self.dds.close()
         self.ip = ip
         try:
+            self.dds = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.dds.connect((self.ip, self.port))
             self.connected = True
         except Exception as e:
@@ -340,6 +350,7 @@ class DDSWidget(QScrollArea):
         try:
             with open(os.path.join(folder, name), 'r') as f:
                 self.lines = [Line(parent=self, data=line) for line in json.load(f)]
+                print(self.lines)
             success = True
         except Exception as error:
             print(error)

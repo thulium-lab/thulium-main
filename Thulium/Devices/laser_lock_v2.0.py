@@ -40,7 +40,7 @@ class BlueLock():
     srs_insr_error_counter_threshold = 10
 
     def __init__(self):
-        self.db = MongoClient('mongodb://localhost:27017/').measData.sacher_log
+        self.db = MongoClient('mongodb://192.168.1.59:27017/').measData.sacher_log
         self.load()
         # self.updateCOMPortsInfo()
         self.srs = SRS(default_port=self.config.get('srs_port',''))
@@ -440,7 +440,7 @@ class Sacher(COMPortDevice):
         return self.write_read_com(b'P:OFFS %.3fV\r' % new_voltage)
 
 class SRS(COMPortDevice):
-    identification_names = ['Stanford_Research_Systems', 'SIM960']
+    identification_names = ['Stanford_Research_Systems', 'SIM960','s/n016481']
     check_answer = 'Prolific'
 
     # def preCheck(self):

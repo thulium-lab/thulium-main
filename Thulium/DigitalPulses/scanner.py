@@ -36,7 +36,7 @@ class Scanner(QWidget):
         self.on_scan = False
         self.scan_interrupted = False
         self.number_of_shots = 5        # per parameter to average
-        self.current_shot_number = 0
+        self.current_shot_number = -1
         self.single_meas_folder = ''    # folder with pictures
         self.loadConfig()
         self.progressBar = QProgressBar(self)
@@ -172,7 +172,7 @@ class Scanner(QWidget):
             is_ok = self.scan_parameters.checkLength()
             if not is_ok:
                 return -1
-            self.current_shot_number = 0
+            self.current_shot_number = -1
             changed_index = self.scan_parameters.updateIndexes(start=True)
             self.globals['current_measurement_folder'] = self.meas_folder1.day_folder.strip() + '/' + self.meas_folder1.name.strip()
             # if folder already exists and add_points_flag isn't risen
@@ -214,7 +214,7 @@ class Scanner(QWidget):
     def addFirstFolder(self):
         """Not used now. Was written to start in thread and delay creation of first folder name to image_stack """
         time.sleep(0.7)
-        self.globals['image_stack'].append(self.globals['current_data_folder'] + '/' + '0_0.png')
+        self.globals['image_stack'].append(self.globals['current_data_folder'] + '/' + '-1_0.png')
 
     def updateSingleMeasFolder(self):
         print('updateSingleMeasFolder')
@@ -240,18 +240,18 @@ class Scanner(QWidget):
         if not self.on_scan:
             return
         # add image_name for saving image
-        self.globals['image_stack'].append(
-            self.globals['current_data_folder'] + '/' + '%i_0.png' % self.current_shot_number)
+        # self.globals['image_stack'].append(
+        #     self.globals['current_data_folder'] + '/' + '%i_0.png' % self.current_shot_number)
         # self.signals.imageProcessed.emit("%i %i" % (self.current_shot_number,self.scan_parameters.current_indexs[0]))
         if self.current_shot_number < self.number_of_shots - 1: # same shots to average
             self.current_shot_number += 1
             self.progressBar.setValue(self.scan_parameters.current_indexs[0] +
                                       self.current_shot_number / self.number_of_shots)
-            # self.globals['image_stack'].append(
-            #     self.globals['current_data_folder'] + '/' + '%i_0.png' % self.current_shot_number)
+            self.globals['image_stack'].append(
+                self.globals['current_data_folder'] + '/' + '%i_0.png' % self.current_shot_number)
             return 0
 
-        self.current_shot_number = 0 # new parameter will be launched
+        self.current_shot_number = -1 # new parameter will be launched
         # self.globals['image_stack'].append(
         #     self.globals['current_data_folder'] + '/' + '%i_0.png' % self.current_shot_number)
         changed_index = self.scan_parameters.updateIndexes() # for nested scans
@@ -272,11 +272,12 @@ class Scanner(QWidget):
 
         if self.on_scan:
             self.updateSingleMeasFolder()
-            # self.globals['image_stack'].append(self.globals['current_data_folder'] + '/' + '0_0.png')
+            self.globals['image_stack'].append(self.globals['current_data_folder'] + '/' + '-1_0.png')
 
     def updateParamAndSend(self,changed_index):
         """Updates scanning parameter and sends it to the module from which this parameter"""
         print('updateParamAndSend')
+        # self.globals['DAQ'].stop()
         try:
             self.progressBar.setValue(self.scan_parameters.current_indexs[0]+
                                       self.current_shot_number/self.number_of_shots)
@@ -296,6 +297,9 @@ class Scanner(QWidget):
                     is_Ok = False
                     break
 
+        # time.sleep(0.1)
+        # self.globals['DAQ'].run()
+
         if changed_index == -1:
             self.stopScan(stop_btn_text='Fihished')
 
@@ -305,6 +309,7 @@ class Scanner(QWidget):
         self.stop_btn.setText(stop_btn_text)
         self.scan_btn.setText('New scan')
         self.scan_interrupted = is_scan_interrupted
+
 
     def startScan(self,**argd):
         if self.scan_parameters.active_params_list:
@@ -317,6 +322,9 @@ class Scanner(QWidget):
         self.on_scan = True
         # print('scan_starteeeed')
         print(self.globals['active_params_list'])
+        self.updateSingleMeasFolder()
+        self.globals['image_stack'] = []
+        self.globals['image_stack'].append(self.globals['current_data_folder'] + '/' + '-1_0.png')
         self.signals.scanStarted.emit()
 
     def notesChanged(self):

@@ -53,7 +53,7 @@ class BlueLock():
     srs_insr_error_counter_threshold = 10
 
     def __init__(self):
-        self.db = MongoClient('mongodb://192.168.1.15:27017/').measData.sacher_log
+        self.db = MongoClient('mongodb://192.168.1.59:27017/').measData.sacher_log
         self.load()
         self.updateCOMPortsInfo()
         self.srs = SRS()

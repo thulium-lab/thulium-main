@@ -1,4 +1,4 @@
-import os, json, ctypes, sys, inspect
+import os, json, ctypes, sys, inspect, time
 import pyqtgraph as pg
 import numpy as np
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -15,7 +15,10 @@ from PyQt5.QtGui import (QColor, QFont, QIcon)
 from PyQt5.QtWidgets import (QApplication, QMenu, QColorDialog, QGridLayout, QVBoxLayout, QHBoxLayout, QDialog, QLabel,
                              QLineEdit, QPushButton, QWidget, QRadioButton, QSpinBox, QCheckBox, QButtonGroup,
                              QErrorMessage)
-import time
+import datetime
+import socket
+HOST, PORT = "192.168.1.59", 9999
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 n_air = 1.0002926
 cicle_counter = 0
@@ -86,12 +89,12 @@ class WMChannel:
             main_layout.addLayout(layout1)
 
             self.name_line = QLabel(self.data.name)
-            self.name_line.setFont(QFont("Times", 25, QFont.Bold))
+            self.name_line.setFont(QFont("Times", 20, QFont.Bold))
             self.name_line.setStyleSheet("QWidget { color: %s }"% self.data.color.name())
             main_layout.addWidget(self.name_line)
 
             self.value = QLabel()
-            self.value.setFont(QFont("Times",70))#,QFont.Bold
+            self.value.setFont(QFont("Times",40))#,QFont.Bold
             self.setValueText()
             self.value.setStyleSheet("QWidget { color: %s }"% self.data.color.name())
             main_layout.addWidget(self.value)
@@ -119,9 +122,9 @@ class WMChannel:
                 self.value.setText('HIGH')
                 return
             if self.data.unit == 'nm':
-                self.value.setText("%.5f nm" % self.data.wavelength)
+                self.value.setText("%.6f nm" % self.data.wavelength)
             else:
-                self.value.setText("%.5f THz" % self.data.frequency)
+                self.value.setText("%.6f THz" % self.data.frequency)
 
         def showSpectrum(self, b):
             # print('Show spectrum', b)
@@ -152,10 +155,58 @@ class WMMain():
         self.arduino = arduinoShutters.Arduino(port=self.config.get('port',''))
         self.arduino.n_lines = 1
         self.arduino.n_chars_in_string = 1000
+        self.a = 1
+        self.b = 0
+        self.loadCalib()
+        self.calibrate(force=True)
         # if arduino == None:
         #     # try to connect to arduino
         #     pass
         # self.arduino = arduino
+
+    def loadCalib(self, filename='WM_calib.json'):
+        filename = os.path.join(folder, filename)
+        try:
+            with open(filename, 'r') as f:
+                data = json.load(f)
+                self.calibData = data
+        except Exception as e:
+            self.calibData = {'Clock': 0, 'GreenX2': 0, 'Green': 0, 'time': 0}
+        return
+
+    def saveCalib(self, filename='WM_calib.json'):
+        filename = os.path.join(folder, filename)
+        with open(filename, 'w') as f:
+            json.dump(self.calibData, f)
+        return
+
+    def getFreq(self, omega):
+        return self.a*omega + self.b
+
+    def calibrate(self, force=False):
+        if datetime.datetime.now().timestamp() - self.calibData['time'] < 600 and not force:
+            return -1
+        if self.calibData['Clock'] == 0 or self.calibData['GreenX2'] == 0 or self.calibData['Green'] == 0:
+            return 1
+        if (self.calibData['Clock'] + self.calibData['GreenX2'] - 2*self.calibData['Green']) == 0:
+            return 1
+        a = (262954938.269213 + 2*426.7607) / (self.calibData['Clock'] + self.calibData['GreenX2'] - 2*self.calibData['Green']) / 1e6
+        b = a * (self.calibData['GreenX2'] - 2*self.calibData['Green'])
+        if abs(a-1) > 1e-7:
+            # print('#WM check that all lasers are locked')
+            return 2
+        ans = -1
+        if abs(b) > 100e-6:
+            # print('#WM consider recalibrating the wavemeter')
+            ans = 0
+        self.a = a
+        self.b = b
+        print('#WM recalibrated successfully')
+        if not force:
+            self.calibData['time'] = datetime.datetime.now().timestamp()
+            self.saveCalib()
+        return ans
+
     def save(self):
         # print('Save')
         data_to_save = {}
@@ -248,7 +299,12 @@ class WMMain():
 
             menu_layout.addWidget(QLabel('per line'))
 
+            self.calibrateBox = QCheckBox("recalibrate")
+            self.calibrateBox.setChecked(True)
+
             menu_layout.addStretch(1)
+
+            menu_layout.addWidget(self.calibrateBox)
 
             timer_len = QSpinBox()
             timer_len.setMinimum(10)
@@ -280,15 +336,18 @@ class WMMain():
             main_layout.addLayout(menu_layout)
 
             temp_layout = QHBoxLayout()
-            self.arduinoWidget = self.data.arduino.Widget(parent=self, data=self.data.arduino)
-            self.arduinoWidget.setMaximumWidth(250)
-            temp_layout.addWidget(self.arduinoWidget)
+
 
             plots_layout = QVBoxLayout()
             plots_layout.addWidget(self.plot_window1)
             plots_layout.addWidget(self.plot_window2)
-
             temp_layout.addLayout(plots_layout)
+
+            self.arduinoWidget = self.data.arduino.Widget(parent=self, data=self.data.arduino)
+            self.arduinoWidget.setMaximumWidth(250)
+            temp_layout.addWidget(self.arduinoWidget)
+
+
             main_layout.addLayout(temp_layout)
 
             self.channels_layout = QGridLayout()
@@ -318,6 +377,7 @@ class WMMain():
             print('new_config', self.config)
             with open(os.path.join(folder,'WM_config.json'), 'w') as f:
                 json.dump(self.config, f)
+
         def temerIntervalChanged(self, new_val):
             self.data.timer_interval = new_val
             self.data.save()
@@ -442,8 +502,26 @@ class WMMain():
                 channel = self.data.channels[self.data.current_index]
                 channel.wavelength = wm_data['wavelength']
                 channel.frequency = wm_data['frequency']
+                with open('freq_data_10_10.txt','a') as f:
+                    f.write('%.10f %i %.10f\n' % (time.time(),self.data.current_index,channel.frequency))
                 channel.amplitudes = wm_data['amplitudes']
                 channel.spectrum = wm_data['spectrum']
+
+                # remember for calibration
+                self.data.calibData[channel.name] = channel.frequency
+                if self.calibrateBox.isChecked():
+                    colour = self.data.calibrate()
+                    if colour > 0:
+                        self.calibrateBox.setStyleSheet("color: red")
+                    if colour < 0:
+                        self.calibrateBox.setStyleSheet("color: black")
+                    if colour == 0:
+                        self.calibrateBox.setStyleSheet("color: green")
+                    channel.frequency = self.data.getFreq(channel.frequency)
+                # send to server data
+                msg = 'WM %s %.2f %.7f\n'%(channel.name,datetime.datetime.now().timestamp(),channel.frequency)
+                sock.sendto(bytes(msg, "utf-8"), (HOST, PORT))
+
                 # self.signals.wvlChanged.emit(' '.join([str(channel.frequency) for channel in self.data.channels]))
                 self.drawChannels()
                 self.drawSpecta()

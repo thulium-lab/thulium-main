@@ -185,7 +185,7 @@ class GPDwidget(QWidget):
         layout.addLayout(l1)
         layout.addLayout(l2)
 
-        layout.addWidget(self.gpd.BasicWidget(data=self.gpd, parent=self))
+        layout.addWidget(self.gpd.BasicWidget(data=self.gpd, parent=self,connect=False))
 
         self.setLayout(layout)
 

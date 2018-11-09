@@ -115,9 +115,9 @@ class AnalogOutput(dq.Task):
     stop() - stops
         it is possible to explicitly call
         but not necessary (called implicitly when adding new data)
-    __del__ - clean on destruction
+    __del__ - clean on destruction (for the sake of NI board, not garbage collection)
     """
-    def __init__(self, sync = True):
+    def __init__(self, sync=True):
         dq.Task.__init__(self)
         self.sync = sync
         self.running = False
@@ -131,7 +131,7 @@ class AnalogOutput(dq.Task):
         self.sync = sync
         return
     
-    def write(self, data = np.array([0 for x in range(AON*2)], dtype=np.double), rate = 2, samples = 2):
+    def write(self, data = np.array([0 for x in range(AON*2)], dtype=np.double), rate=2, samples=2):
         self.stop()
         self.CfgSampClkTiming("", rate, dq.DAQmx_Val_Rising,
                               dq.DAQmx_Val_ContSamps, samples)
@@ -172,7 +172,7 @@ class DAQHandler:
         use run() to make everything zero
     __del__ - clean on destruction
     """
-    def __init__(self, func = None, sync = True):
+    def __init__(self, func=None, sync=True):
         self.DO = DigitalOutput(func)
         self.AO = AnalogOutput(sync)
         
@@ -182,7 +182,7 @@ class DAQHandler:
     def setSync(self, sync):
         return self.AO.setSync(sync)
         
-    def write(self, data = {}):
+    def write(self, data={}):
         print('writing to DAQ')
         p = 10000
         print(data)
@@ -190,6 +190,9 @@ class DAQHandler:
             self.AO.write()
             return self.DO.write()
         DOtimes = set()
+
+
+
         AOtimes = set()
         AOpattern = 'A'
         DOchans = {}
@@ -237,7 +240,7 @@ class DAQHandler:
             last = DOdata[sample-1]
             t = DOdt*sample
             for chan in DOchans:
-                if abs(DOchans[chan][0][0]-t)<err:
+                if abs(DOchans[chan][0][0]-t) < err:
                     V = DOchans[chan].pop(0)[1]
                     if not V:
                         last = last | (1 << chan)
@@ -248,7 +251,7 @@ class DAQHandler:
             last = [AOdata[x*AOsamples+sample-1] for x in range(AON)]
             t = AOdt*sample
             for chan in AOchans:
-                if abs(AOchans[chan][0][0]-t)<err:
+                if abs(AOchans[chan][0][0]-t) < err:
                     last[chan] = AOchans[chan].pop(0)[1]
             for i in range(AON):
                 AOdata[i*AOsamples+sample] = last[i]

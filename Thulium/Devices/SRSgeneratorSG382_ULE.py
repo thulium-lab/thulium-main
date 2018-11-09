@@ -142,7 +142,7 @@ class SRSGenerator(QWidget):
         self.config = {}
         self.srs = SRS_LAN() #SRS_COM()
         self.f0 = 29000000.000
-        self.df = 28.8
+        self.df = 26.1
         self.t0 = datetime(2018,1,1,0,0,0)
         self.fnow = 29000000.000
         self.t = datetime.now()
