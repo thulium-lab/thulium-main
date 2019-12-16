@@ -1,2 +1,0 @@
-python PyLabDock.py
-::pause

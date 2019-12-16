@@ -1,1 +1,0 @@
-{"frequency": 745061700.0, "K_d": 0.0, "channel": "402nm", "timer_interval": 300, "K_p": 0.2, "threshold": 5.0, "K_neg": 1.0, "gain": 2.0, "initial_voltage": 2.5, "correction_limit": 2.5, "K_i": 0.1}
