@@ -908,7 +908,7 @@ class ScannerWidget(QWidget):
                     "on_scan"] and not self.scan_running_data["on_scan"]:
             return # if scan is on but from another scanner
         if not self.scan_running_data["on_scan"]:
-            self.signals.scanCycleFinished.emit(-1)
+            self.signals.scanCycleFinished.emit(-1,t_finish)
             if self.delayed_scan_start: # if programm waits for scan beginninng
                 self.delayed_scan_start = False
                 self.scan_running_data["on_scan"] = True
@@ -919,7 +919,7 @@ class ScannerWidget(QWidget):
         finished_shot = self.scan_running_data["current_meas_number"]
         new_shot = finished_shot+1
         self.scan_running_data["folder_to_save"] = self.scan_running_data["current_folder"] # updates folder to save
-        self.signals.scanCycleFinished.emit(finished_shot)
+        self.signals.scanCycleFinished.emit(finished_shot,t_finish)
         print(finished_shot, "measurement finished")
         self.scan_running_data["current_meas_number"] = new_shot
         if finished_shot == len(self.scan_running_table)-1: #last measurement was made

@@ -1,4 +1,4 @@
-import sys, ctypes, time, functools,threading, json, datetime
+import sys, ctypes, time, functools,threading, json, datetime, requests
 import socket
 import pickle
 import socketserver
@@ -87,8 +87,12 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
         #     data = {}
         # print('task:', task, ",data:", data)
         if task == "cicle_finished": # end of cicle
-            print("Cycle %s finished at"%(data), time.perf_counter())#datetime.datetime.now().time()
+            print("Cycle %s finished at"%(data), time.perf_counter(),datetime.datetime.now())#datetime.datetime.now().time()
             main_window_widget.signals.singleScanFinished.emit(time.perf_counter())
+            try:
+                requests.get("http://192.168.1.59:2900/trigger", timeout=0.02)
+            except Exception as e:
+                print("failed to trigger SRS freq change")
         elif task == "analog_input": # reading of analog inputs:
             print("DAQin should connect via TCP")
             print("analog_input. Read channels", data.keys())
@@ -107,7 +111,7 @@ class OurSignals(QObject):
     anyPulseChange = pyqtSignal()  # to handle any change in pulse scheme - probably for displaying pulses
     newImageRead = pyqtSignal()     # emits when new image is read from image_folder
     newImage2Read = pyqtSignal()
-    scanCycleFinished = pyqtSignal(int)    # emits by DAQ whenever a cycle is finished
+    scanCycleFinished = pyqtSignal(int,float)    # emits by DAQ whenever a cycle is finished
     shutterChange = pyqtSignal(str)
     arduinoReceived = pyqtSignal() # WMeter can start averaging
     wvlChanged = pyqtSignal(str) # server can update wvl

@@ -351,6 +351,20 @@ class CurrentLine(PulseLine):
         self.parent.pulseChanged(self)
         # print('data from config',self.data["Config"])
 
+    def updateFromScanner(self, param, value):
+        # print("update", self.widgets.keys())
+        self._update_from_scanner = True
+        if param == "value":
+            self.data["Config"]["value"] = value
+            return 0
+        if param not in self.widgets:
+            if DEBUG: print('PulseLine, param not in the dictionary')
+            return 1
+        if self.widgets[param].setValue(str(value)):  # returns 1 if error
+            return 1
+        else:
+            return 0
+
     def getScanParams(self):
         if self.data["Config"] == {}:
             add_params = []
@@ -1345,9 +1359,11 @@ class PulseScheme(QWidget):
 
     def updateFromScanner(self):
         current_shot = self.globals["scan_running_data"]["current_meas_number"]
+        changed = False
         for param,path in {**self.globals["scan_params"]["main"],**self.globals["scan_params"]["low"]}.items():
             if path[0] == "Pulses" and (current_shot==0 or
             self.globals["scan_running_table"].loc[current_shot,param] != self.globals["scan_running_table"].loc[current_shot-1,param]):
+                changed = True
                 if DEBUG: print("Pulses - update from scanner - ",param, path)
                 try:
                     w = [w for w in self.tabbox.children()[0].children()
@@ -1356,7 +1372,8 @@ class PulseScheme(QWidget):
                     w.widget().updateFromScanner(param=path[2:],value=self.globals["scan_running_table"].loc[current_shot,param])
                 except:
                     print('Can not find widget for group', param["Param"][1])
-        self.constructPulseSequence()
+        if changed:
+            self.constructPulseSequence()
 
     def getUpdateMethod(self):  # old
         return self.updateFromScanner

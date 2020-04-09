@@ -1,4 +1,4 @@
-import os, sys, json, socket, ctypes, re
+import os, sys, json, socket, ctypes, re, datetime
 import numpy as np
 import sympy as sp
 from sympy.utilities.lambdify import lambdify
@@ -38,7 +38,7 @@ LineDict = OrderedDict([
     ('freq1', ['MDB', '140', freq_validator, 60]),
     ('amp1', ['MDB', '1', ampl_validator, 60]),
     ('mode', ['CB', 'SingleTone',
-              ['SingleTone', 'FrequencyRamp', 'PhaseAmpMode', 'FreqRampAmpRam', "FreqRampAntiRam"], 120]),
+              ['SingleTone', 'FrequencyRamp', 'PhaseAmpMode', 'FreqRampAmpRam', "FreqRampAntiRam",'AmpRamp'], 120]),
     ('lower', ['MDB', '0', freq_validator, 60]),
     ('upper', ['MDB', '0', freq_validator, 60]),
     ('rise', ['MDB', '0', slope_validator, 60]),
@@ -154,6 +154,7 @@ class Line(QWidget):
         if not self.parent.connected:
             print(str(self))
             return
+        print("Sending to DDS at ", datetime.datetime.now())
         try:
             self.parent.dds.send(str(self).encode())
         except Exception as e:
@@ -161,10 +162,13 @@ class Line(QWidget):
             print('disconnected from ' + self.parent.ip + '\n', e)
 
         try:
-            received = str(self.parent.dds.recv(1024), "utf-8")
-            print('DDS says', received)
+            pass
+            # received = str(self.parent.dds.recv(1024), "utf-8")
+            # print('DDS says', received)
         except Exception as e:
             print('DDS ' + e)
+
+        print("Received from DDS at ", datetime.datetime.now())
 
     def textEdited(self):
         if self.parent:
@@ -193,6 +197,33 @@ class Line(QWidget):
         m = max(m,0)
         if data['mode'] == 'SingleTone':
             points = ''
+        elif data['mode'] == 'AmpRamp':
+            n_points = 1024
+            t_fall = float(data['fall'])
+            t_low = float(data['length'])
+            t_rise = float(data['rise'])
+            a0 = min(max(float(data['amp0']),0),m)
+            a1 = min(max(float(data['lower']),0),m)
+            a2 = min(max(float(data['upper']), 0), m)
+            t_tot = t_fall + t_low + t_rise
+            n1 = int(t_fall/t_tot * (n_points-1))
+            n2 = int(t_low/t_tot * (n_points-1))
+            n3 = (n_points-1) - (n1 + n2)
+            points_fall = [a0 + (a1-a0)*i/n1 for i in range(n1)]
+            points_low = [a1]*n2
+            points_rise = [a1 + (a2-a1)*i/n3 for i in range(n3)] + [a2]
+            points = points_fall + points_low + points_rise
+            # print("Every 40th point", points[::40])
+            # args = [data['index'], data['name'], data['mode'], int(data['osk']),
+            #         int(data['ndl']), int(data['ndh']), data['freq0'], data['amp0'],
+            #         data['fall'], data['rise'], data['lower'], data['upper'], points,
+            #         str(t_tot), data['freq1'], data['amp1'], 0, 0, 0, '', 1, 1, 1]
+            # 'PhaseAmpMode' or 'FreqRampAmpRam'. For reverse trigger: 'FreqRampAntiRam'
+            args = [data['index'], data['name'], 'PhaseAmpMode', int(data['osk']),
+                    int(data['ndl']), int(data['ndh']), data['freq0'], data['amp0'],
+                    0, 0, data['freq1'], data['freq1'], " ".join(["%.5f"%(x) for x in points]),
+                    str(1e6*t_tot), data['freq1'], data['amp1'], 0, 0, 0, '', 1, 1, 1]
+            return 'setChannel(' + ','.join(map(str, args)) + ');'
         else:
             sp_form = re.split("([+-/*()])", data['wForm'])
             sp_form = [s.strip() for s in sp_form]

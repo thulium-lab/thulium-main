@@ -57,8 +57,13 @@ def exp_grouth(t, N0, tau):
     return N0 * ( 1 - np.exp( - t / tau))
 
 def _gaussian_p0(xs,ys):
-    """Returns M, x0,sigma,background"""
+    """Returns N, x0,sigma,background"""
     return (-max(ys) / 20 * (max(xs) - min(xs)), xs[np.argmin(ys)], (max(xs) - min(xs)) / 10, max(ys))
+
+def _my_sinc_p0(xs,ys):
+    """Returns N, x0,sigma,background"""
+    return (min(ys)-max(ys), xs[np.argmin(ys)], (max(xs) - min(xs)) / 4, max(ys))
+
 def _exp_decay_p0(xs,ys):
     """Returns N,tau,background"""
     return (max(ys), (max(xs) - min(xs))/3,0)
@@ -71,7 +76,7 @@ def _exp_plus_tw_body_decay_p0(xs,ys):
 
 _p0_dict = {'gaussian':_gaussian_p0,
            'gaussian2':_gaussian_p0,
-           'my_sinc0':_gaussian_p0,
+           'my_sinc0':_my_sinc_p0,
            'lorentz': _gaussian_p0,
            'exp_decay':_exp_decay_p0,
            'exp_decay_no_bg':_exp_decay_no_bg_p0,

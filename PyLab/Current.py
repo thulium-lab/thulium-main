@@ -500,14 +500,17 @@ class CurrentWidget(QScrollArea):
 
     def updateFromScanner(self):
         current_shot = self.globals["scan_running_data"]["current_meas_number"]
+        changed = False
         for param,path in {**self.globals["scan_params"]["main"],**self.globals["scan_params"]["low"]}.items():
             if path[0] == "Current" and ( current_shot==0 or
             self.globals["scan_running_table"].loc[current_shot,param] != self.globals["scan_running_table"].loc[current_shot-1,param]):
                 if DEBUG: print("Current - update from scanner - ",param, path)
+                changed = True
                 for w in self.lines:
                     if w.getName() == path[1]:
                         w.updateFromScanner(param=path[2],value=self.globals["scan_running_table"].loc[current_shot,param])
-        self.constructPulses(0,1000)
+        if changed:
+            self.constructPulses(0,1000)
 
     def updateDeviceReadings(self, msg):
         # print("updateDeviceReadings", msg)

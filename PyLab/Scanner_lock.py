@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (QApplication, QVBoxLayout, QHBoxLayout, QTextEdit, 
                              QSpinBox, QCheckBox, QMessageBox, QProgressBar,QTableWidget,QHeaderView,QTableWidgetItem,
                              QInputDialog,QMenuBar, QAction, QScrollArea, QMenu, QFileDialog,QSizePolicy,QDialog)
 # from DigitalPulses.scanParameters import SingleScanParameter, AllScanParameters, MeasurementFolderClass
-from PyQt5.QtCore import (QTimer, Qt)
+from PyQt5.QtCore import (QTimer, Qt,QRect,QPoint)
 from PyQt5.QtGui import (QFont)
 from Lib import (MyComboBox, MyDoubleBox, MyIntBox, MyLineEdit, MyCheckBox, MyPushButton,
                  QDoubleValidator, QIntValidator)
@@ -23,8 +23,10 @@ from function_lib import *
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+import matplotlib.patches as mpatches
 
 DEBUG = True
+FORMAT = ".png"
 
 NAME_IN_SCAN_PARAMS = 'ScannerLock'
 
@@ -272,6 +274,8 @@ class ScanParameters(QScrollArea):
             return active_params_data
 
     def updateCurrentParamValue(self):
+        print("updateCurrentValue")
+        return
         # print(self.globals["scan_running_data"]["new_main_params"])
         # print(self.globals["scan_running_data"]["new_low_params"])
         params = list(self.globals["scan_running_params"]["main"].keys())
@@ -312,6 +316,7 @@ class ScannerLockWidget(QWidget):
         # self.updateFunctions()
         self.meas_windows_counter = -1
         self.low_scan_finished = False
+        self.delayed_scan_start = False
         self.initUI()
         self.scan_running_data = {"scan_interrupted": False,
                                   "on_scan": False,
@@ -372,15 +377,32 @@ class ScannerLockWidget(QWidget):
                                       text_changed_handler=self.lockParamsChanged)
         lock_param_layout.addWidget(self.n_cycles_line)
 
-        lock_param_layout.addWidget(QLabel("feedback_gain"))
-        self.feedback_gain_line = MyDoubleBox(value=self.scan_data["feedback_gain"],validator=QDoubleValidator(-9.9,9.9,1),
+        lock_param_layout.addWidget(QLabel("feedback_P"))
+        self.feedback_gain_line = MyDoubleBox(value=self.scan_data["feedback_gain"],
+                                              validator=QDoubleValidator(-9.9, 9.9, 3),
                                               text_changed_handler=self.lockParamsChanged)
         lock_param_layout.addWidget(self.feedback_gain_line)
 
+        lock_param_layout.addWidget(QLabel("feedback_I"))
+        self.feedback_int_line = MyDoubleBox(value=self.scan_data["feedback_int"],
+                                              validator=QDoubleValidator(-9.9, 9.9, 3),
+                                              text_changed_handler=self.lockParamsChanged)
+        lock_param_layout.addWidget(self.feedback_int_line)
+
+        lock_param_layout.addWidget(QLabel("n_I"))
+        self.n_int_line = MyIntBox(value=self.scan_data["n_int"], validator=QIntValidator(0, 99999),
+                                      text_changed_handler=self.lockParamsChanged)
+        lock_param_layout.addWidget(self.n_int_line)
+
         lock_param_layout.addWidget(QLabel("eta="))
-        self.eta_formula_line = MyLineEdit(name=self.scan_data["eta_formula"],max_width=100,
+        self.eta_formula_line = MyLineEdit(name=self.scan_data["eta_formula"],max_width=300,
                                            text_changed_handler=self.lockParamsChanged)
         lock_param_layout.addWidget(self.eta_formula_line)
+
+        lock_param_layout.addWidget(QLabel("lim"))
+        self.eta_limit_line = MyLineEdit(name=self.scan_data["eta_limit"], max_width=300,
+                                         text_changed_handler=self.lockParamsChanged)
+        lock_param_layout.addWidget(self.eta_limit_line)
 
         main_layout.addLayout(lock_param_layout)
 
@@ -495,7 +517,7 @@ class ScannerLockWidget(QWidget):
             #                             "additional": {d["Name"]: d["Param"] for d in scan_sequence["additional"]}}
 
             self.scan_running_data = {"scan_interrupted": False,
-                                      "on_scan": True,
+                                      "on_scan": False,
                                       "current_meas_number": 0,
                                       "day_folder": self.folder_widget.getDayFolder(),
                                       "current_folder": None,  # folder for current measurements
@@ -514,7 +536,7 @@ class ScannerLockWidget(QWidget):
             print("sequence algorithm  ", self.scan_data["algorithm0_seq"])
 
             self.scan_data["feedback_gain"] = self.feedback_gain_line.getValue()
-            print("1", self.scan_running_data)
+            print("scan_running_data", self.scan_running_data)
 
             self.scan_data["eta_dependencies"] =  re.findall(r'[a-zA-Z]\w+', self.eta_formula_line.getValue())
             print("eta dependencies", self.scan_data["eta_dependencies"])
@@ -539,26 +561,28 @@ class ScannerLockWidget(QWidget):
             self.scan_running_data["n0"] = 0 # number of sideband interrogation
             self.scan_running_data["n1"] = 0 # number of parameter interrogation
             self.scan_running_data["n_cycle"] = 0 # cycle number
-            self.scan_running_table_columns = ["n_cycle",self.scan_params["main"]["Name"], *[d["Name"] for d in self.scan_params["additional"]], "f0", "sigma", "slope", "eta","f_clock"]
+            self.scan_running_table_columns = ["n_cycle","shot_n",self.scan_params["main"]["Name"],
+                                               *[d["Name"] for d in self.scan_params["additional"]],
+                                               "f0", "sigma", "slope", "eta", "error", "f_clock"]
             self.scan_running_table = pd.DataFrame(columns=self.scan_running_table_columns)
+            self.globals["scan_running_table"] = self.scan_running_table
             self.calculateCurrentStep()
-            self.scan_running_table["T0"]=0
+            # self.scan_running_table["T0"]=0
             self.updateCurrentFolder()
             self.scan_running_data["folder_to_save"] = self.scan_running_data["current_folder"]
             os.mkdir(os.path.join(self.scan_running_data["day_folder"],
                                   self.scan_running_data["current_folder"]))
-            self.globals["scan_running_table"] = self.scan_running_table
             self.globals["scan_running_data"] = self.scan_running_data
-            self.globals["scan_running_params"] = {"low": {"f0": self.scan_data["freq_param"]},
+            self.globals["scan_params"] = {"low": {"f_clock": self.scan_data["freq_param"]},
              "main": {self.scan_params["main"]["Name"]:self.scan_params["main"]["Param"],
                       **{d["Name"]: d["Param"] for d in self.scan_params["additional"]}}}
             # self.globals["scan_running_table"]["T0"]=0
-            self.startScan()
             self.launchMeasurementWindow()
             print("scan data",self.scan_data)
             print("scan_running_table",self.globals["scan_running_table"])
             print("scan_running_data",self.globals["scan_running_data"])
             print('Scan started at ', datetime.datetime.now().time())
+            self.startScan()
 
             # for test
             return
@@ -567,9 +591,10 @@ class ScannerLockWidget(QWidget):
         self.stop_btn.setText('Stop')
         self.scan_btn.setText('On scan!')
         self.scan_params_widget.updateCurrentParamValue()
-        # self.signals.updateFromScanner.emit()
+        self.signals.updateFromScanner.emit()
+        self.delayed_scan_start = True
         # self.signals.scanStarted.emit()
-        self.cycleTimer.start()
+        # self.cycleTimer.start()
 
     def calculateDf(self,name,df_formula,value):
         res = eval(df_formula.replace(name,str(value)))
@@ -587,8 +612,12 @@ class ScannerLockWidget(QWidget):
         f_clock = f0 + (1 if slope=="+" else -1)*sigma/2
         main_param = self.scan_params["main"]["Seq"][self.scan_data["algorithm1_seq"][self.scan_running_data["n1"]]]
         additional_params = [d["Seq"][self.scan_data["algorithm1_seq"][self.scan_running_data["n1"]]] for d in self.scan_params["additional"]]
-        data = [n_cycle,main_param,*additional_params,f0,sigma,slope,0,f_clock]
+        data = [n_cycle,0,main_param,*additional_params,f0,sigma,slope,0,0,f_clock]
         self.globals["scan_running_table"] = self.globals["scan_running_table"].append(pd.Series(data,index=self.scan_running_table_columns),ignore_index=True)
+        if "C0_0_N_x" in self.globals["scan_running_table"].columns:
+            print(self.globals["scan_running_table"][["n_cycle","f0","slope","eta","f_clock","C0_0_N_x"]])
+        else:
+            print(self.globals["scan_running_table"])
         # self.globals["scan_running_table"] = self.scan_running_table
 
     def genProbeSignal(self):
@@ -609,16 +638,27 @@ class ScannerLockWidget(QWidget):
                     "on_scan"] and not self.scan_running_data["on_scan"]:
             return # if scan is on but from another scanner
         if not self.scan_running_data["on_scan"]:
-            # self.signals.scanCycleFinished.emit(-1)
+            self.signals.scanCycleFinished.emit(-1, t_finish)
+            if self.delayed_scan_start:  # if programm waits for scan beginninng
+                self.delayed_scan_start = False
+                self.scan_running_data["on_scan"] = True
+                self.signals.scanStarted.emit()
             return
-        self.genProbeSignal()
+        # self.genProbeSignal()
+        finished_shot = self.scan_running_data["current_meas_number"]
+        self.signals.scanCycleFinished.emit(finished_shot, t_finish)
+        print("New", self.scan_running_data["current_meas_number"], "cycle finished")
+        print(self.globals["scan_running_table"][["n_cycle", "f0", "slope", "eta", "f_clock", "C0_0_N_x"]][-8:])
         self.calculateEta()
         print(self.scan_running_data["current_meas_number"], "cycle finished")
-        print(self.globals["scan_running_table"])
+        print(self.globals["scan_running_table"][["n_cycle", "f0", "slope", "eta", "f_clock", "C0_0_N_x"]][-8:])
+        print(self.scan_running_data)
         self.scan_running_data["current_meas_number"] += 1
         if self.scan_running_data["n0"] < len(self.scan_data["algorithm0_seq"]) - 1:  # sideband probs are not finished
+            print("UPDATE NO", self.scan_running_data["n0"])
             self.scan_running_data["n0"] += 1
         else:
+            print("ALMOST FINISHED")
             self.scan_running_data["n0"] = 0
             if self.scan_running_data["n1"] < len(self.scan_data["algorithm1_seq"]) - 1:  # parameters probs are not finished
                 self.scan_running_data["n1"] += 1
@@ -626,31 +666,37 @@ class ScannerLockWidget(QWidget):
                 self.scan_running_data["n1"] = 0
                 self.scan_running_data["n_cycle"] += 1
                 self.calculateNewF0s()
+                table_folder = os.path.join(self.scan_running_data["day_folder"], "DataTables")
+                try:
+                    os.mkdir(table_folder)
+                except FileExistsError:
+                    pass
+                self.globals["scan_running_table"].to_csv(
+                    os.path.join(table_folder, self.scan_running_data["current_folder"]) + ".csv")
+
                 if self.scan_running_data["n_cycle"] == self.scan_data["n_cycles"]:
                     print("SCAN FINISHED")
                     # self.signals.scanFinished.emit()
                     self.stopScan(stop_btn_text='Stop', is_scan_interrupted=False)
-                    table_folder = os.path.join(self.scan_running_data["day_folder"], "DataTables")
-                    try:
-                        os.mkdir(table_folder)
-                    except FileExistsError:
-                        pass
-                    self.globals["scan_running_table"].to_csv(
-                        os.path.join(table_folder, self.scan_running_data["current_folder"]) + ".csv")
                     return
         self.calculateCurrentStep()
         self.scan_params_widget.updateCurrentParamValue()
+        self.signals.updateFromScanner.emit()
         # self.DelayedMeasurementPlottingTimer.start()
         self.startDelayedMeasurementPlotting()
         # self.signals.updateFromScanner.emit()
         # print(self.scan_data)
-        self.cycleTimer.start()
+        # self.cycleTimer.start()
 
     def calculateEta(self):
         eta_formula = self.eta_formula_line.getValue()
         for param in self.scan_data["eta_dependencies"]:
             eta_formula = eta_formula.replace(param,str(self.globals["scan_running_table"].loc[self.scan_running_data["current_meas_number"],param]))
+        eta_formula = eta_formula.replace('nan',"0")
         eta = eval(eta_formula)
+        lowerLim, upperLim = [float(x) for x in self.eta_limit_line.getValue().split()]
+        if eta <= lowerLim or eta >= upperLim:
+            eta = np.nan
         # print("eta=",eta)
         self.globals["scan_running_table"].ix[self.scan_running_data["current_meas_number"], "eta"] = eta
 
@@ -659,27 +705,49 @@ class ScannerLockWidget(QWidget):
         new_f0s = []
         for main_param_value in self.scan_params["main"]["Seq"]:
             # data from last sidebands measurement for paticular paramter value
-            data = self.scan_running_table[self.scan_running_table[main_param_name] == main_param_value][-len(self.scan_data["algorithm0_seq"]):]
+            # print("ERROR HERE", main_param_name, main_param_value)
+            DATA = self.globals["scan_running_table"][self.globals["scan_running_table"][main_param_name] == main_param_value][-int(self.n_int_line.getValue()):]
+            data = self.globals["scan_running_table"][self.globals["scan_running_table"][main_param_name] == main_param_value][-len(self.scan_data["algorithm0_seq"]):]
+            # data = self.globals["scan_running_table"][-len(self.scan_data["algorithm0_seq"]):]
             # params_values = {}
+            print("_DATA_",data)
             # eta_plus_formula = self.eta_formula_line.getValue()
             # eta_minus_formula = self.eta_formula_line.getValue()
             # for param in self.scan_data["eta_dependencies"]:
             #     eta_plus_formula = eta_plus_formula.replace(param,str(data[data["slope"] == "+"][param].mean()))
             #     eta_minus_formula = eta_minus_formula.replace(param, str(data[data["slope"] == "-"][param].mean()))
-            eta_plus = data[data["slope"] == "+"]["eta"].mean()
-            eta_minus = data[data["slope"] == "-"]["eta"].mean()
+            # eta_plus = np.nanmean(np.array(data[data["slope"] == "+"]["eta"]))
+            eta_plus = data[data["slope"] == "+"]["eta"].mean(skipna=True)
+            # eta_minus = np.nanmean(np.array(data[data["slope"] == "-"]["eta"]))
+            eta_minus = data[data["slope"] == "-"]["eta"].mean(skipna=True)
             # eta_plus = eval(eta_plus_formula)
             # eta_minus = eval(eta_minus_formula)
             # print("eta+, eta-", eta_plus, eta_minus)
-            if pd.isna(eta_plus) or pd.isna(eta_minus): # one can not calculate error signal
-                new_f0s.append(data["f0"].iloc[0])
-            else:
-                error = eta_plus - eta_minus
-                print("Error", error)
-                f0 = data["f0"].iloc[0] + error*self.scan_data["feedback_gain"]*data["sigma"].iloc[0]/2
-                new_f0s.append(f0)
+            error = 0
+            f0 = data["f0"].iloc[0]
+            error = eta_plus - eta_minus
+            if np.isnan(error):
+                error = 0
+            # if all(np.isnan(data["eta"])):  # one can not calculate error signal
+            #     f0 = data["f0"].iloc[0]
+            #     error = np.nan
+            # else:
+            #     error = eta_plus - eta_minus
+            #     if any(np.isnan(data["eta"])):
+            #         error /= 2
+            #     # self.feedback_sum += error
+            #     print("Error", error)
+
+            self.globals["scan_running_table"].loc[(self.globals["scan_running_table"][main_param_name] == main_param_value) & (self.globals["scan_running_table"]["n_cycle"] == self.scan_running_data["n_cycle"]-1), "error"] = error
+
+            errors = DATA["error"].mean()
+
+            f0 += error*self.scan_data["feedback_gain"]*data["sigma"].iloc[0]/2 +\
+                  errors*self.scan_data["feedback_int"]*data["sigma"].iloc[0]
+            new_f0s.append(f0)
 
         self.scan_running_data["f0s"].append(new_f0s)
+
         return
 
     def stopScan(self,stop_btn_text='Stop',is_scan_interrupted=False,**argd):
@@ -757,7 +825,7 @@ class MeasurementWindow(QDialog):
             self.axes.cla()
             self.axes.set_title(self.title)
             self.axes.plot(all_data,'.', markersize=3)
-            # self.axes.legend(all_data.columns)
+            self.axes.legend(all_data.columns,loc="lower left")#,loc="upper right"
             # self.axes.plot(median_data,'o',mfc='None')
             # for i in range(len(yss)):
             #     # print(yss[i])
@@ -781,6 +849,10 @@ class MeasurementWindow(QDialog):
             d = data[data["slope"] == "-"]
             colors_minus = [self.color_bank[main_param_values.index(x)] for x in d[main_param_name]]
             self.axes.scatter(list(d.index), d["eta"], color=colors_minus, marker="_")
+            patchs = []
+            for i in range(len(main_param_values)):
+                patchs.append(mpatches.Patch(color=self.color_bank[i], label=str(main_param_values[i])))
+            self.axes.legend(handles=patchs,loc="lower left")
             self.draw()
         def addCureveToCurrentPlot(self,xs,ys, s=""):
             if self.plot_line == None:
@@ -806,7 +878,12 @@ class MeasurementWindow(QDialog):
         self.window_n = window_n
         self.n_start = n_start
         self.finished = False
-        self.figure_file_name = None
+        fig_folder = os.path.join(self.globals["scan_running_data"]["day_folder"], "Figures")
+        try:
+            os.mkdir(fig_folder)
+        except FileExistsError:
+            pass
+        self.figure_file_name = os.path.join(fig_folder,self.globals["scan_running_data"]["current_folder"])
         # self.p0_change_timer = QTimer()
         # self.p0_change_timer.setInterval(1000)
         # self.p0_change_timer.timeout.connect(self.p0LineChanged)
@@ -851,7 +928,13 @@ class MeasurementWindow(QDialog):
 
     def saveFigure(self,f_name):
         print("Plot will be saved at ", f_name)
-        self.plot_widget.fig.savefig(f_name)
+        self.freq_plot_widget.fig.savefig(f_name+"_freq"+FORMAT)
+        self.adev_plot_widget.fig.savefig(f_name+"_adev"+FORMAT)
+        self.eta_plot_widget.fig.savefig(f_name+"_eta"+FORMAT)
+        # pixmap = self.grab(QRect(QPoint(0,0),QPoint(-1,-1)))
+        # print(pixmap.save(f_name))
+        # self.preview_screen.save(f_name, "png")
+        # self.plot_widget.fig.savefig(f_name)
 
     def updatePlot(self,window_n,current_shot,finished=False):
         # print("UpdatePlot", current_shot, " finished=",finished)

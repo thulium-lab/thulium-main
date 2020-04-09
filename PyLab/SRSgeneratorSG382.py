@@ -156,6 +156,8 @@ class SRSGenerator(QWidget):
     def updateFromScanner(self, param_dict=None):
         # self.scanner = True
         current_shot = self.globals["scan_running_data"]["current_meas_number"]
+        # print("update SRS frequency", current_shot)
+        # print( self.globals["scan_running_table"].loc[current_shot, "f0"])
         for param, path in {**self.globals["scan_params"]["main"],
                             **self.globals["scan_params"]["low"]}.items():
             if path[0] == NAME_IN_SCAN_PARAMS and (current_shot == 0 or

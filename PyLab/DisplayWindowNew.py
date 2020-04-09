@@ -6,6 +6,7 @@ import pyqtgraph.exporters
 import numpy as np
 import pandas as pd
 from scipy.optimize import curve_fit
+from scipy import optimize
 import pickle
 import pymongo, datetime
 from pymongo import MongoClient
@@ -43,6 +44,11 @@ import imageio
 def gaussian(x,N,x0,sigma, background):
     """Returns value of a 1D-gaussian with the given parameters"""
     return N / (sigma * np.sqrt(np.pi)) * np.exp(-(x - x0)**2/(sigma**2)) + background
+
+def error_gaussian(params,ys):
+    N, x0, sigma, background = params
+    xs = 1.0 * np.arange(len(ys))
+    return ys - gaussian(xs, N, x0, sigma, background)
 
 CameraLineDict = OrderedDict([
     ('Channel',['MCB','D16',['D%i'%i for i in np.arange(8,32)],60]),
@@ -143,9 +149,9 @@ class ImageWidget(QWidget):
 
         main_layout.addLayout(chbx_layout)
 
-        data_layout = QVBoxLayout()
+        # data_layout = QVBoxLayout()
 
-
+        self.table_tab = QTabWidget()
 
         self.fit_table = QTableWidget(3, len(FIT_TABLE_PARAMS))
         self.fit_table.horizontalHeader().setResizeMode(QHeaderView.ResizeToContents)
@@ -162,8 +168,8 @@ class ImageWidget(QWidget):
             self.fit_table.setItem(1, i, QTableWidgetItem("-"))
             self.fit_table.setItem(2, i, QTableWidgetItem("-"))
         self.fit_table.horizontalHeader().hide()
-
-        data_layout.addWidget(self.fit_table)
+        self.table_tab.addTab(self.fit_table,"fits")
+        # data_layout.addWidget(self.fit_table)
 
         self.camera_table = QTableWidget(2, len(CAMERA_TABLE_PARAMS))
         self.camera_table.horizontalHeader().setResizeMode(QHeaderView.ResizeToContents)
@@ -181,9 +187,10 @@ class ImageWidget(QWidget):
             self.camera_table.setItem(1, i, QTableWidgetItem(v))
         self.camera_table.horizontalHeader().hide()
         self.camera_table.cellChanged.connect(self.cameraTableChanged)
-        data_layout.addWidget(self.camera_table)
-
-        main_layout.addLayout(data_layout)
+        # data_layout.addWidget(self.camera_table)
+        self.table_tab.addTab(self.camera_table,"settings")
+        main_layout.addWidget(self.table_tab)
+        # main_layout.addLayout(data_layout)
 
         self.setLayout(main_layout)
         self.setMinimumHeight(500)
@@ -269,8 +276,8 @@ class ImageWidget(QWidget):
     def getCameraChannel(self):
         return self.config["channel"]
 
-    def updateImage(self):
-        # print("--imageWidget -- updateImage")
+    def updateImage(self,image_number=0,image_name_to_save=None):
+        # print("--imageWidget -- updateImage", self.parent.camera_number, image_number,datetime.datetime.now())
         # global current_data_index
         # check if row is still correct
         if (np.array(self.config["roi_ll"]) < 0).any() or not (np.array(self.config["roi_ll"])+np.array(self.config["roi_size"]) < self.parent.image.shape[::-1]).all():
@@ -282,14 +289,15 @@ class ImageWidget(QWidget):
 
         self.roi_image = np.array(self.parent.image[self.config["roi_ll"][1]:self.config["roi_ll"][1]+self.config["roi_size"][1],
                                       self.config["roi_ll"][0]:self.config["roi_ll"][0]+self.config["roi_size"][0]])
-        self.current_fit_data = []
+        if image_number==0:
+            self.current_fit_data = []
         self.fit_status = True
         # print("befor do fits")
         # print(self.config)
         if self.config["do_fits"]:
             # print("ind do fits")
             # print(self.roi_image.shape)
-            tot = np.sum(self.roi_image )
+            tot = np.sum(self.roi_image)
             # print(tot)
             # print(self.config["camera_params"])
             gain = float(self.config["camera_params"][CAMERA_TABLE_PARAMS.index("Gain")])
@@ -308,7 +316,10 @@ class ImageWidget(QWidget):
                     d = np.sum(self.roi_image,i)
                     # print(d)
                     # print(len(d),self.roi_image.shape)
-                    popt,pcov = curve_fit(gaussian,np.arange(len(d)),d,p0=[tot,np.argmax(d),10,0])
+                    # # old way of fitting data
+                    # popt,pcov = curve_fit(gaussian,np.arange(len(d)),d,p0=[tot,np.argmax(d),10,0],bounds=(0,np.inf),maxfev=100)
+                    # new fit - works faster
+                    popt, success = optimize.leastsq(error_gaussian, np.array([tot,np.argmax(d),10,0]),args=d,maxfev=100)
                     # print(popt)
                     x0 = popt[1]+self.config["roi_ll"][i]
                     self.current_fit_data.extend([popt[0],popt[0]*norm_coeff,x0,x0*pixel_size,popt[2],
@@ -319,20 +330,23 @@ class ImageWidget(QWidget):
                     print(e)
                     self.current_fit_data.extend([0]*len(FIT_TABLE_PARAMS))
                     self.fit_status = False
-
-            self.parent.data_table = self.parent.data_table.append(pd.Series(self.current_fit_data,index=self.parent.data_table.columns),ignore_index=True)
+                if success == 5:
+                    self.fit_status = False
+            # self.parent.data_table = self.parent.data_table.append(pd.Series(self.current_fit_data,index=self.parent.data_table.columns),ignore_index=True)
+            for i in np.arange(2*len(FIT_TABLE_PARAMS)):
+                # print(image_number,i)
+                self.parent.data_table.iat[-1,2*len(FIT_TABLE_PARAMS)*image_number + i] = self.current_fit_data[2*len(FIT_TABLE_PARAMS)*image_number + i]
             # print("data_table",self.data_table)
+        if image_name_to_save:
+            self.saveImage(image_name_to_save)
+        if image_number == int(self.config["image_number"]): # this image should be displayed
+            # print("in update table", self.config["do_fits"], self.config["subs_bgnd"], self.fit_status)
+            if self.config["do_fits"] and self.config["subs_bgnd"] and self.fit_status:
+                self.roi_image -= np.mean(bgnds)
+                self.parent.image[self.config["roi_ll"][1]:self.config["roi_ll"][1] + self.config["roi_size"][1],
+                        self.config["roi_ll"][0]:self.config["roi_ll"][0] + self.config["roi_size"][0]] = self.roi_image
             self.updateFitTable()
-
-        # update image based on fits
-        # print(1)
-        if self.config["do_fits"] and self.config["subs_bgnd"] and self.fit_status:
-            self.roi_image -= np.mean(bgnds)
-            self.parent.image[self.config["roi_ll"][1]:self.config["roi_ll"][1] + self.config["roi_size"][1],
-                    self.config["roi_ll"][0]:self.config["roi_ll"][0] + self.config["roi_size"][0]] = self.roi_image
-        # show image
-        # print(2)
-        self.img.setImage(self.parent.image,autoRange=True, autoLevels=False,autoHistogramRange=False,autoDownsample=True)
+            self.img.setImage(self.parent.image,autoRange=True, autoLevels=False,autoHistogramRange=False,autoDownsample=True)
         # print("finished updating")
         return self.fit_status
 
@@ -367,13 +381,14 @@ class PlotWidget(QWidget):
 
         menu_layout = QVBoxLayout()
         self.chbx_layout = QGridLayout()
-        for i,key in enumerate(FIT_TABLE_PARAMS):
-            w1 = MyCheckBox(key+'_x',is_checked=self.config[key+'_x'],
-                                   handler=self.chbxClicked)
-            w2 = MyCheckBox(key + '_y', is_checked=self.config[key+'_y'],
-                            handler=self.chbxClicked)
-            self.chbx_layout.addWidget(w1, i, 0)
-            self.chbx_layout.addWidget(w2, i, 1)
+        self.onDataTableChanged()
+        # for i,key in enumerate(FIT_TABLE_PARAMS):
+        #     w1 = MyCheckBox(key+'_x',is_checked=self.config[key+'_x'],
+        #                            handler=self.chbxClicked)
+        #     w2 = MyCheckBox(key + '_y', is_checked=self.config[key+'_y'],
+        #                     handler=self.chbxClicked)
+        #     self.chbx_layout.addWidget(w1, i, 0)
+        #     self.chbx_layout.addWidget(w2, i, 1)
 
         self.chbx_layout.setContentsMargins(5, 2, 5, 2)
         menu_layout.addLayout(self.chbx_layout)
@@ -402,14 +417,16 @@ class PlotWidget(QWidget):
             if key in ["n_points"]:
                 continue
             if self.config[key]:  # this parameter is set to be displayed
-                self.curves[key] = self.plot.plot(np.array([]), name=key, pen=(i, n_plots))
+                self.curves[key] = self.plot.plot(np.array([]), name=key[3:], pen=(i, n_plots))
                 i += 1
 
     def chbxClicked(self):
         # print("--plotWidget -- chbxClicked")
-        for i,key in enumerate(FIT_TABLE_PARAMS):
-            self.config[key+'_x'] = self.chbx_layout.itemAtPosition(i,0).widget().getValue()
-            self.config[key+'_y'] = self.chbx_layout.itemAtPosition(i, 1).widget().getValue()
+        # for i,key in enumerate(FIT_TABLE_PARAMS):
+        #     self.config[key+'_x'] = self.chbx_layout.itemAtPosition(i,0).widget().getValue()
+        #     self.config[key+'_y'] = self.chbx_layout.itemAtPosition(i, 1).widget().getValue()
+        for i, key in enumerate(self.parent.data_table.columns):
+            self.config[key] = self.chbx_layout.itemAtPosition( i//2, i%2).widget().getValue()
         for key in self.curves:
             self.plot.removeItem(self.curves[key])
         for item in self.plot.getPlotItem().legend.items:
@@ -426,6 +443,26 @@ class PlotWidget(QWidget):
         self.createCurves()
         self.save_config()
 
+    def onDataTableChanged(self):
+        keys_to_del = []
+        for key in self.config:
+            if key in ["n_points"]:
+                continue
+            if key not in self.parent.data_table.columns:
+                keys_to_del.append(key)
+        for key in keys_to_del:
+            del self.config[key]
+        for i in range(self.chbx_layout.count()):
+            self.chbx_layout.itemAt(i).widget().deleteLater()
+        for i,key in enumerate(self.parent.data_table.columns):
+            if key not in self.config:
+                self.config[key] = False
+            w1 = MyCheckBox(key[3:], is_checked=self.config.get(key,False),
+                            handler=self.chbxClicked)
+            self.chbx_layout.addWidget(w1, i//2, i%2)
+        self.save_config()
+
+
     def updatePlot(self):
         # print("--plotWidget -- updatePlot")
         # print(self.parent.data_table)
@@ -437,7 +474,7 @@ class PlotWidget(QWidget):
                 # print(key, "to plot")
                 # print(self.parent.data_table[key+self.parent.camera_number])
                 # print("points_to_show",self.parent.data_table[key+self.parent.camera_number][-self.config["n_points"]:])
-                data = self.parent.data_table[key+self.parent.camera_number][-self.config["n_points"]:]
+                data = self.parent.data_table[key][-self.config["n_points"]:]
                 xs = np.array(data.index)
                 ys = data.values
                 self.curves[key].setData(xs,ys)
@@ -487,24 +524,25 @@ class CameraWidget(da.DockArea):
         self.camera_number = camera_number
         self.config = {}
         self.image_name = image_name
+        self.image_stock = []
         self.load()
-        self.data_table = pd.DataFrame(columns=[s +"_x" + self.camera_number for s in FIT_TABLE_PARAMS] +
-                                               [s +"_y" + self.camera_number for s in FIT_TABLE_PARAMS], dtype=float)
-
-
+        # self.data_table = pd.DataFrame(columns=[s +"_x" + self.camera_number for s in FIT_TABLE_PARAMS] +
+        #                                        [s +"_y" + self.camera_number for s in FIT_TABLE_PARAMS], dtype=float)
+        self.constructDataTable(len(self.config["camera"]["list_of_image"]))
         self.initUI()
+        self.number_of_images = self.image_widget.getNumberOfImages()
         self.timer = QTimer()
         self.timer.setInterval(2000)
         self.timer.timeout.connect(self.cycleFinishedHandler)
         self.waitForImageTimer = QTimer()
-        self.waitForImageTimer.setInterval(10)
+        self.waitForImageTimer.setInterval(5)
         self.waitForImageTimer.timeout.connect(self.processImage)
         self.waitForFirstImageTimer = QTimer()
         self.waitForFirstImageTimer.setInterval(100)
         self.waitForFirstImageTimer.timeout.connect(self.startImageReadings)
-        self.waitAfterScanStarted = QTimer()
-        self.waitAfterScanStarted.setInterval(100)
-        self.waitAfterScanStarted.timeout.connect(self.deleteAllImaged)
+        # self.waitAfterScanStarted = QTimer()
+        # self.waitAfterScanStarted.setInterval(100)
+        # self.waitAfterScanStarted.timeout.connect(self.deleteAllImaged)
 
         # self.onScanStarted()
         # self.timer.start()
@@ -535,6 +573,14 @@ class CameraWidget(da.DockArea):
                                        chbx_config_name="plot2_chbx")
         self.plot2_dock.addWidget(self.plot2_widget)
 
+    def constructDataTable(self,n_images):
+        """column format Ci_j_P_x, here i - camera_number, j- image_number, P - parameter, x  - x or y"""
+        columns = []
+        for i in range(n_images):
+            columns.extend(["C%s_%i_" % (self.camera_number, i) + s + "_x" for s in FIT_TABLE_PARAMS] +
+                           ["C%s_%i_" % (self.camera_number, i) + s + "_y" for s in FIT_TABLE_PARAMS])
+        self.data_table = pd.DataFrame(columns=columns, dtype=float)
+
     def onPulsesChanged(self):
         camera_channel = self.image_widget.getCameraChannel()
         start_times = []
@@ -543,21 +589,27 @@ class CameraWidget(da.DockArea):
             for pulse in self.globals["pulses"][camera_channel]:
                 if pulse[1] == 1: # start exposition
                     start_times.append(pulse[0])
+            self.wait_for_first_image_interval = min(start_times)-300
+            # self.waitForFirstImageTimer.setInterval(min(start_times) - 10)
             if self.image_widget.getNumberOfImages() != len(start_times):
                 self.image_widget.updateListOfImage([str(i) for i in range(len(start_times))])
                 self.number_of_images = len(start_times)
-                self.waitForFirstImageTimer.setInterval(min(start_times))
-                return
-                columns = []
-                for i in range(len(start_times)):
-                    columns.extend(["C%s_%i_"%(self.camera_number,i) + s +"_x" for s in FIT_TABLE_PARAMS] +
-                                               ["C%s_%i_"%(self.camera_number,i) + s +"_y" for s in FIT_TABLE_PARAMS])
-                self.data_table = pd.DataFrame(columns=columns, dtype=float)
+                self.constructDataTable(self.number_of_images)
+                self.plot1_widget.onDataTableChanged()
+                self.plot2_widget.onDataTableChanged()
+                # # return
+                # columns = []
+                # for i in range(len(start_times)):
+                #     columns.extend(["C%s_%i_"%(self.camera_number,i) + s +"_x" for s in FIT_TABLE_PARAMS] +
+                #                                ["C%s_%i_"%(self.camera_number,i) + s +"_y" for s in FIT_TABLE_PARAMS])
+                # self.data_table = pd.DataFrame(columns=columns, dtype=float)
 
     def startImageReadings(self):
         self.waitForFirstImageTimer.stop()
+        self.deleteAllImaged()
+        self.data_table = self.data_table.append(pd.Series(),ignore_index=True)
         self.handled_images = 0
-        print("New image should arrive", self.number_of_images)
+        # print("New image should arrive", self.number_of_images,datetime.datetime.now())
         self.n_waits = 0
         self.waitForImageTimer.start()
 
@@ -567,28 +619,125 @@ class CameraWidget(da.DockArea):
         if self.globals and "scan_running_table" in self.globals:
             for fit_param in self.data_table.columns:
                 self.globals["scan_running_table"][fit_param] = 0.0
-        self.waitAfterScanStarted.start()
+        # self.waitAfterScanStarted.start()
 
     def deleteAllImaged(self):
-        self.waitAfterScanStarted.stop()
-        if self.camera_number == "0":
-            print("camera - delite all images at",datetime.datetime.now())
+        # self.waitAfterScanStarted.stop()
+        # if self.camera_number == "0":
+        #     print("camera - delite all images at",datetime.datetime.now())
+        # print("Delete everything because should be empty at ", datetime.datetime.now())
         files = os.listdir(self.image_fodler)
         files = [f for f in files if f.endswith('png') or f.endswith('tiff')]
-        for f in files:
-            os.remove(os.path.join(self.image_fodler,f))
+        if files:
+            print("camera %s delite %i images"%(self.camera_number,len(files)), datetime.datetime.now())
+            for f in files:
+                if self.camera_number == "0":
+                    print(f)
+                os.remove(os.path.join(self.image_fodler,f))
 
-    def cycleFinishedHandler(self,finished_shot):
-        # self.finished_shot = finished_shot
-        # self.waitForFirstImageTimer.start()
-        # old code
-        if self.camera_number=="0":
-            print("camera cycle_finished at", datetime.datetime.now())
-        # print("camera - cycleFinishedHandeler")
+    def cycleFinishedHandler(self,finished_shot,t_finished):
         self.finished_shot = finished_shot
-        self.n_waits = 0
-        self.waitForImageTimer.start()
+        # print("Start to wait for images in about ",
+        #       t_finished - time.perf_counter() + self.wait_for_first_image_interval,
+        #       " ms after ", datetime.datetime.now())
+        # self.waitForFirstImageTimer.stop()
+        # print(time.perf_counter()-t_finished + self.wait_for_first_image_interval)
+        # self.waitForFirstImageTimer.setInterval(t_finished - time.perf_counter() + self.wait_for_first_image_interval)
+        self.waitForFirstImageTimer.start(t_finished - time.perf_counter() + self.wait_for_first_image_interval)
+        # if self.camera_number == "0":
+        #     print("camera", self.camera_number, "cycle_finished, time_to_wait",self.waitForFirstImageTimer.interval())
+        # old code
+        # if self.camera_number=="0":
+        #     print("camera cycle_finished at", datetime.datetime.now())
+        # # print("camera - cycleFinishedHandeler")
+        # self.finished_shot = finished_shot
+        # self.n_waits = 0
+        # self.waitForImageTimer.start()
 
+    def processImage(self):
+        self.waitForImageTimer.stop()
+        files = os.listdir(self.image_fodler)
+        files = sorted([f for f in files if f.endswith('png') or f.endswith('tiff')])
+        if files == []:
+            # start timer to wait for image
+            self.n_waits += 1
+            self.waitForImageTimer.start()
+            return
+        else:
+            if len(files) <= self.handled_images:
+                self.n_waits += 1
+                self.waitForImageTimer.start()
+                return
+            # if self.camera_number == "0":
+            #     print("camera image found at", datetime.datetime.now())
+            last_handled = self.handled_images
+            for i in range(self.handled_images,len(files)):
+                f = files[i]
+                # if self.camera_number == "0":
+                #     print("camera0", i, len(files),datetime.datetime.now())
+                try:
+                    self.image = imageio.imread(os.path.join(self.image_fodler,f))
+                except (PermissionError,IndexError):
+                    self.n_waits += 1
+                    self.waitForImageTimer.start()
+                    self.handled_images = last_handled
+                    return
+                if self.camera_number == "0":
+                    print(i, f)
+                self.image = self.image / 2**16
+                image_name_to_save = self.constructImageNameToSave(i)
+                # if self.camera_number == "0":
+                #     print("camera %s n_tries %i"%(self.camera_number,self.n_waits))
+                update_image_status = self.image_widget.updateImage(image_number=i,image_name_to_save=image_name_to_save)
+                # if update_image_status:
+                #     self.plot1_widget.updatePlot()
+                #     self.plot2_widget.updatePlot()
+                last_handled = i
+                if i+1 == self.image_widget.getNumberOfImages():
+                    break
+            self.handled_images = last_handled+1
+            # if self.camera_number == "0":
+            #     print("camera0 after handling", self.handled_images,self.image_widget.getNumberOfImages())
+            if self.handled_images == self.image_widget.getNumberOfImages():# all expected images are handled
+                for f in files:
+                    os.remove(os.path.join(self.image_fodler, f))
+                self.plot1_widget.updatePlot()
+                self.plot2_widget.updatePlot()
+                if self.globals and "scan_running_data" in self.globals and self.globals["scan_running_data"]["on_scan"]: #self.finished_shot>0:
+                    # image_folder_name = os.path.join(self.globals["scan_running_data"]["day_folder"],
+                    #                                  self.globals["scan_running_data"]["folder_to_save"])
+                    meas_num = self.globals["scan_running_data"]["current_meas_number"]# self.finished_shot
+                    # if update_image_status:
+                    # print(self.data_table.iloc[-1])
+                    for fit_param in self.data_table.columns:
+                        if fit_param == 'C0_0_N_x':
+                            print("!!!FROM DISPLAY WINDOW: ",meas_num,fit_param,self.data_table.iloc[-1][fit_param])
+                        self.globals["scan_running_table"].at[meas_num,fit_param] = self.data_table.iloc[-1][fit_param]
+                    # print(self.globals["scan_running_table"])
+                    # print(self.globals["scan_running_table"],self.globals["scan_params"])
+                    # image_name = "cam"+self.camera_number + "_"
+                    # image_name += '_'.join(["%s=%f"%(key,self.globals["scan_running_table"].loc[int(meas_num),key])
+                    #                       for key in self.globals["scan_params"]["low"]])
+                    # image_name += '_shot_n=%i.png'%self.globals["scan_running_table"].loc[int(meas_num),"shot_n"]
+                    # image_name = os.path.join(image_folder_name,image_name)
+                    # self.image_widget.saveImage(image_name)
+            else:
+                self.waitForImageTimer.start()
+        # for f in files:
+        #     os.remove(os.path.join(self.image_fodler,f))
+    def constructImageNameToSave(self,image_number):
+        if self.globals and "scan_running_data" in self.globals and self.globals["scan_running_data"]["on_scan"]:#self.finished_shot >= 0:
+            image_folder_name = os.path.join(self.globals["scan_running_data"]["day_folder"],
+                                             self.globals["scan_running_data"]["folder_to_save"])
+            meas_num = self.globals["scan_running_data"]["current_meas_number"]#self.finished_shot
+            image_name = "cam" + self.camera_number + "_" + str(meas_num) + "_" + str(image_number) + "_"
+            image_name += '_'.join(["%s=%f" % (key, self.globals["scan_running_table"].loc[int(meas_num), key])
+                                    for key in self.globals["scan_params"]["low"]])
+            image_name += '_shot_n=%i.png' % self.globals["scan_running_table"].loc[int(meas_num), "shot_n"]
+            image_name = os.path.join(image_folder_name, image_name)
+        else:
+            image_name = None
+        return image_name
     # def processImage(self):
     #     self.waitForImageTimer.stop()
     #     files = os.listdir(self.image_fodler)
@@ -599,28 +748,20 @@ class CameraWidget(da.DockArea):
     #         self.waitForImageTimer.start()
     #         return
     #     else:
-    #         # if self.camera_number == "0":
-    #         #     print("camera image found at", datetime.datetime.now())
-    #         last_handled = self.handled_images
-    #         for i in range(self.handled_images,len(files)):
-    #             f = files[i]
-    #             try:
-    #                 self.image = imageio.imread(os.path.join(self.image_fodler,f))
-    #             except (PermissionError,IndexError):
-    #                 self.n_waits += 1
-    #                 self.waitForImageTimer.start()
-    #                 self.handled_images = last_handled
-    #                 return
-    #             self.image = self.image / 2**16
-    #             update_image_status = self.image_widget.updateImage()
-    #             if update_image_status:
-    #                 self.plot1_widget.updatePlot()
-    #                 self.plot2_widget.updatePlot()
-    #             last_handled = i
-    #         self.handled_images = last_handled+1
-    #         if self.handled_images == self.image_widget.getNumberOfImages():# all expected images are handled
-    #             for f in files:
-    #                 os.remove(os.path.join(self.image_fodler, f))
+    #         if self.camera_number == "0":
+    #             print("camera image found at", datetime.datetime.now())
+    #         f = files[-1]
+    #         try:
+    #             self.image = imageio.imread(os.path.join(self.image_fodler,f))
+    #         except (PermissionError,IndexError):
+    #             self.n_waits += 1
+    #             self.waitForImageTimer.start()
+    #             return
+    #         self.image = self.image / 2**16
+    #         update_image_status = self.image_widget.updateImage()
+    #         if update_image_status:
+    #             self.plot1_widget.updatePlot()
+    #             self.plot2_widget.updatePlot()
     #
     #         if self.globals and "scan_running_data" in self.globals and self.finished_shot>0:
     #             image_folder_name = os.path.join(self.globals["scan_running_data"]["day_folder"],
@@ -639,53 +780,8 @@ class CameraWidget(da.DockArea):
     #             image_name += '_shot_n=%i.png'%self.globals["scan_running_table"].loc[int(meas_num),"shot_n"]
     #             image_name = os.path.join(image_folder_name,image_name)
     #             self.image_widget.saveImage(image_name)
-    #     # for f in files:
-    #     #     os.remove(os.path.join(self.image_fodler,f))
-
-    def processImage(self):
-        self.waitForImageTimer.stop()
-        files = os.listdir(self.image_fodler)
-        files = [f for f in files if f.endswith('png') or f.endswith('tiff')]
-        if files == []:
-            # start timer to wait for image
-            self.n_waits += 1
-            self.waitForImageTimer.start()
-            return
-        else:
-            if self.camera_number == "0":
-                print("camera image found at", datetime.datetime.now())
-            f = files[-1]
-            try:
-                self.image = imageio.imread(os.path.join(self.image_fodler,f))
-            except (PermissionError,IndexError):
-                self.n_waits += 1
-                self.waitForImageTimer.start()
-                return
-            self.image = self.image / 2**16
-            update_image_status = self.image_widget.updateImage()
-            if update_image_status:
-                self.plot1_widget.updatePlot()
-                self.plot2_widget.updatePlot()
-
-            if self.globals and "scan_running_data" in self.globals and self.finished_shot>0:
-                image_folder_name = os.path.join(self.globals["scan_running_data"]["day_folder"],
-                                                 self.globals["scan_running_data"]["folder_to_save"])
-                meas_num = self.finished_shot
-                if update_image_status:
-                    # print(self.data_table.iloc[-1])
-                    for fit_param in self.data_table.columns:
-                        # print(meas_num,fit_param,self.data_table.iloc[-1][fit_param])
-                        self.globals["scan_running_table"].at[meas_num,fit_param] = self.data_table.iloc[-1][fit_param]
-                    # print(self.globals["scan_running_table"])
-                # print(self.globals["scan_running_table"],self.globals["scan_params"])
-                image_name = "cam"+self.camera_number + "_"
-                image_name += '_'.join(["%s=%f"%(key,self.globals["scan_running_table"].loc[int(meas_num),key])
-                                      for key in self.globals["scan_params"]["low"]])
-                image_name += '_shot_n=%i.png'%self.globals["scan_running_table"].loc[int(meas_num),"shot_n"]
-                image_name = os.path.join(image_folder_name,image_name)
-                self.image_widget.saveImage(image_name)
-        for f in files:
-            os.remove(os.path.join(self.image_fodler,f))
+    #     for f in files:
+    #         os.remove(os.path.join(self.image_fodler,f))
 
     def load(self):
         try:
